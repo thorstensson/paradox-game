@@ -18,12 +18,17 @@ import nebulaFrontUrl from "./assets/backgrounds/purple-nebula/planets.png?url";
 import galaxyBackUrl from "./assets/backgrounds/galaxy/back.png?url";
 import galaxyFrontUrl from "./assets/backgrounds/galaxy/front.png?url";
 
-// Player
-import playerUrl from "./assets/player/player.png?url";
-import propulsionFireUrl from "./assets/player/propulsion/propulsion-fire.png?url";
-import propulsionFireAtlasUrl from "./assets/player/propulsion/propulsion-fire_atlas.json?url";
-import propulsionFireAnimUrl from "./assets/player/propulsion/propulsion-fire_anim.json?url";
-import bulletUrl from "./assets/player/bullet.png?url";
+// Player ship. Hand-painted, 32x32 indexed, three one-frame tags:
+// level / bank-up / bank-down. Exported from Aseprite untrimmed in Array
+// format with Tags on -- Phaser indexes the frames numerically, so Hash
+// format will not load.
+import shipUrl from "./assets/player/ship/obsidion-ship.png?url";
+import shipJsonUrl from "./assets/player/ship/obsidion-ship.json?url";
+
+// Player bullet. 8x2 native, one frame, no tags -- so a plain image, not an
+// atlas. PlayerBullets blows it up 4x into a canvas texture at runtime,
+// because a Blitter draws its Bobs at raw texture size.
+import shipBulletUrl from "./assets/player/bullet/ship-bullet.png?url";
 
 // Enemies
 import enemyBlueUrl from "./assets/enemies/enemy-blue/enemy-blue.png?url";
@@ -54,12 +59,12 @@ export class Preloader extends Phaser.Scene {
         this.load.image("galaxy-back", galaxyBackUrl);
         this.load.image("galaxy-front", galaxyFrontUrl);
 
-        this.load.image("player", playerUrl);
-        this.load.atlas("propulsion-fire", propulsionFireUrl, propulsionFireAtlasUrl);
-        this.load.animation("propulsion-fire-anim", propulsionFireAnimUrl);
+        // Phaser reads Aseprite atlases natively; createFromAseprite() in the
+        // scene turns each frameTag into an animation of the same name.
+        this.load.aseprite("ship", shipUrl, shipJsonUrl);
+        this.load.image("ship-bullet", shipBulletUrl);
 
         // Bullets
-        this.load.image("bullet", bulletUrl);
         this.load.image("flares", flaresUrl);
 
         // Enemies
@@ -78,6 +83,15 @@ export class Preloader extends Phaser.Scene {
     }
 
     create() {
+        // Stopgap bullet. The template's bullet.png went with the rest of the
+        // Phaser default art; this is a plain 4x1 native dot drawn at 4x, so
+        // it sits on the same grid as everything else until real art exists.
+        const bullet = this.make.graphics({ x: 0, y: 0 }, false);
+        bullet.fillStyle(0xffffff, 1);
+        bullet.fillRect(0, 0, 16, 4);
+        bullet.generateTexture("bullet", 16, 4);
+        bullet.destroy();
+
         // Create bitmap font and load it in cache
         const config = {
             image: 'knighthawks',

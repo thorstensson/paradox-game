@@ -32,29 +32,20 @@ export class MainScene extends Scene {
         this.galaxy_background = new GalaxyBackground(this);
         this.star_field = new StarField(this);
 
+        // Builds one animation per Aseprite frameTag: level, bank-up,
+        // bank-down. Must run before the Player, which holds "level" from
+        // its constructor.
+        this.anims.createFromAseprite("ship");
+
         // Player
         this.player = new Player({ scene: this });
 
         // Enemy
         this.enemy_blue = new BlueEnemy(this);
 
-        // Cursor keys 
+        // Autofire is polled in update() rather than driven by key events, so
+        // holding the button keeps shots coming on the cooldown.
         this.cursors = this.input.keyboard.createCursorKeys();
-        this.cursors.space.on("down", () => {
-            this.player.fire();
-        });
-        this.input.on("pointerdown", (pointer) => {
-            this.player.fire(pointer.x, pointer.y);
-        });
-
-        // Overlap enemy with bullets
-        this.physics.add.overlap(this.player.bullets, this.enemy_blue, (enemy, bullet) => {
-            bullet.destroyBullet();
-            this.enemy_blue.damage(this.player.x, this.player.y);
-            this.points += 10;
-            this.scene.get("HudScene")
-                .update_points(this.points);
-        });
 
         // Overlap player with enemy bullets
         this.physics.add.overlap(this.enemy_blue.bullets, this.player, (player, bullet) => {
@@ -97,16 +88,23 @@ export class MainScene extends Scene {
     update(time, delta) {
         this.galaxy_background.update(time, delta);
         this.star_field.update(time, delta);
-        this.player.update();
+        this.player.update(time, delta);
         this.enemy_blue.update();
 
-        // Player movement entries
-        if (this.cursors.up.isDown) {
-            this.player.move("up");
-        }
-        if (this.cursors.down.isDown) {
-            this.player.move("down");
+        // The mouse steers the ship, so a click cannot also aim -- the ship is
+        // already at the cursor. Bullets always travel right.
+        if (this.input.activePointer.isDown || this.cursors.space.isDown) {
+            this.player.fire(time);
         }
 
+        this.player.bullets.update(time, delta);
+
+        // Player bullets are Blitter Bobs with no physics body, so the hit
+        // test is done by hand rather than through physics.add.overlap.
+        this.player.bullets.collide(this.enemy_blue, () => {
+            this.enemy_blue.damage(this.player.x, this.player.y);
+            this.points += 10;
+            this.scene.get("HudScene").update_points(this.points);
+        });
     }
 }
