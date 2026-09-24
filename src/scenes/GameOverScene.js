@@ -1,5 +1,8 @@
 import { Scene } from "phaser";
-import { GalaxyBackground } from "../gameobjects/GalaxyBackground";
+
+// How long GAME OVER holds before fading back to the intro, and the fade.
+const HOLD_MS = 3000;
+const FADE_MS = 1000;
 
 export class GameOverScene extends Scene {
     end_points = 0;
@@ -13,62 +16,31 @@ export class GameOverScene extends Scene {
     }
 
     create() {
-        // Static starfield: constructed but never updated, so it stays frozen.
-        new GalaxyBackground(this);
-
-        // Rectangles to show the text
-        // Background rectangles
-        this.add.rectangle(
-            0,
-            this.scale.height / 2,
-            this.scale.width,
-            120,
-            0xffffff
-        ).setAlpha(.8).setOrigin(0, 0.5);
-        this.add.rectangle(
-            0,
-            this.scale.height / 2 + 105,
-            this.scale.width,
-            90,
-            0x000000
-        ).setAlpha(.8).setOrigin(0, 0.5);
-
-        const gameover_text = this.add.bitmapText(
+        // Same font and size as the score, as in Delta.
+        this.add.bitmapText(
             this.scale.width / 2,
             this.scale.height / 2,
-            "knighthawks",
-            "GAME\nOVER",
-            62,
-            1
-        )
-        gameover_text.setOrigin(0.5, 0.5);
-        gameover_text.postFX.addShine();
+            "main-font",
+            "GAME OVER",
+            32
+        ).setOrigin(0.5, 0.5);
 
         this.add.bitmapText(
             this.scale.width / 2,
-            this.scale.height / 2 + 85,
-            "pixelfont",
+            this.scale.height / 2 + 64,
+            "main-font",
             `YOUR POINTS: ${this.end_points}`,
-            24
+            32
         ).setOrigin(0.5, 0.5);
 
-        this.add.bitmapText(
-            this.scale.width / 2,
-            this.scale.height / 2 + 130,
-            "pixelfont",
-            "CLICK TO RESTART",
-            24
-        ).setOrigin(0.5, 0.5);
+        // No restart prompt: hold, fade out, and drop back to the intro.
+        // MainScene launches MenuScene from its init().
+        this.time.delayedCall(HOLD_MS, () => {
+            this.cameras.main.fadeOut(FADE_MS, 0, 0, 0);
+        });
 
-        // Click to restart
-        this.time.addEvent({
-            delay: 1000,
-            callback: () => {
-                this.input.on("pointerdown", () => {
-                    this.scene.start("MainScene");
-                });
-            }
-        
-        })
+        this.cameras.main.once("camerafadeoutcomplete", () => {
+            this.scene.start("MainScene");
+        });
     }
 }

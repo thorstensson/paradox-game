@@ -2,23 +2,26 @@ I am building a 2D horizontal space shooter in Phaser 3 using pure JavaScript. W
 
 ### 📐 Canvas & Scaling Blueprint
 
-- **Target Resolution:** 1280 x 640 (Adjusted to match asset height)
-- **Native Asset Size:** 272 x 160
-- **Scale Multiplier:** 4x integer scaling
-- **Background Dimensions Formula:** Screen dimensions are divided by 4:
-    - `tileWidth` = 1280 / 4 = 320
-    - `tileHeight` = 640 / 4 = 160 (Matches native asset height 1:1)
+- **Canvas:** 1280 x 800 -- 4x the C64 playfield (320 x 200).
+- **Window fit:** `Scale.NONE` plus an integer `zoom` (largest whole multiple that fits the window), so the canvas is never stretched by a fractional amount.
+- **Clear colour:** `#111111` -- Amiga OCS near-black, one `0x11` step up from black. The page around it stays `#0b090a` (`style.css`), so the playfield edge reads against the border.
+- **Sprites (ships, enemies, bullets):** 3x. See **Sprite Scale: 3x** below.
+- **Title logo:** 4x.
+- **Main font:** Electron Pulse, drawn 1:1 at 32px. See **Fonts** below.
+- **Stars:** 1/2/3px screen-pixel dots (`StarField.js`), not on any texel grid.
 
 * **Rendering Rule:** Always apply `pixelArt: true` in the Phaser config. This already forces `NEAREST` filtering globally, so per-object `setFilterMode` calls are not needed.
-* **Note:** The native tile width (272) does not divide evenly into the 320 virtual width. This is fine — a `TileSprite` repeats its texture and simply wraps mid-texture, so only seamlessness matters, not the ratio.
+* **Integer vs non-integer scale:** anything can be drawn at any size. Integer scales keep every pixel the same width; non-integer ones stay hard-edged but make some pixels a screen pixel wider than others, so they read less clean. A choice per asset, not a rule.
 
-### 🌌 Parallax Background Loop Strategy
+### 🌌 Parallax Backgrounds -- parked
 
-- `back.png` and `front.png` are static, seamless textures (not spritesheets).
-- Depth is created via **code-driven parallax**. In the scene's `update()` loop, we shift the texture position (`tilePositionX`) at varying speeds (e.g., `back` moves slower than `front`).
-- Scrolling is **delta-based** (`tilePositionX += speed * delta / 1000`) so the drift rate is framerate independent.
-- Speeds are expressed in *texture* pixels per second; multiply by the 4x scale for the on-screen rate.
-- The `props/` folder contains individual, standalone planet and asteroid textures. These will be dynamically spawned just off-screen to the right and given a leftward velocity to float across the sky independent of the background tiles.
+`GalaxyBackground.js` (two scrolling TileSprites) was removed 2026-09-24:
+Level 1 is stars only, and the intro and Game Over screens are plain
+`#111111`. The template backgrounds (`galaxy/`, `purple-nebula/`, `planets/`)
+and the generated `oil6/` tile are kept in `src/assets/backgrounds/` in case
+one comes back in-game; none are loaded. If one does, the technique was: a
+TileSprite per layer, `tilePositionX += speed * delta / 1000`, back layer
+slower than front. The old class is in git history.
 
 ### 📦 Asset Pipeline (Vite)
 
@@ -37,50 +40,54 @@ We are using a modular, ES6-module approach splitting files by their functional 
 obsidion/
 ├── index.html
 ├── vite.config.js
+├── art/ # Aseprite masters (not loaded by the game)
+│ └── player/ # obsidion-ship.aseprite, ship-bullet.aseprite
 ├── public/
 │ └── favicon.png # Only truly static, unprocessed files
 │
 └── src/
-├── main.js # Phaser config and main initialization
+├── main.js # Phaser config, canvas size, clear colour, integer zoom
 ├── preloader.js # All asset imports + load calls
 │
 ├── assets/ # Structured strictly by runtime function
-│ ├── backgrounds/
-│ │ └── galaxy/
-│ │ ├── back.png # Deep background star tile
-│ │ ├── front.png # Mid-ground star tile
-│ │ └── props/ # Individual props-1.png to props-5.png (planets/asteroids)
-│ ├── enemies/
+│ ├── backgrounds/ # Parked: galaxy/, purple-nebula/, planets/, oil6/ -- none loaded
 │ ├── player/
+│ │ ├── ship/ # obsidion-ship.png + .json (Aseprite atlas)
+│ │ └── bullet/ # ship-bullet.png, 8x2
 │ └── fonts/
+│ ├── scifiadventure.png # Title logo image (OBSIDION only, not a full font)
+│ └── electron-pulse.fnt + electron-pulse_0.png # Main font (BMFont)
 │
-├── gameobjects/ # Custom JS classes inheriting from Phaser GameObjects
-│ ├── GalaxyBackground.js # Two TileSprites, 320x160 at setScale(4)
-│ ├── Player.js
-│ ├── BlueEnemy.js
-│ └── Bullet.js
+├── gameobjects/
+│ ├── Player.js # Mouse-steered ship, banking, autofire. SHIP_SCALE = 3
+│ ├── PlayerBullets.js # Blitter bullet pool, SCALE = 3
+│ └── StarField.js # Procedural Blitter starfield
 │
-└── scenes/ # Core Phaser Scene files
-├── SplashScene.js
-├── MainScene.js # Orchestrates the game loop and collision logic
-├── MenuScene.js
-├── HudScene.js
-└── GameOverScene.js
+└── scenes/
+├── MainScene.js # Game loop; launches MenuScene over itself as the intro
+├── MenuScene.js # Intro: logo + PLAYER ONE / CLICK TO START
+├── HudScene.js # POINTS + REMAINING
+└── GameOverScene.js # GAME OVER + points, holds 3s, fades back to the intro
+
+Enemies get their own folder under `src/assets/enemies/` when the first one is
+drawn (see Enemies & Waves).
 
 ---
 
 ### ✅ Status
 
-**Done (v1):**
-- Canvas set to 1280 x 640.
-- Galaxy `back.png` / `front.png` loading and scrolling as a two-layer parallax via `GalaxyBackground.js`.
-- All assets migrated from `public/` to `src/assets/` with `?url` imports.
+**Done 2026-09-24:**
+- Template enemy (`BlueEnemy`), its glow bullets (`Bullet.js`, bloom postFX, `flares` particles) and their assets removed.
+- `GalaxyBackground` removed from gameplay, intro and Game Over. Stars only.
+- Clear colour `#111111`.
+- Game Over: stripes and click-to-restart gone; holds 3s, fades out, back to the intro. Delta style.
+- Main font is Electron Pulse everywhere except the logo. `pixelfont` and Knighthawks deleted.
+- Ship and bullets at 3x.
 
 **Next up:**
-- Props spawning (individual planets/asteroids drifting leftward).
-- Remove the leftover `floor.png` strip in `MainScene.js` — a Space Invaders holdover that makes no sense over a starfield.
-- Fix the `roundPixel` typo in `main.js` (should be `roundPixels`; currently a silent no-op).
-- Replace the placeholder enemy art.
+- First enemy, 32x32 canvas at 3x.
+- Score font in Delta's layout (score, hi-score table) -- Electron Pulse is the candidate.
+- The 20s game-over timer and the POINTS/REMAINING HUD are still template placeholders.
 
 ---
 
@@ -101,8 +108,9 @@ which is as much of the C64 look as the palette is, and tile-based art is
 seamless by construction.
 
 Use a real Phaser tilemap only where geometry is solid and needs collision.
-Never for open space — `GalaxyBackground`'s TileSprite parallax is infinite,
-seamless and two draw calls, which a tilemap cannot beat for a backdrop.
+Never for open space — a TileSprite parallax (the approach the removed
+`GalaxyBackground` used) is infinite, seamless and one draw call per layer,
+which a tilemap cannot beat for a backdrop.
 
 ---
 
@@ -115,12 +123,11 @@ seamless and two draw calls, which a tilemap cannot beat for a backdrop.
 (`scene.add.blitter`, batched Bobs), generating its own texture at runtime:
 three 1/2/3px white squares, no loaded image at all.
 
-Depth is carried by size, speed and alpha together across three bands, and
-the field is drawn on top of the background at `depth: -5`. `MainScene.js`
-creates `GalaxyBackground` and `StarField` as two separate things.
+Depth is carried by size, speed and alpha together across three bands, drawn
+at `depth: -5`.
 
-So no background texture is needed here — the clear colour (`#0b090a`, set in
-both `main.js` and `style.css`) plus the Blitter is the whole level.
+So no background texture is needed here — the clear colour (`#111111`, set in
+`main.js`) plus the Blitter is the whole level.
 
 ---
 
@@ -163,8 +170,12 @@ with `drawImage(..., 0, 0, potWidth, potHeight)`, which *stretches* a non-POT
 texture to the padded size. A 64x24 strip would come out vertically
 distorted.
 
-At 32px of flame top and bottom, the 200px native playfield keeps 136px —
-about 4.25 ship-heights. Tight, Delta-ish, playable.
+**Needs rebalancing since the ship went to 3x.** This was first worked out
+with a 4x ship: 32px of flame top and bottom left 136 of the 200 native rows,
+about 4.25 ship-heights -- tight, Delta-ish, playable. With the hull now ~60px
+on screen, 32px flames at 4x (128px each) leave 544px, about 9 ship-heights;
+at 3x (96px each) about 10. To get back to the tight feel: thicker flames, or
+decide the gap in ship-heights first and size the strips from that.
 
 ---
 
@@ -173,8 +184,51 @@ about 4.25 ship-heights. Tight, Delta-ish, playable.
 Theme parked -- Thomas will decide it later.
 
 What is settled: this is the final level, and it **ends with a boss**. Boss
-canvas convention is 64x64 or 96x96 (see the sprite size note in
-`docs/aserpsrite-tips-by-bossman.md`).
+canvas convention is 64x64 or 96x96 (see Canvas convention in the Aseprite
+section) -- 192px or 288px on screen at 3x.
+
+---
+
+## Sprite Scale: 3x
+
+**Decided 2026-09-24.** Ships are drawn at **3x**: the player ship, and every
+enemy after it. A 32x32 canvas is 96x96 on screen; the ~28x20 hull comes out
+around 84x60.
+
+At 4x the ship read a touch too big for the 1280x800 playfield. 3x is still
+an integer scale, so every pixel stays the same size and crisp -- the only
+trade is that ship pixels are 3px while some other things on screen are not.
+
+In code this is `SHIP_SCALE` in `src/gameobjects/Player.js`. Anything
+positioned relative to the ship is written in native ship pixels times the
+scale (the muzzle point is `14 * SHIP_SCALE`), so it follows if the scale ever
+changes again.
+
+---
+
+## Fonts
+
+**Main font: Electron Pulse** (Darrell Flood / HAWTPIXEL; free for personal
+use, commercial licence $25 indie / $100 unlimited). Used for everything --
+HUD, intro text, Game Over -- except the logo, as Delta uses one font
+throughout. Its squared, notched letters match the OBSIDION logo.
+
+Made with **AngelCode BMFont** from the installed TTF:
+
+- Font Settings: **size 32**, *Match char height* **off** (on, BMFont writes a
+  negative size and Phaser renders the text flipped on both axes), font
+  smoothing off.
+- Export Options: bit depth 32, preset *White text with alpha*, font
+  descriptor **XML**, textures **png**, **512x256** so it fits one page
+  (Phaser's loader reads one page only). *Equalize cell heights* and *Force
+  offsets to zero* off.
+- Saved as `src/assets/fonts/electron-pulse.fnt` + `electron-pulse_0.png`.
+
+Drawn at 32 in game, i.e. 1:1. At 16px the font lost its thin cuts and the
+gaps between letters (A and P came out identical), so it needs the room.
+
+**Title logo** is `scifiadventure.png`: the word OBSIDION set in Sci Fi
+Adventure, as an image, drawn at 4x with a tint and shine. Not a usable font.
 
 ---
 
@@ -236,7 +290,7 @@ What worked:
 **trim off**. Phaser indexes Aseprite frames numerically, so Hash format will
 not load. Trim off keeps every frame 32x32 sharing one centre — trimmed
 asymmetric frames put the origin in a slightly different place per frame and
-the ship jitters a pixel between states, which is 4px on screen at 4x.
+the ship jitters a pixel between states, which is 3px on screen at 3x.
 
 **Next:** thruster flicker, hit flash, then enemy art.
 
@@ -414,8 +468,8 @@ engine pulse or idle shimmer.
 32x32, indexed, transparent, square 1:1 pixel aspect. Hull inside roughly
 28x20 centred. Bosses at 64x64 or 96x96.
 
-Keep 1:1 despite real C64 multicolour being 2:1, because the game scales by a
-square 4x. Get the multicolour feel by drawing in 2px-wide horizontal blocks
+Keep 1:1 despite real C64 multicolour being 2:1, because the game scales
+sprites by a square 3x. Get the multicolour feel by drawing in 2px-wide horizontal blocks
 instead.
 
 Palette is DB32 — see the Palette section above.

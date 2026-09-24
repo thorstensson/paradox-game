@@ -33,7 +33,9 @@ const config = {
     parent: "phaser-container",
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
-    backgroundColor: "#0b090a",
+    // Amiga OCS near-black (one 0x11 step up from black): a tad lighter than
+    // the page's #0b090a, so the playfield edge reads against the border.
+    backgroundColor: "#111111",
     // Sets antialias false, which also makes Phaser apply
     // `image-rendering: pixelated` to the canvas element itself.
     pixelArt: true,

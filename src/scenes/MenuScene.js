@@ -25,9 +25,9 @@ export class MenuScene extends Scene {
         const start_msg = this.add.bitmapText(
             this.scale.width / 2,
             this.scale.height / 2 + 120,
-            "pixelfont",
+            "main-font",
             "PLAYER ONE\nCLICK TO START",
-            24
+            32
         ).setOrigin(0.5, 0.5);
 
         // setOrigin centres the block; this centres the lines within it.

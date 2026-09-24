@@ -1,9 +1,9 @@
 import { Math as PhaserMath, Physics } from "phaser";
 import { PlayerBullets } from "./PlayerBullets";
 
-// The ship is 32x32 native and everything else on screen sits on the 4x
-// grid, so it is drawn at 4x too.
-const SHIP_SCALE = 4;
+// The ship is 32x32 native. Drawn at 3x rather than the 4x grid everything
+// else uses: at 4x it read a touch too big for the playfield.
+const SHIP_SCALE = 3;
 
 // Mouse steering, near-locked to the cursor.
 //
@@ -63,13 +63,14 @@ const BANK_DECAY = 0.0001;
 // not a mechanic.
 const FIRE_INTERVAL = 120;
 
-// Where a shot is born, in screen pixels from the ship centre. The point the
+// Where a shot is born, in native ship pixels from its centre (scaled with
+// the ship, so it stays on the prongs at any SHIP_SCALE). The point the
 // two prongs converge on, so it reads as coming from the weapon rather than
 // from the middle of the hull. Deliberately the same for all three bank
 // states: a muzzle that moves with the bank looks better but makes aiming
 // less predictable, and precision is the whole game.
-const MUZZLE_X = 56;
-const MUZZLE_Y = 0;
+const MUZZLE_X = 14 * SHIP_SCALE;
+const MUZZLE_Y = 0 * SHIP_SCALE;
 
 export class Player extends Physics.Arcade.Sprite {
 
@@ -99,7 +100,7 @@ export class Player extends Physics.Arcade.Sprite {
         // Scale before the body is created. An Arcade body takes its size
         // from displayWidth/Height at creation and does not follow a later
         // setScale, so doing this the other way round leaves a 32x32 body
-        // under a 128x128 ship.
+        // under the scaled-up ship.
         this.setScale(SHIP_SCALE);
         this.setOrigin(0.5, 0.5);
 

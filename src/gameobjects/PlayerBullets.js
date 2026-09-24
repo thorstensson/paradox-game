@@ -1,8 +1,8 @@
 import { Geom } from "phaser";
 
 // The bullet art is authored at native size, 8x2, like every other sprite.
-// Everything on screen sits on the 4x grid.
-const SCALE = 4;
+// Drawn at 3x, the same scale as the ship that fires it.
+const SCALE = 3;
 
 const SOURCE_TEXTURE = "ship-bullet";
 const DRAW_TEXTURE = "ship-bullet-drawn";
@@ -133,7 +133,7 @@ export class PlayerBullets {
 }
 
 // The loaded PNG is 8x2. A Blitter does not apply scale to its Bobs -- they
-// draw at raw texture size -- so the art is blown up 4x once, here, into a
+// draw at raw texture size -- so the art is blown up SCALE times once, here, into a
 // canvas texture. Nearest-neighbour, so the pixels stay hard.
 function ensureTexture(scene) {
     if (scene.textures.exists(DRAW_TEXTURE)) {
