@@ -9,6 +9,12 @@ import { StarField } from "../gameobjects/StarField";
 // 1800 (1000 delay + 800 tween), so this leaves a beat after it settles.
 const FIRST_WAVE_DELAY = 2500;
 
+// Shown mid-screen before the level starts, as Delta does: fades in, holds,
+// fades out, and only then does the ship fly in. ms.
+const LEVEL_TITLE = "ENTERING SPACE";
+const LEVEL_TITLE_FADE = 500;
+const LEVEL_TITLE_HOLD = 1000;
+
 // Ships per game. Losing the last one is GAME OVER.
 const LIVES = 3;
 
@@ -117,11 +123,38 @@ export class MainScene extends Scene {
             this.playing = true;
             this.scene.stop("MenuScene");
             this.scene.launch("HudScene", { lives: this.lives });
-            this.player.start();
 
-            this.time.delayedCall(FIRST_WAVE_DELAY, () => {
-                this.wave = WAVES[0](this);
+            this.showLevelTitle(() => {
+                this.player.start();
+
+                this.time.delayedCall(FIRST_WAVE_DELAY, () => {
+                    this.wave = WAVES[0](this);
+                });
             });
+        });
+    }
+
+    // The level's name, alone over the stars; onDone runs once it has faded
+    // out.
+    showLevelTitle(onDone) {
+        const title = this.add.bitmapText(
+            this.scale.width / 2,
+            this.scale.height / 2,
+            "small-font",
+            LEVEL_TITLE,
+            16
+        ).setOrigin(0.5, 0.5).setAlpha(0);
+
+        this.tweens.add({
+            targets: title,
+            alpha: 1,
+            duration: LEVEL_TITLE_FADE,
+            hold: LEVEL_TITLE_HOLD,
+            yoyo: true,
+            onComplete: () => {
+                title.destroy();
+                onDone();
+            }
         });
     }
 
