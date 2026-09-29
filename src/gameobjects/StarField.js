@@ -20,7 +20,7 @@ const STAR_SIZES = [ 1, 2, 3 ];
 const BANDS = [
     { count: 60, speed: 48, alpha: 0.4, size: 1 },
     { count: 34, speed: 96, alpha: 0.7, size: 2 },
-    { count: 16, speed: 176, alpha: 1, size: 3 },
+    { count: 16, speed: 211, alpha: 1, size: 2 },
 ];
 
 export class StarField {

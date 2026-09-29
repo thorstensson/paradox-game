@@ -1,46 +1,31 @@
 import { Scene } from "phaser";
 
-// How long GAME OVER holds before fading back to the intro, and the fade.
+// How long GAME OVER holds before cutting back to the intro.
 const HOLD_MS = 3000;
-const FADE_MS = 1000;
 
+// Drawn over the still-running level (MainScene launches it rather than
+// starting it), so there is no black: no fade in, no fade out.
 export class GameOverScene extends Scene {
-    end_points = 0;
     constructor() {
         super("GameOverScene");
     }
 
-    init(data) {
-        this.cameras.main.fadeIn(1000, 0, 0, 0);
-        this.end_points = data.points || 0;
-    }
-
     create() {
-        // Same font and size as the score, as in Delta.
+        // Small font at 16, the same size as the intro's PLAYER ONE /
+        // CLICK TO START.
         this.add.bitmapText(
             this.scale.width / 2,
             this.scale.height / 2,
-            "main-font",
+            "small-font",
             "GAME OVER",
-            32
+            16
         ).setOrigin(0.5, 0.5);
 
-        this.add.bitmapText(
-            this.scale.width / 2,
-            this.scale.height / 2 + 64,
-            "main-font",
-            `YOUR POINTS: ${this.end_points}`,
-            32
-        ).setOrigin(0.5, 0.5);
-
-        // No restart prompt: hold, fade out, and drop back to the intro.
-        // MainScene launches MenuScene from its init().
+        // No restart prompt: hold, then cut straight to the intro. start()
+        // restarts MainScene -- which launches MenuScene from its init() --
+        // and shuts this scene down.
         this.time.delayedCall(HOLD_MS, () => {
-            this.cameras.main.fadeOut(FADE_MS, 0, 0, 0);
-        });
-
-        this.cameras.main.once("camerafadeoutcomplete", () => {
-            this.scene.start("MainScene");
+            this.scene.start("MainScene", { cut: true });
         });
     }
 }

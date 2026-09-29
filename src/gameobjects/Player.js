@@ -1,4 +1,4 @@
-import { Math as PhaserMath, Physics } from "phaser";
+import { Geom, Math as PhaserMath, Physics } from "phaser";
 import { PlayerBullets } from "./PlayerBullets";
 
 // The ship is 32x32 native. Drawn at 3x rather than the 4x grid everything
@@ -19,12 +19,13 @@ const SHIP_SCALE = 3;
 //
 //   FOLLOW  fraction of the remaining gap closed per frame at 60fps.
 //           1.0 = rigidly locked to the cursor, no smoothing at all
-//           0.65 = a touch of trail (current)
+//           0.65 = a touch of trail
+//           0.55 = a tad more (current)
 //           0.4  = noticeably loose
 //
 // Math.pow rescales it to the real frame time, so the feel does not change
 // with framerate.
-const FOLLOW = 0.65;
+const FOLLOW = 0.55;
 
 // Banking runs on hysteresis: two thresholds, not one, both in px/s.
 //
@@ -72,9 +73,19 @@ const FIRE_INTERVAL = 120;
 const MUZZLE_X = 14 * SHIP_SCALE;
 const MUZZLE_Y = 0 * SHIP_SCALE;
 
+// What an enemy has to touch to kill the ship, in native pixels from its
+// centre: the middle band, from the rear up to and including the ringed
+// dot (level frame, x 3-19, y 14-17). Far smaller than the sprite, so a wing
+// clipping an enemy is a near miss rather than a death. To be tuned.
+const HIT_BOX = { x: -13, y: -2, w: 17, h: 4 };
+
+// Where the ship waits off-screen before flying in.
+const START_X = -190;
+
 export class Player extends Physics.Arcade.Sprite {
 
-    // Player states: waiting, start, can_move
+    // Player states: waiting, start, can_move, removed. Only can_move can be
+    // hit, so the ship is safe while it flies in.
     state = "waiting";
     scene = null;
     bullets = null;
@@ -93,8 +104,17 @@ export class Player extends Physics.Arcade.Sprite {
     // Earliest time the current bank may be given up.
     bank_until = 0;
 
+    // Where the ship is steering to. The mouse is pointer-locked -- the real
+    // cursor is hidden and a page cannot move it -- so there is no cursor
+    // position to follow. Instead the mouse's movement is added up here, and
+    // the ship follows this point exactly as it used to follow the cursor.
+    // It starts on the ship, which is why the ship no longer snaps to
+    // wherever the mouse happened to be when the game began.
+    target_x = 0;
+    target_y = 0;
+
     constructor({ scene }) {
-        super(scene, -190, scene.scale.height / 2, "ship");
+        super(scene, START_X, scene.scale.height / 2, "ship");
         this.scene = scene;
 
         // Scale before the body is created. An Arcade body takes its size
@@ -117,9 +137,43 @@ export class Player extends Physics.Arcade.Sprite {
         // A Blitter pool -- one draw call for every bullet on screen, no
         // physics bodies, no postFX, nothing created or destroyed at runtime.
         this.bullets = new PlayerBullets(scene);
+
+        // Read from the browser directly rather than from Phaser's pointer:
+        // Phaser keeps only the last movement it saw each frame, and a fast
+        // flick arrives as several events, so most of it would be lost.
+        this.onMouseMove = (event) => this.steer(event);
+        document.addEventListener("mousemove", this.onMouseMove);
+
+        scene.events.once("shutdown", () => {
+            document.removeEventListener("mousemove", this.onMouseMove);
+        });
     }
 
-    start() {
+    // Movement is in screen pixels; the canvas is shown at an integer zoom,
+    // so dividing by it gives the same feel as following the cursor did.
+    // The target is held inside the same edges as the ship, so it can never
+    // wander off and leave the ship pinned against a wall.
+    steer(event) {
+        if (this.state !== "can_move" || !this.scene.input.mouse.locked) {
+            return;
+        }
+
+        const zoom = this.scene.scale.zoom;
+        const half_w = this.displayWidth / 2;
+        const half_h = this.displayHeight / 2;
+
+        this.target_x = PhaserMath.Clamp(
+            this.target_x + event.movementX / zoom,
+            half_w, this.scene.scale.width - half_w
+        );
+        this.target_y = PhaserMath.Clamp(
+            this.target_y + event.movementY / zoom,
+            half_h, this.scene.scale.height - half_h
+        );
+    }
+
+    // delay: ms before the fly-in begins.
+    start(delay = 1000) {
         this.state = "start";
 
         // Fly in from off-screen left, then hand control to the mouse.
@@ -127,12 +181,46 @@ export class Player extends Physics.Arcade.Sprite {
             targets: this,
             x: 200,
             duration: 800,
-            delay: 1000,
+            delay,
             ease: "Power2",
             onComplete: () => {
+                this.target_x = this.x;
+                this.target_y = this.y;
                 this.state = "can_move";
             }
         });
+    }
+
+    // Takes the ship out of play: hidden, and no longer steered or firing,
+    // since both check for "can_move". Bullets already in flight carry on.
+    leavePlay() {
+        this.state = "removed";
+        this.setVisible(false);
+    }
+
+    // Back in after losing a life: level, mid-height, flying in at once.
+    respawn() {
+        this.setPosition(START_X, this.scene.scale.height / 2);
+        this.setVisible(true);
+        this.bank_velocity = 0;
+        this.setBank("level");
+        this.start(0);
+    }
+
+    // True while the ship can be hit: in play, and the hit box overlaps rect.
+    touches(rect) {
+        if (this.state !== "can_move") {
+            return false;
+        }
+
+        const box = new Geom.Rectangle(
+            this.x + HIT_BOX.x * SHIP_SCALE,
+            this.y + HIT_BOX.y * SHIP_SCALE,
+            HIT_BOX.w * SHIP_SCALE,
+            HIT_BOX.h * SHIP_SCALE
+        );
+
+        return Geom.Intersects.RectangleToRectangle(box, rect);
     }
 
     // Called every frame the fire input is held; the cooldown does the rest.
@@ -165,7 +253,6 @@ export class Player extends Physics.Arcade.Sprite {
         }
 
         const step = delta / 1000;
-        const pointer = this.scene.input.activePointer;
 
         // Close FOLLOW of the remaining gap each frame, rescaled to the real
         // frame time so the feel holds at any framerate.
@@ -180,11 +267,11 @@ export class Player extends Physics.Arcade.Sprite {
         const half_h = this.displayHeight / 2;
 
         this.x = PhaserMath.Clamp(
-            this.x + (pointer.x - this.x) * follow,
+            this.x + (this.target_x - this.x) * follow,
             half_w, this.scene.scale.width - half_w
         );
         this.y = PhaserMath.Clamp(
-            this.y + (pointer.y - this.y) * follow,
+            this.y + (this.target_y - this.y) * follow,
             half_h, this.scene.scale.height - half_h
         );
 

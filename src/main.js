@@ -4,6 +4,7 @@ import { GameOverScene } from "./scenes/GameOverScene";
 import { HudScene } from "./scenes/HudScene";
 import { MainScene } from "./scenes/MainScene";
 import { MenuScene } from "./scenes/MenuScene";
+import { PauseScene } from "./scenes/PauseScene";
 
 // 4x the C64 playfield (320x200).
 const GAME_WIDTH = 1280;
@@ -33,9 +34,8 @@ const config = {
     parent: "phaser-container",
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
-    // Amiga OCS near-black (one 0x11 step up from black): a tad lighter than
-    // the page's #0b090a, so the playfield edge reads against the border.
-    backgroundColor: "#111111",
+    // Pure black, framed by the page's #111111.
+    backgroundColor: "#000000",
     // Sets antialias false, which also makes Phaser apply
     // `image-rendering: pixelated` to the canvas element itself.
     pixelArt: true,
@@ -52,7 +52,8 @@ const config = {
             gravity: { y: 0 },
         },
     },
-    scene: [Preloader, MainScene, MenuScene, HudScene, GameOverScene],
+    // PauseScene last, so it draws over everything else.
+    scene: [Preloader, MainScene, MenuScene, HudScene, GameOverScene, PauseScene],
 };
 
 const game = new Game(config);

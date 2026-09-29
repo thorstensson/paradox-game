@@ -4,7 +4,7 @@ I am building a 2D horizontal space shooter in Phaser 3 using pure JavaScript. W
 
 - **Canvas:** 1280 x 800 -- 4x the C64 playfield (320 x 200).
 - **Window fit:** `Scale.NONE` plus an integer `zoom` (largest whole multiple that fits the window), so the canvas is never stretched by a fractional amount.
-- **Clear colour:** `#111111` -- Amiga OCS near-black, one `0x11` step up from black. The page around it stays `#0b090a` (`style.css`), so the playfield edge reads against the border.
+- **Clear colour:** `#000000`, framed by the page's `#111111` (`style.css`).
 - **Sprites (ships, enemies, bullets):** 3x. See **Sprite Scale: 3x** below.
 - **Title logo:** 4x.
 - **Main font:** Electron Pulse, drawn 1:1 at 32px. See **Fonts** below.
@@ -17,7 +17,7 @@ I am building a 2D horizontal space shooter in Phaser 3 using pure JavaScript. W
 
 `GalaxyBackground.js` (two scrolling TileSprites) was removed 2026-09-24:
 Level 1 is stars only, and the intro and Game Over screens are plain
-`#111111`. The template backgrounds (`galaxy/`, `purple-nebula/`, `planets/`)
+`#000000`. The template backgrounds (`galaxy/`, `purple-nebula/`, `planets/`)
 and the generated `oil6/` tile are kept in `src/assets/backgrounds/` in case
 one comes back in-game; none are loaded. If one does, the technique was: a
 TileSprite per layer, `tilePositionX += speed * delta / 1000`, back layer
@@ -79,7 +79,7 @@ drawn (see Enemies & Waves).
 **Done 2026-09-24:**
 - Template enemy (`BlueEnemy`), its glow bullets (`Bullet.js`, bloom postFX, `flares` particles) and their assets removed.
 - `GalaxyBackground` removed from gameplay, intro and Game Over. Stars only.
-- Clear colour `#111111`.
+- Clear colour `#000000`.
 - Game Over: stripes and click-to-restart gone; holds 3s, fades out, back to the intro. Delta style.
 - Main font is Electron Pulse everywhere except the logo. `pixelfont` and Knighthawks deleted.
 - Ship and bullets at 3x.
@@ -88,6 +88,30 @@ drawn (see Enemies & Waves).
 - First enemy, 32x32 canvas at 3x.
 - Score font in Delta's layout (score, hi-score table) -- Electron Pulse is the candidate.
 - The 20s game-over timer and the POINTS/REMAINING HUD are still template placeholders.
+
+---
+
+## V1
+
+Everything there is for version 1, in order:
+
+1. **The three levels** -- the bulk of the work, and it will take time.
+2. **Audio effects** -- from good sound resources Thomas knows.
+3. **Hi-score table on Supabase** -- simple, online only, no local table.
+
+**Domain:** `obsidion-game.io`, registered once all three levels are done.
+
+## Credits
+
+- **Intro screen:** `BY THOMAS THORSTENSSON` along the bottom
+  (`MenuScene.js`). The intro is for CV and portfolio, so it carries my name
+  only.
+- **Ending credits:** after all levels are completed, old-skool, scrolling
+  slowly upward. Includes:
+  - Graphics by Thomas Thorstensson
+  - Code by Thomas Thorstensson & Claude
+
+  Not built yet.
 
 ---
 
@@ -126,7 +150,7 @@ three 1/2/3px white squares, no loaded image at all.
 Depth is carried by size, speed and alpha together across three bands, drawn
 at `depth: -5`.
 
-So no background texture is needed here — the clear colour (`#111111`, set in
+So no background texture is needed here — the clear colour (`#000000`, set in
 `main.js`) plus the Blitter is the whole level.
 
 ---
@@ -304,25 +328,64 @@ to be read and threaded is the thing that makes it feel alive.
 
 ### Wave structure
 
-Ten waves per level, **the same shape on all three levels**. The count, the
-length and the 5 / 4 / 1 split below do not change -- what changes is the
-enemy types and the patterns they fly.
+The wave **sequence** is lifted from Delta, one level at a time: which kind
+of wave comes when, how often a kind repeats, where a new one breaks in. Not
+the enemy art, and not the exact motion -- only the order and rhythm of
+variation. A flirt with Delta, not a copy.
 
-The shape, taken from Delta:
+Each level's sequence is worked out when that level is reached. Nothing is
+planned ahead.
 
-| Waves | Behaviour |
-|---|---|
-| 1–5 | Five identical waves of basic craft, looping into the screen diagonally from the top right |
-| 6–9 | Four fast straight-line dart formations, crossing the middle and lower screen |
-| 10 | Spinning circular drones — the last barrier before the level boundary |
+Notation: each letter is a **kind** of wave (an enemy type plus the way it
+moves). Repeating a letter means the same kind again, and it can take a
+different formation shape.
 
-**Level 3 ends with a boss.** Levels 1 and 2 end at wave 10.
+#### Level 1 -- from Delta level 2
+
+```
+A A A A B C A D
+```
+
+| Wave | Kind | Delta reference |
+|---|---|---|
+| 1 | A | Ring craft, two curved groups above and below the middle |
+| 2 | A | Ring craft, loose diagonal string |
+| 3 | A | Ring craft, loose arc |
+| 4 | A | Ring craft, tall curved column |
+| 5 | B | Hex blocks linked into a chain, bent into an arch |
+| 6 | C | Blocky craft in a straight horizontal line, mid-height |
+| 7 | A | Ring craft returns |
+| 8 | D | Multicoloured blocks in a diagonal chain |
+
+The rhythm: one kind carries the opening four waves, two new kinds arrive
+back to back, the familiar kind returns as a breather, and a last new kind
+closes the level. Four kinds over eight waves.
+
+### Speeds
+
+Settled 2026-09-29, by playing. Two speeds, fast-paced like Delta:
+
+| Kind | Speed | Used by |
+|---|---|---|
+| Regular | 415 px/s | Neutron (wave A) |
+| Fast | 623 px/s | Clover (wave B) |
+
+New aliens start from one of these. The gap between aliens in a chain is
+worked out from the speed, so it stays one sprite width either way.
+
+### Wave Attack Patterns
+
+Named by the motion, not the alien, so any alien can fly any pattern and
+patterns come back through the levels, as in Delta. For now each class is
+still tied to its alien; they get detached later.
+
+| Pattern | Motion | Used in | Code |
+|---|---|---|---|
+| **sinus-pinch** | Two mirrored chains, above and below the middle, dip toward each other and pull apart again | Level 1 waves 1, 4 (neutron) | `NeutronWave` |
+| **sinus-center** | One chain enters above or below the middle, swings out, curves onto the centre line and flies straight at the ship | Level 1 waves 2, 3 (neutron) | `NeutronDiveWave` |
+| **sinus-edges** | A chain of seven enters just in from the bottom, eases onto the bottom edge and races off; 2s later the same along the top. Fast, a memory test | Level 1 wave 5 (clover) | `CloverWave` |
 
 ### Enemy roster
-
-**Two new enemy types per level.** The wave count does not grow; the
-vocabulary does. By level 3 there are six types and the patterns combine
-them.
 
 This is the main body of art still to draw. Canvas convention as the player
 ship: 32x32, indexed, untrimmed, one folder per entity under
@@ -331,34 +394,70 @@ Tags on, trim off, and **Item Filename set to `{frame}`** — Phaser's
 `createFromAseprite()` looks the frames up by index, and Aseprite's default
 filename template silently breaks it.
 
+### Wave B -- pulsating blobs (idea)
+
+Five oscillating blobs in a row, each a different colour, moving together
+and pulsating: `O O O O O`.
+
+- **One file, five colour tags.** Paint the blob's frames, copy the whole
+  frame range four times (Ctrl-drag in the timeline), recolour each copy,
+  and tag them `blob-red`, `blob-green` and so on. One export, one sheet,
+  one load.
+- **Each O is its own sprite.** Aseprite has one timeline, but in the game
+  every sprite has its own playhead on the same sheet, so five sprites can
+  each play their own colour tag at once. Started together, with the same
+  frame count and timing, they pulse in perfect sync, one long blob.
+- **Ripple for free:** start each O a little after the one before and the
+  pulse travels along the chain like a wave. Same art, different start
+  times in code.
+- Separate sprites also mean each O can be shot on its own, and the chain
+  can bend and move like the neutron chains.
+
+### Power drops
+
+Instead of Delta's block pick-ups, a Nemesis-style power drop.
+
+- Look: gleaming silver rings with a letter inside (Thomas designs them).
+- Four drops: double fire rate, triple laser, extra life (L), speed.
+- Fixed per wave: a given wave always carries the same drop, so players
+  can learn it and plan, as in Delta.
+- Trigger: shoot down the whole wave. Missing any alien means no drop,
+  which keeps the pressure on.
+- A missed drop drifts off slowly and steadily.
+- Power-ups are temporary (lives are not). Durations to try out later.
+- Needs ship collision first.
+
+### Testing a single wave -- later
+
+Not now: playing the full sequence is part of testing for the moment. But
+as the waves and levels grow, reaching the last wave to check one change
+means playing everything before it every time. So later, a way to jump
+straight to a wave, dev server only (`import.meta.env.DEV`), never in the
+released game:
+
+1. **URL parameter** -- `?wave=5` starts at wave B; later
+   `?level=2&wave=3`. Nothing in the code changes between tests, and a
+   bookmark per wave makes it one click. The preferred route.
+2. **A skip key** -- e.g. N ends the current wave and brings on the next.
+   Pairs well with 1.
+3. **A `START_WAVE` constant** in `MainScene.js` -- simplest, but it has to
+   be edited each time and set back.
+
 ## Explosions
 
-No particle emitters, and no additive blending. Additive glow is a modern
-effect the C64 could not produce, and beside indexed 4-value sprites it reads
-as a different game bleeding through.
+No particle emitters, no glow, no bloom. The main reason is CPU: the
+template's glow bullets (bloom postFX plus `flares` particles) made the game
+lag from the outset. It isn't retro either.
 
-**Chunky palette debris instead.** On death an enemy throws 6–10 solid 2x2 or
-4x4 squares outward with a short life. The ship does not dissolve, it comes
-apart — which is what Delta and Armalyte actually did.
+**No chunks flying outward.** That is modern arcade and clutters the stage.
+Nemesis, Zynaps and Delta all explode in place.
 
-The machinery already exists in `StarField.js`: a Blitter with a
-`generateTexture`'d square, batched into one draw call. Same pattern,
-different behaviour.
+**A hand-painted Aseprite animation, Delta style.** Delta's is 7 frames, greys
+and white only: a small clump pops, swells to a dense mass with white hot
+spots, cracks open, and dissolves into a few dashes inside the same
+footprint. Painted like the neutron, one tag, played once on death.
 
-**Chunks die by stepping down a colour ramp, never by alpha.** Alpha fading is
-the modern tell. Colour cycling is the authentic one, and it is the same
-mechanism as the level 2 flame flicker — so the ramps get reused.
-
-```
-fire:   white -> yellow -> orange -> light red -> red -> brown
-metal:  white -> light grey -> grey -> dark grey
-```
-
-A chunk spawns at the hot end and advances one step every ~60ms until it runs
-off the cold end.
-
-Explosions are **pooled**, like the bullets. With ten-ship waves there will
-routinely be eight running at once, and creating and destroying sprites
+Explosions are **pooled**, like the bullets: creating and destroying sprites
 mid-wave will stutter.
 
 ## Palette
@@ -397,6 +496,15 @@ preset -- that was an unverified claim of mine, and it is not there.
 - **Intro screen only.** A Commodore-inspired track on the title screen.
 - **No music in game.** The gameplay runs silent under the effects.
 - Buying the track, or commissioning a composer, is the plan — both exist.
+  The soundtrack comes **last**, after everything else.
+
+**Effects first, soon:**
+
+- **Laser** — the player's shot.
+- **Explosion** — an enemy dying.
+- **Falling sound** — a top-down falling tone for the wrong-coloured alien
+  that turns up now and then in each wave. Shooting it takes points away
+  instead of adding them. An idea from Delta.
 
 Worth noting the consequence: with no in-game music, the **explosions and
 impacts carry the entire feel of the game**. That is an argument for spending
