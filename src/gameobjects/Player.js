@@ -203,7 +203,8 @@ export class Player extends Physics.Arcade.Sprite {
         this.setPosition(START_X, this.scene.scale.height / 2);
         this.setVisible(true);
         this.bank_velocity = 0;
-        this.setBank("level");
+        this.bank = null;
+        this.setBank("level", 0, true);
         this.start(0);
     }
 
@@ -233,18 +234,47 @@ export class Player extends Physics.Arcade.Sprite {
         this.bullets.fire(this.x + MUZZLE_X, this.y + MUZZLE_Y);
     }
 
-    // One-frame held tags: level, bank-up, bank-down.
-    setBank(tag, time = 0) {
+    // Tags: level (one frame), bank-up and bank-down (three frames each,
+    // played once and held on the last). Going back to level plays the bank
+    // backwards from whatever frame is showing, and update() puts up level
+    // when it runs out. Banking again the same way on the way back carries
+    // on forwards from that frame too, so neither direction snaps.
+    // instant: straight to the tag, for a respawn.
+    setBank(tag, time = 0, instant = false) {
         if (this.bank === tag) {
             return;
         }
 
         this.bank = tag;
-        this.play(tag);
 
-        if (tag !== "level") {
-            this.bank_until = time + BANK_MIN_HOLD;
+        const current = this.anims.currentAnim;
+
+        // Position of the showing frame within its tag. Phaser's frame index
+        // counts from 1.
+        const position = this.anims.currentFrame
+            ? this.anims.currentFrame.index - 1
+            : 0;
+
+        const in_bank = !instant && current && current.key !== "level";
+
+        if (tag === "level") {
+            // Phaser plays a reverse from startFrame 0 from the LAST frame,
+            // so on the first bank frame go straight to level instead.
+            if (in_bank && position > 0) {
+                this.playReverse({ key: current.key, startFrame: position });
+            } else {
+                this.play("level");
+            }
+            return;
         }
+
+        if (in_bank && current.key === tag) {
+            this.play({ key: tag, startFrame: position });
+        } else {
+            this.play(tag);
+        }
+
+        this.bank_until = time + BANK_MIN_HOLD;
     }
 
     update(time, delta) {
@@ -295,6 +325,12 @@ export class Player extends Physics.Arcade.Sprite {
             this.setBank("bank-down", time);
         } else if (time >= this.bank_until) {
             this.setBank("level", time);
+        }
+
+        // The bank has played back to its first frame: show level.
+        if (this.bank === "level" && !this.anims.isPlaying
+            && this.anims.currentAnim.key !== "level") {
+            this.play("level");
         }
     }
 

@@ -1,6 +1,7 @@
 import { Scene } from "phaser";
 import { CloverWave } from "../gameobjects/CloverWave";
 import { Explosions } from "../gameobjects/Explosions";
+import { FireringWave } from "../gameobjects/FireringWave";
 import { NeutronDiveWave, NeutronWave } from "../gameobjects/NeutronWave";
 import { Player } from "../gameobjects/Player";
 import { StarField } from "../gameobjects/StarField";
@@ -26,13 +27,17 @@ const RESPAWN_DELAY = 1500;
 const WAVE_GAP = 1000;
 
 // Level 1 in order (notes.md -> Wave structure): A, then A from the bottom,
-// then A from the top, then A again, then B along the bottom and top edges.
+// then A from the top, then A again, then B along the bottom and top edges,
+// then C as a turning circle, then A from the bottom again with its last
+// neutron odd-coloured.
 const WAVES = [
     (scene) => new NeutronWave(scene),
     (scene) => new NeutronDiveWave(scene, 1),
     (scene) => new NeutronDiveWave(scene, -1),
     (scene) => new NeutronWave(scene),
-    (scene) => new CloverWave(scene)
+    (scene) => new CloverWave(scene),
+    (scene) => new FireringWave(scene),
+    (scene) => new NeutronDiveWave(scene, 1, 4)
 ];
 
 export class MainScene extends Scene {
@@ -85,6 +90,8 @@ export class MainScene extends Scene {
         // One looping animation: spin.
         this.anims.createFromAseprite("neutron");
         this.anims.createFromAseprite("clover");
+        this.anims.createFromAseprite("firering");
+        this.anims.createFromAseprite("neutron-odd");
 
         // One animation each, played once per explosion: boom (ours) and
         // Animation (explosion-2, on trial). Explosions picks which one.

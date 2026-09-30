@@ -19,6 +19,9 @@ const CHAIN_LENGTH = 4;
 // Score for shooting one down.
 const POINTS = 100;
 
+// The odd-coloured neutron: shooting it takes points away (Delta's idea).
+const ODD_POINTS = -100;
+
 // What kills the ship on contact, in native pixels from the centre: the
 // band the ring covers at every angle of its spin (x 3-28, y 12-20), so it
 // never kills through empty space. Bullets still hit the whole sprite.
@@ -47,7 +50,9 @@ export class NeutronWave {
     to_spawn = CHAIN_LENGTH;
 
     // sides: which chains fly, -1 for the top and 1 for the bottom.
-    constructor(scene, sides = [-1, 1]) {
+    // odd: position in the chain (from 1) of the odd-coloured neutron, or
+    // null for none.
+    constructor(scene, sides = [-1, 1], odd = null) {
         this.scene = scene;
 
         // Neutrons spawn and despawn fully off-screen, half a sprite past
@@ -60,7 +65,7 @@ export class NeutronWave {
         // of each other.
         for (let i = 0; i < CHAIN_LENGTH; i++) {
             scene.time.delayedCall(i * SPACING, () => {
-                sides.forEach((side) => this.spawn(side));
+                sides.forEach((side) => this.spawn(side, i + 1 === odd));
                 this.to_spawn--;
             });
         }
@@ -72,13 +77,16 @@ export class NeutronWave {
     }
 
     // side: -1 for the top chain, 1 for the bottom.
-    spawn(side) {
-        const neutron = this.scene.add.sprite(this.start_x, 0, "neutron");
+    // odd: true for the odd-coloured neutron.
+    spawn(side, odd = false) {
+        const neutron = this.scene.add.sprite(
+            this.start_x, 0, odd ? "neutron-odd" : "neutron"
+        );
         neutron.setScale(NEUTRON_SCALE);
         neutron.side = side;
-        neutron.points = POINTS;
+        neutron.points = odd ? ODD_POINTS : POINTS;
         neutron.y = this.pathY(neutron.x, side);
-        neutron.play({ key: "spin", repeat: -1 });
+        neutron.play({ key: odd ? "neutron-odd-spin" : "spin", repeat: -1 });
 
         this.neutrons.push(neutron);
     }
@@ -162,8 +170,8 @@ const DIVE_LEVEL_AT = 0.45;
 
 export class NeutronDiveWave extends NeutronWave {
 
-    constructor(scene, side) {
-        super(scene, [side]);
+    constructor(scene, side, odd = null) {
+        super(scene, [side], odd);
     }
 
     // The half-cosine carries the chain from the edge offset in to the

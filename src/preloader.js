@@ -33,6 +33,16 @@ import neutronJsonUrl from "./assets/enemies/neutron/neutron.json?url";
 import cloverUrl from "./assets/enemies/clover/clover.png?url";
 import cloverJsonUrl from "./assets/enemies/clover/clover.json?url";
 
+// Odd-coloured neutron: the neutron recoloured, one looping tag,
+// neutron-odd-spin. Shooting it takes points away.
+import neutronOddUrl from "./assets/enemies/neutron/neutron-odd.png?url";
+import neutronOddJsonUrl from "./assets/enemies/neutron/neutron-odd.json?url";
+
+// Firering, level 1 wave kind C. 32x32 indexed, eight frames under one
+// looping tag, firering-pulse. Same export settings as the ship.
+import fireringUrl from "./assets/enemies/firering/firering.png?url";
+import fireringJsonUrl from "./assets/enemies/firering/firering.json?url";
+
 // Explosion. 32x32, nine frames under one tag, boom, played once.
 import explosionUrl from "./assets/fx/explosion/explosion.png?url";
 import explosionJsonUrl from "./assets/fx/explosion/explosion.json?url";
@@ -73,7 +83,9 @@ export class Preloader extends Phaser.Scene {
         this.load.aseprite("ship", shipUrl, shipJsonUrl);
         this.load.image("ship-bullet", shipBulletUrl);
         this.load.aseprite("neutron", neutronUrl, neutronJsonUrl);
+        this.load.aseprite("neutron-odd", neutronOddUrl, neutronOddJsonUrl);
         this.load.aseprite("clover", cloverUrl, cloverJsonUrl);
+        this.load.aseprite("firering", fireringUrl, fireringJsonUrl);
         this.load.aseprite("explosion", explosionUrl, explosionJsonUrl);
         this.load.aseprite("explosion-2", explosion2Url, explosion2JsonUrl);
 
