@@ -318,6 +318,20 @@ the ship jitters a pixel between states, which is 3px on screen at 3x.
 
 **Next:** thruster flicker, hit flash, then enemy art.
 
+### HUD lives icon: more pixellated -- to do
+
+The ship next to the score is the right size but too sharp: it is the full
+32x32 ship at 1.2x, so each art pixel is ~1 screen px, while the font's
+bricks are 3px. Make a **separate copy of the ship for the score**, shrunk in
+Aseprite (`Sprite → Sprite Size`, Nearest-neighbor, then touch up by hand),
+and draw it bigger in `HudScene.js` so it stays the same size but chunkier:
+
+| Export | Scale | On screen | Pixel size |
+|---|---|---|---|
+| 16x16 | 2.4 | 38px, same as now | ~2.4px (recommended) |
+| 16x16 | 2 | 32px | 2px, even |
+| 11x11 | 3.5 | 38px | ~3.5px, close to the font |
+
 ---
 
 ## Enemies & Waves

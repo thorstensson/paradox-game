@@ -5,27 +5,25 @@ import { PlayerBullets } from "./PlayerBullets";
 // else uses: at 4x it read a touch too big for the playfield.
 const SHIP_SCALE = 3;
 
-// Mouse steering, near-locked to the cursor.
+// Mouse steering with inertia, as in Zynaps: the ship has momentum of its
+// own. It is pulled toward the steering point like a spring and slowed by
+// drag, so it trails the mouse slightly and, when the mouse stops, glides on
+// a touch past it before settling. Hard to halt on purpose.
 //
-// This is a bullet-hell dodging game: it is all about player precision, so
-// the ship has to be exactly where the player put it. A spring model --
-// accelerate toward the cursor, damp the velocity -- was tried and rejected.
-// Any spring has lag by definition, and lag is what kills you when threading
-// a wave.
+//   PULL  acceleration per px of gap, 1/s^2.
+//         lower = more lag on the follow
+//   DRAG  speed lost per second, as a fraction of speed.
+//         lower = longer glide when the mouse stops
 //
-// So the ship tracks the cursor directly, and only the last sliver of the gap
-// is smoothed. That takes the digital edge off a raw teleport without costing
-// any precision.
-//
-//   FOLLOW  fraction of the remaining gap closed per frame at 60fps.
-//           1.0 = rigidly locked to the cursor, no smoothing at all
-//           0.65 = a touch of trail
-//           0.55 = a tad more (current)
-//           0.4  = noticeably loose
-//
-// Math.pow rescales it to the real frame time, so the feel does not change
-// with framerate.
-const FOLLOW = 0.55;
+// At 180 / 20 the ship reaches the point in about a fifth of a second,
+// overshoots by ~3% of the move and comes to rest in about 0.4s. DRAG at or
+// above 2 * sqrt(PULL) (~27 here) would stop it with no overshoot at all.
+const PULL = 180;
+const DRAG = 20;
+
+// The spring is stepped in slices no longer than this, s, so a slow frame
+// cannot make it blow up.
+const MAX_SLICE = 1 / 120;
 
 // Banking runs on hysteresis: two thresholds, not one, both in px/s.
 //
@@ -38,16 +36,23 @@ const FOLLOW = 0.55;
 // when it drops below the lower EXIT. The gap between them is the
 // anti-chatter margin -- the same idea as a thermostat.
 //
-// ENTER is low enough that slow deliberate movement banks, which is only
-// safe because EXIT stops the chatter that would otherwise cause.
-const BANK_ENTER = 60;
-const BANK_EXIT = 25;
+// ENTER is high, as in IO: banking is throwing the ship over, so it takes a
+// fast, forceful move -- faster than the neutrons fly (415). A slow drift,
+// diagonal or not, stays level. EXIT lets it level out once the throw is
+// over rather than holding the bank through the glide after it.
+const BANK_ENTER = 500;
+const BANK_EXIT = 150;
 
 // Once a bank starts it holds at least this long, in ms. Mouse events arrive
 // in bursts rather than once per frame, so even a steady hand produces a
 // spiky velocity signal; this guarantees a flick stays on screen long enough
 // to read.
 const BANK_MIN_HOLD = 90;
+
+// From level, the ship has to travel this far up or down in one go before it
+// may bank, screen px: 15 C64 pixels at our 4x. Small corrections stay level,
+// as in IO.
+const BANK_DEAD_ZONE = 60;
 
 // Near-locked tracking means the ship arrives in a frame or two, so raw
 // frame-to-frame velocity spikes for ~16ms and is gone -- the banked frame
@@ -98,6 +103,10 @@ export class Player extends Physics.Arcade.Sprite {
     // Vertical speed, smoothed. Drives which bank frame is held.
     bank_velocity = 0;
 
+    // Vertical distance travelled in one direction while level, px. Up is
+    // negative. Checked against BANK_DEAD_ZONE.
+    bank_travel = 0;
+
     // Timestamp the next shot is allowed at.
     next_fire = 0;
 
@@ -112,6 +121,10 @@ export class Player extends Physics.Arcade.Sprite {
     // wherever the mouse happened to be when the game began.
     target_x = 0;
     target_y = 0;
+
+    // The ship's own speed, px/s: the inertia.
+    speed_x = 0;
+    speed_y = 0;
 
     constructor({ scene }) {
         super(scene, START_X, scene.scale.height / 2, "ship");
@@ -186,6 +199,8 @@ export class Player extends Physics.Arcade.Sprite {
             onComplete: () => {
                 this.target_x = this.x;
                 this.target_y = this.y;
+                this.speed_x = 0;
+                this.speed_y = 0;
                 this.state = "can_move";
             }
         });
@@ -203,6 +218,9 @@ export class Player extends Physics.Arcade.Sprite {
         this.setPosition(START_X, this.scene.scale.height / 2);
         this.setVisible(true);
         this.bank_velocity = 0;
+        this.bank_travel = 0;
+        this.speed_x = 0;
+        this.speed_y = 0;
         this.bank = null;
         this.setBank("level", 0, true);
         this.start(0);
@@ -284,10 +302,6 @@ export class Player extends Physics.Arcade.Sprite {
 
         const step = delta / 1000;
 
-        // Close FOLLOW of the remaining gap each frame, rescaled to the real
-        // frame time so the feel holds at any framerate.
-        const follow = 1 - Math.pow(1 - FOLLOW, step * 60);
-
         const previous_y = this.y;
 
         // Half the ship stays on screen at every edge. Clamped by hand rather
@@ -295,15 +309,34 @@ export class Player extends Physics.Arcade.Sprite {
         // position instead of cooperating with it.
         const half_w = this.displayWidth / 2;
         const half_h = this.displayHeight / 2;
+        const max_x = this.scene.scale.width - half_w;
+        const max_y = this.scene.scale.height - half_h;
 
-        this.x = PhaserMath.Clamp(
-            this.x + (this.target_x - this.x) * follow,
-            half_w, this.scene.scale.width - half_w
-        );
-        this.y = PhaserMath.Clamp(
-            this.y + (this.target_y - this.y) * follow,
-            half_h, this.scene.scale.height - half_h
-        );
+        // Pull toward the steering point, brake by drag, then move. Sliced
+        // so the feel holds at any framerate.
+        const slices = Math.ceil(step / MAX_SLICE);
+        const slice = step / slices;
+
+        for (let i = 0; i < slices; i++) {
+            this.speed_x += (PULL * (this.target_x - this.x)
+                - DRAG * this.speed_x) * slice;
+            this.speed_y += (PULL * (this.target_y - this.y)
+                - DRAG * this.speed_y) * slice;
+
+            this.x += this.speed_x * slice;
+            this.y += this.speed_y * slice;
+
+            // At an edge the speed into it is dropped, so the ship stops
+            // there instead of sticking or bouncing.
+            if (this.x < half_w || this.x > max_x) {
+                this.x = PhaserMath.Clamp(this.x, half_w, max_x);
+                this.speed_x = 0;
+            }
+            if (this.y < half_h || this.y > max_y) {
+                this.y = PhaserMath.Clamp(this.y, half_h, max_y);
+                this.speed_y = 0;
+            }
+        }
 
         // Bank on what the ship actually did, not on input, so it levels out
         // by itself when the cursor stops. Fed through a decaying average so
@@ -315,13 +348,31 @@ export class Player extends Physics.Arcade.Sprite {
 
         const banked = this.bank !== "level";
 
+        // Dead zone: while level, add up the travel in one direction. It
+        // starts over when the ship turns the other way or as good as stops.
+        if (banked) {
+            this.bank_travel = 0;
+        } else {
+            const dy = this.y - previous_y;
+
+            if (dy * this.bank_travel < 0
+                || Math.abs(this.bank_velocity) < BANK_EXIT) {
+                this.bank_travel = dy;
+            } else {
+                this.bank_travel += dy;
+            }
+        }
+
+        const may_bank = banked
+            || Math.abs(this.bank_travel) >= BANK_DEAD_ZONE;
+
         // While banked, hold on until the speed falls below the lower exit
         // threshold -- and never give it up before the minimum hold expires.
         const threshold = banked ? BANK_EXIT : BANK_ENTER;
 
-        if (this.bank_velocity < -threshold) {
+        if (may_bank && this.bank_velocity < -threshold) {
             this.setBank("bank-up", time);
-        } else if (this.bank_velocity > threshold) {
+        } else if (may_bank && this.bank_velocity > threshold) {
             this.setBank("bank-down", time);
         } else if (time >= this.bank_until) {
             this.setBank("level", time);

@@ -2,6 +2,7 @@ import { Scene } from "phaser";
 import { CloverWave } from "../gameobjects/CloverWave";
 import { Explosions } from "../gameobjects/Explosions";
 import { FireringWave } from "../gameobjects/FireringWave";
+import { GreywingWave } from "../gameobjects/GreywingWave";
 import { NeutronDiveWave, NeutronWave } from "../gameobjects/NeutronWave";
 import { Player } from "../gameobjects/Player";
 import { StarField } from "../gameobjects/StarField";
@@ -26,10 +27,14 @@ const RESPAWN_DELAY = 1500;
 // Pause between one wave being gone and the next arriving, ms.
 const WAVE_GAP = 1000;
 
+// Gives one wave its own pause before it, ms, in place of WAVE_GAP.
+const withGap = (gap, make) => Object.assign(make, { gap });
+
 // Level 1 in order (notes.md -> Wave structure): A, then A from the bottom,
 // then A from the top, then A again, then B along the bottom and top edges,
 // then C as a turning circle, then A from the bottom again with its last
-// neutron odd-coloured.
+// neutron odd-coloured, and last D, a staggered wall of greywings, twice,
+// the second with its stagger flipped and only half a second behind.
 const WAVES = [
     (scene) => new NeutronWave(scene),
     (scene) => new NeutronDiveWave(scene, 1),
@@ -37,7 +42,9 @@ const WAVES = [
     (scene) => new NeutronWave(scene),
     (scene) => new CloverWave(scene),
     (scene) => new FireringWave(scene),
-    (scene) => new NeutronDiveWave(scene, 1, 4)
+    (scene) => new NeutronDiveWave(scene, 1, 4),
+    (scene) => new GreywingWave(scene),
+    withGap(500, (scene) => new GreywingWave(scene, true))
 ];
 
 export class MainScene extends Scene {
@@ -91,6 +98,7 @@ export class MainScene extends Scene {
         this.anims.createFromAseprite("neutron");
         this.anims.createFromAseprite("clover");
         this.anims.createFromAseprite("firering");
+        this.anims.createFromAseprite("greywing");
         this.anims.createFromAseprite("neutron-odd");
 
         // One animation each, played once per explosion: boom (ours) and
@@ -236,7 +244,7 @@ export class MainScene extends Scene {
                 const next = WAVES[this.wave_index];
 
                 if (next) {
-                    this.time.delayedCall(WAVE_GAP, () => {
+                    this.time.delayedCall(next.gap ?? WAVE_GAP, () => {
                         this.wave = next(this);
                     });
                 }

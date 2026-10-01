@@ -43,6 +43,11 @@ import neutronOddJsonUrl from "./assets/enemies/neutron/neutron-odd.json?url";
 import fireringUrl from "./assets/enemies/firering/firering.png?url";
 import fireringJsonUrl from "./assets/enemies/firering/firering.json?url";
 
+// Greywing, level 1 wave kind D. 32x32 indexed, one frame under the tag
+// greywing-level. Same export settings as the ship.
+import greywingUrl from "./assets/enemies/greywing/greywing.png?url";
+import greywingJsonUrl from "./assets/enemies/greywing/greywing.json?url";
+
 // Explosion. 32x32, nine frames under one tag, boom, played once.
 import explosionUrl from "./assets/fx/explosion/explosion.png?url";
 import explosionJsonUrl from "./assets/fx/explosion/explosion.json?url";
@@ -52,14 +57,14 @@ import explosionJsonUrl from "./assets/fx/explosion/explosion.json?url";
 import explosion2Url from "./assets/fx/explosion-2/explosion.png?url";
 import explosion2JsonUrl from "./assets/fx/explosion-2/explosion.json?url";
 
-// Main font: Gradius / Gradius II (FontStruct), a bitmap font exported
-// from BMFont at 24px -- its 8-brick grid at 3px per brick. Drawn at 24
-// (1:1) so every brick stays an even square.
-import mainFontUrl from "./assets/fonts/gradius_0.png?url";
-import mainFontXmlUrl from "./assets/fonts/gradius.fnt?url";
+// Main font: Katakis (C64) (FontStruct), a bitmap font exported from
+// BMFont at 24px -- its 8-brick grid at 3px per brick. Drawn at 24 (1:1)
+// so every brick stays an even square.
+import mainFontUrl from "./assets/fonts/katakis-24_0.png?url";
+import mainFontXmlUrl from "./assets/fonts/katakis-24.fnt?url";
 // The same font exported at 16px (2px per brick) for the smaller intro text.
-import smallFontUrl from "./assets/fonts/gradius-16_0.png?url";
-import smallFontXmlUrl from "./assets/fonts/gradius-16.fnt?url";
+import smallFontUrl from "./assets/fonts/katakis-16_0.png?url";
+import smallFontXmlUrl from "./assets/fonts/katakis-16.fnt?url";
 
 // Class to preload all the assets
 // Remember you can load this assets in another scene if you need it
@@ -86,6 +91,7 @@ export class Preloader extends Phaser.Scene {
         this.load.aseprite("neutron-odd", neutronOddUrl, neutronOddJsonUrl);
         this.load.aseprite("clover", cloverUrl, cloverJsonUrl);
         this.load.aseprite("firering", fireringUrl, fireringJsonUrl);
+        this.load.aseprite("greywing", greywingUrl, greywingJsonUrl);
         this.load.aseprite("explosion", explosionUrl, explosionJsonUrl);
         this.load.aseprite("explosion-2", explosion2Url, explosion2JsonUrl);
 
