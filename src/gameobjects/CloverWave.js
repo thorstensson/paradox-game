@@ -23,8 +23,8 @@ const POINTS = 100;
 const HIT_BOX = { x: -8, y: -8, w: 16, h: 16 };
 
 // Horizontal speed, px/s, right to left: 1.5x the neutron's 346, then 20%
-// up (519 -> 623).
-const SPEED = 623;
+// up (519 -> 623), and 15% again (623 -> 716).
+const SPEED = 716;
 
 // Time between clovers in a chain, ms, worked out from SPEED so the gap
 // between their centres stays one clover width (96px) at any speed.
@@ -69,7 +69,7 @@ export class CloverWave {
         // Centre heights that put the clover EDGE_GAP in from the screen's
         // edge.
         this.top_y = ABOVE_CENTRE * CLOVER_SCALE + EDGE_GAP;
-        this.bottom_y = scene.scale.height - BELOW_CENTRE * CLOVER_SCALE
+        this.bottom_y = scene.cameras.main.height - BELOW_CENTRE * CLOVER_SCALE
             - EDGE_GAP;
 
         this.sendChain(1);

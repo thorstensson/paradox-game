@@ -1,4 +1,4 @@
-import { Geom, Math as PhaserMath, Physics } from "phaser";
+import { Math as PhaserMath, Physics } from "phaser";
 import { PlayerBullets } from "./PlayerBullets";
 
 // The ship is 32x32 native. Drawn at 3x rather than the 4x grid everything
@@ -40,7 +40,7 @@ const MAX_SLICE = 1 / 120;
 // fast, forceful move -- faster than the neutrons fly (415). A slow drift,
 // diagonal or not, stays level. EXIT lets it level out once the throw is
 // over rather than holding the bank through the glide after it.
-const BANK_ENTER = 500;
+const BANK_ENTER = 450;
 const BANK_EXIT = 150;
 
 // Once a bank starts it holds at least this long, in ms. Mouse events arrive
@@ -78,14 +78,12 @@ const FIRE_INTERVAL = 120;
 const MUZZLE_X = 14 * SHIP_SCALE;
 const MUZZLE_Y = 0 * SHIP_SCALE;
 
-// What an enemy has to touch to kill the ship, in native pixels from its
-// centre: the middle band, from the rear up to and including the ringed
-// dot (level frame, x 3-19, y 14-17). Far smaller than the sprite, so a wing
-// clipping an enemy is a near miss rather than a death. To be tuned.
-const HIT_BOX = { x: -13, y: -2, w: 17, h: 4 };
-
 // Where the ship waits off-screen before flying in.
 const START_X = -190;
+
+// Black kept between the top of the hull and the top of the playfield (the
+// HUD band), px.
+const TOP_GAP = 5;
 
 export class Player extends Physics.Arcade.Sprite {
 
@@ -126,8 +124,16 @@ export class Player extends Physics.Arcade.Sprite {
     speed_x = 0;
     speed_y = 0;
 
+    // Highest the ship centre may go: the hull, not the 32x32 frame, stops
+    // TOP_GAP below the top. Worked out from the painted pixels.
+    min_y = 0;
+
+    // Per frame, which native pixels are painted. The whole painted ship is
+    // what can be hit -- wings and prongs included, never the empty notch.
+    masks = null;
+
     constructor({ scene }) {
-        super(scene, START_X, scene.scale.height / 2, "ship");
+        super(scene, START_X, scene.cameras.main.height / 2, "ship");
         this.scene = scene;
 
         // Scale before the body is created. An Arcade body takes its size
@@ -136,6 +142,9 @@ export class Player extends Physics.Arcade.Sprite {
         // under the scaled-up ship.
         this.setScale(SHIP_SCALE);
         this.setOrigin(0.5, 0.5);
+
+        this.masks = shipMasks(scene);
+        this.min_y = TOP_GAP + (this.displayHeight / 2 - topmostRow(this.masks) * SHIP_SCALE);
 
         this.scene.add.existing(this);
         this.scene.physics.add.existing(this);
@@ -181,7 +190,7 @@ export class Player extends Physics.Arcade.Sprite {
         );
         this.target_y = PhaserMath.Clamp(
             this.target_y + event.movementY / zoom,
-            half_h, this.scene.scale.height - half_h
+            this.min_y, this.scene.cameras.main.height - half_h
         );
     }
 
@@ -215,7 +224,7 @@ export class Player extends Physics.Arcade.Sprite {
 
     // Back in after losing a life: level, mid-height, flying in at once.
     respawn() {
-        this.setPosition(START_X, this.scene.scale.height / 2);
+        this.setPosition(START_X, this.scene.cameras.main.height / 2);
         this.setVisible(true);
         this.bank_velocity = 0;
         this.bank_travel = 0;
@@ -226,20 +235,71 @@ export class Player extends Physics.Arcade.Sprite {
         this.start(0);
     }
 
-    // True while the ship can be hit: in play, and the hit box overlaps rect.
+    // True while the ship can be hit (only in play) and a painted pixel of
+    // the frame on show lies inside rect.
     touches(rect) {
         if (this.state !== "can_move") {
             return false;
         }
 
-        const box = new Geom.Rectangle(
-            this.x + HIT_BOX.x * SHIP_SCALE,
-            this.y + HIT_BOX.y * SHIP_SCALE,
-            HIT_BOX.w * SHIP_SCALE,
-            HIT_BOX.h * SHIP_SCALE
-        );
+        const { width, height, painted } = this.masks[this.frame.name];
+        const left = this.x - this.displayWidth / 2;
+        const top = this.y - this.displayHeight / 2;
 
-        return Geom.Intersects.RectangleToRectangle(box, rect);
+        // The native pixels whose screen squares overlap rect.
+        const first_column = Math.max(0, Math.floor((rect.left - left) / SHIP_SCALE));
+        const last_column = Math.min(width - 1, Math.ceil((rect.right - left) / SHIP_SCALE) - 1);
+        const first_row = Math.max(0, Math.floor((rect.top - top) / SHIP_SCALE));
+        const last_row = Math.min(height - 1, Math.ceil((rect.bottom - top) / SHIP_SCALE) - 1);
+
+        for (let row = first_row; row <= last_row; row++) {
+            for (let column = first_column; column <= last_column; column++) {
+                if (painted[row * width + column]) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    // The painted ship as screen columns, one per native column that has
+    // paint: its left and right edge and its highest and lowest painted
+    // pixel. Null while the ship cannot be hit. Used against the flames.
+    paintedColumns() {
+        if (this.state !== "can_move") {
+            return null;
+        }
+
+        const { width, height, painted } = this.masks[this.frame.name];
+        const left = this.x - this.displayWidth / 2;
+        const top = this.y - this.displayHeight / 2;
+        const columns = [];
+
+        for (let column = 0; column < width; column++) {
+            let first = -1;
+            let last = -1;
+
+            for (let row = 0; row < height; row++) {
+                if (painted[row * width + column]) {
+                    if (first < 0) {
+                        first = row;
+                    }
+                    last = row;
+                }
+            }
+
+            if (first >= 0) {
+                columns.push({
+                    left: left + column * SHIP_SCALE,
+                    right: left + (column + 1) * SHIP_SCALE,
+                    top: top + first * SHIP_SCALE,
+                    bottom: top + (last + 1) * SHIP_SCALE
+                });
+            }
+        }
+
+        return columns;
     }
 
     // Called every frame the fire input is held; the cooldown does the rest.
@@ -310,7 +370,7 @@ export class Player extends Physics.Arcade.Sprite {
         const half_w = this.displayWidth / 2;
         const half_h = this.displayHeight / 2;
         const max_x = this.scene.scale.width - half_w;
-        const max_y = this.scene.scale.height - half_h;
+        const max_y = this.scene.cameras.main.height - half_h;
 
         // Pull toward the steering point, brake by drag, then move. Sliced
         // so the feel holds at any framerate.
@@ -332,8 +392,8 @@ export class Player extends Physics.Arcade.Sprite {
                 this.x = PhaserMath.Clamp(this.x, half_w, max_x);
                 this.speed_x = 0;
             }
-            if (this.y < half_h || this.y > max_y) {
-                this.y = PhaserMath.Clamp(this.y, half_h, max_y);
+            if (this.y < this.min_y || this.y > max_y) {
+                this.y = PhaserMath.Clamp(this.y, this.min_y, max_y);
                 this.speed_y = 0;
             }
         }
@@ -385,4 +445,54 @@ export class Player extends Physics.Arcade.Sprite {
         }
     }
 
+}
+
+// One mask per frame of the ship (banking included): which native pixels
+// are painted. Read once from the loaded image.
+function shipMasks(scene) {
+    const texture = scene.textures.get("ship");
+    const image = texture.getSourceImage();
+
+    const canvas = document.createElement("canvas");
+    canvas.width = image.width;
+    canvas.height = image.height;
+
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    context.drawImage(image, 0, 0);
+
+    const pixels = context.getImageData(0, 0, image.width, image.height).data;
+    const masks = {};
+
+    for (const name of texture.getFrameNames()) {
+        const frame = texture.get(name);
+        const width = frame.cutWidth;
+        const height = frame.cutHeight;
+        const painted = new Uint8Array(width * height);
+
+        for (let row = 0; row < height; row++) {
+            for (let column = 0; column < width; column++) {
+                const i = ((frame.cutY + row) * image.width + frame.cutX + column) * 4;
+                painted[row * width + column] = pixels[i + 3] > 0 ? 1 : 0;
+            }
+        }
+
+        masks[name] = { width, height, painted };
+    }
+
+    return masks;
+}
+
+// The highest painted row over every mask, native px from the top.
+function topmostRow(masks) {
+    let top = Infinity;
+
+    for (const { width, height, painted } of Object.values(masks)) {
+        for (let row = 0; row < height && row < top; row++) {
+            if (painted.subarray(row * width, (row + 1) * width).includes(1)) {
+                top = row;
+            }
+        }
+    }
+
+    return top === Infinity ? 0 : top;
 }

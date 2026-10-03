@@ -42,7 +42,7 @@ const GAP = (WING_WIDTH * GREYWING_SCALE) / 2;
 const TRAIL = WING_WIDTH * GREYWING_SCALE * 3;
 
 // Horizontal speed, px/s, right to left: fast, same as the clover.
-const SPEED = 623;
+const SPEED = 716;
 
 export class GreywingWave {
 
@@ -61,7 +61,7 @@ export class GreywingWave {
         // The wall is centred top to bottom.
         const pitch = WING_HEIGHT * GREYWING_SCALE + GAP;
         const wall_height = WALL_SIZE * pitch - GAP;
-        const top_y = (scene.scale.height - wall_height) / 2
+        const top_y = (scene.cameras.main.height - wall_height) / 2
             + (WING_HEIGHT * GREYWING_SCALE) / 2;
 
         for (let i = 0; i < WALL_SIZE; i++) {

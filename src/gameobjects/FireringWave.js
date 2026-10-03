@@ -28,7 +28,7 @@ const RADIUS_OF_SCREEN = 0.25;
 
 // Drift, px/s, right to left: the slowest thing in the game, since the
 // circle is big and the ship has to find a way round it.
-const SPEED = 140;
+const SPEED = 161;
 
 // Turn, radians per second, clockwise: one full turn every 4s.
 const SPIN = (Math.PI * 2) / 4;
@@ -44,13 +44,13 @@ export class FireringWave {
     constructor(scene) {
         this.scene = scene;
 
-        this.radius = scene.scale.height * RADIUS_OF_SCREEN;
+        this.radius = scene.cameras.main.height * RADIUS_OF_SCREEN;
 
         // The whole circle spawns and despawns fully off-screen: its radius
         // plus half a sprite past each edge.
         const margin = this.radius + 16 * FIRERING_SCALE;
         this.centre_x = scene.scale.width + margin;
-        this.centre_y = scene.scale.height / 2;
+        this.centre_y = scene.cameras.main.height / 2;
         this.end_x = -margin;
 
         for (let i = 0; i < RING_COUNT; i++) {

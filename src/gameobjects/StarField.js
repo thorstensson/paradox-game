@@ -18,9 +18,9 @@ const STAR_SIZES = [ 1, 2, 3 ];
 // The near band is deliberately sparse; a handful of fast bright dots sells
 // depth better than a crowd of them.
 const BANDS = [
-    { count: 60, speed: 48, alpha: 0.4, size: 1 },
-    { count: 34, speed: 96, alpha: 0.7, size: 2 },
-    { count: 16, speed: 211, alpha: 1, size: 2 },
+    { count: 60, speed: 70, alpha: 0.4, size: 1 },
+    { count: 34, speed: 138, alpha: 0.7, size: 2 },
+    { count: 16, speed: 304, alpha: 1, size: 2 },
 ];
 
 export class StarField {
@@ -32,7 +32,7 @@ export class StarField {
 
     constructor(scene, { depth = -5 } = {}) {
         this.view_width = scene.scale.width;
-        this.view_height = scene.scale.height;
+        this.view_height = scene.cameras.main.height;
 
         ensureTexture(scene);
 

@@ -28,7 +28,7 @@ export class MenuScene extends Scene {
             this.scale.height / 2 + 120,
             "small-font",
             "PLAYER ONE\nCLICK TO START",
-            16
+            18
         ).setOrigin(0.5, 0.5);
 
         // setOrigin centres the block; this centres the lines within it.
@@ -49,7 +49,7 @@ export class MenuScene extends Scene {
             logo_bounds.top - gap,
             "small-font",
             "MMXXVI",
-            16
+            18
         ).setOrigin(0.5, 1);
 
         // Byline, centred along the bottom of the screen.
@@ -58,7 +58,7 @@ export class MenuScene extends Scene {
             this.scale.height - 40,
             "small-font",
             "BY THOMAS THORSTENSSON",
-            16
+            18
         ).setOrigin(0.5, 1);
 
 

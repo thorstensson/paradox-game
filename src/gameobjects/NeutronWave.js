@@ -28,8 +28,9 @@ const ODD_POINTS = -100;
 const HIT_BOX = { x: -13, y: -4, w: 26, h: 9 };
 
 // Horizontal speed, px/s, right to left. Three 20% steps up from the first
-// pass of 240 (240 -> 288 -> 346 -> 415): Delta is hard because it is fast.
-const SPEED = 415;
+// pass of 240 (240 -> 288 -> 346 -> 415), then 15% (-> 477): Delta is hard
+// because it is fast.
+const SPEED = 477;
 
 // Time between neutrons in a chain, ms, worked out from SPEED so the gap
 // between their centres stays one neutron width (96px) at any speed.
@@ -97,7 +98,7 @@ export class NeutronWave {
         const t = (this.start_x - x) / (this.start_x - this.end_x);
         const offset = EDGE_OFFSET - DIP * Math.sin(Math.PI * t);
 
-        return this.scene.scale.height / 2 + side * offset;
+        return this.scene.cameras.main.height / 2 + side * offset;
     }
 
     // True if any neutron touches the ship. The neutron is left alone -- it
@@ -184,7 +185,7 @@ export class NeutronDiveWave extends NeutronWave {
         const offset = DIVE_EDGE_OFFSET * (1 + Math.cos(Math.PI * u)) / 2
             + DIVE_SWING * Math.sin(Math.PI * u) ** 2;
 
-        return this.scene.scale.height / 2 + side * offset;
+        return this.scene.cameras.main.height / 2 + side * offset;
     }
 
 }

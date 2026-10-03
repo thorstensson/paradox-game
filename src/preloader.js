@@ -6,10 +6,6 @@
 // Title logo: OBSIDION set in Sci Fi Adventure, halved to 142x16 and drawn
 // at 7x (MenuScene) -- chunkier pixels, one letter's width from each edge.
 import titleLogoUrl from "./assets/fonts/scifiadventure.png?url";
-import nebulaBackUrl from "./assets/backgrounds/purple-nebula/back.png?url";
-import nebulaFrontUrl from "./assets/backgrounds/purple-nebula/planets.png?url";
-import galaxyBackUrl from "./assets/backgrounds/galaxy/back.png?url";
-import galaxyFrontUrl from "./assets/backgrounds/galaxy/front.png?url";
 
 // Player ship. Hand-painted, 32x32 indexed, three one-frame tags:
 // level / bank-up / bank-down. Exported from Aseprite untrimmed in Array
@@ -57,14 +53,24 @@ import explosionJsonUrl from "./assets/fx/explosion/explosion.json?url";
 import explosion2Url from "./assets/fx/explosion-2/explosion.png?url";
 import explosion2JsonUrl from "./assets/fx/explosion-2/explosion.json?url";
 
-// Main font: Katakis (C64) (FontStruct), a bitmap font exported from
-// BMFont at 24px -- its 8-brick grid at 3px per brick. Drawn at 24 (1:1)
+// Firecomet, level 2 A1. 32x32 indexed, six frames under one looping tag,
+// firecomet-pulse. Same export settings as the ship.
+import firecometUrl from "./assets/enemies/firecomet/firecomet.png?url";
+import firecometJsonUrl from "./assets/enemies/firecomet/firecomet.json?url";
+
+// Fire cave, level 2's walls. 128x64 indexed, ten frames under the tag
+// firecave-loop. Same export settings as the ship.
+import firecaveUrl from "./assets/enviro/firecave/firecave.png?url";
+import firecaveJsonUrl from "./assets/enviro/firecave/firecave.json?url";
+
+// Main font: Techbase (FontStruct, Omegaville), a bitmap font exported from
+// BMFont at 27px -- its 9-brick grid at 3px per brick. Drawn at 27 (1:1)
 // so every brick stays an even square.
-import mainFontUrl from "./assets/fonts/katakis-24_0.png?url";
-import mainFontXmlUrl from "./assets/fonts/katakis-24.fnt?url";
-// The same font exported at 16px (2px per brick) for the smaller intro text.
-import smallFontUrl from "./assets/fonts/katakis-16_0.png?url";
-import smallFontXmlUrl from "./assets/fonts/katakis-16.fnt?url";
+import mainFontUrl from "./assets/fonts/techbase-27_0.png?url";
+import mainFontXmlUrl from "./assets/fonts/techbase-27.fnt?url";
+// The same font exported at 18px (2px per brick) for the smaller intro text.
+import smallFontUrl from "./assets/fonts/techbase-18_0.png?url";
+import smallFontXmlUrl from "./assets/fonts/techbase-18.fnt?url";
 
 // Class to preload all the assets
 // Remember you can load this assets in another scene if you need it
@@ -78,10 +84,6 @@ export class Preloader extends Phaser.Scene {
 
         // Background layers
         this.load.image("title-logo", titleLogoUrl);
-        this.load.image("nebula-back", nebulaBackUrl);
-        this.load.image("nebula-front", nebulaFrontUrl);
-        this.load.image("galaxy-back", galaxyBackUrl);
-        this.load.image("galaxy-front", galaxyFrontUrl);
 
         // Phaser reads Aseprite atlases natively; createFromAseprite() in the
         // scene turns each frameTag into an animation of the same name.
@@ -94,6 +96,8 @@ export class Preloader extends Phaser.Scene {
         this.load.aseprite("greywing", greywingUrl, greywingJsonUrl);
         this.load.aseprite("explosion", explosionUrl, explosionJsonUrl);
         this.load.aseprite("explosion-2", explosion2Url, explosion2JsonUrl);
+        this.load.aseprite("firecave", firecaveUrl, firecaveJsonUrl);
+        this.load.aseprite("firecomet", firecometUrl, firecometJsonUrl);
 
         // Fonts
         this.load.bitmapFont("main-font", mainFontUrl, mainFontXmlUrl);

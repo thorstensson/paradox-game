@@ -157,9 +157,30 @@ So no background texture is needed here — the clear colour (`#000000`, set in
 
 ## Level 2 Concepts
 
-**Caves of fire.** Idea from a level in Delta. No stars. Walls of flame
+**Caves of fire.** Idea from a level in Delta. The stars stay, as in Delta. Walls of flame
 running horizontally along the top and bottom of the screen, looping. All
 flame — no rock, no cave edge.
+
+### Wave sequence
+
+Taken from Delta's level 3, the pattern only -- not the graphics.
+
+```
+A1  B1x2  C1x2  B1  Ax2  D1
+```
+
+Notation: the letters start from A again for this level. A number after the
+letter marks a new alien (A1 is level 2's first new alien, not level 1's A).
+`x2` is how many times that wave comes. So every wave here is a new alien
+except **Ax2**, level 1's A returning, just before D1.
+
+Each alien is worked through one at a time.
+
+**A1 drops the first power-up: a better laser.** What A1 itself is, is not
+decided yet.
+
+**A1 is also where aliens start firing.** Enemy bullets are simple grey round
+circles that pulsate in light, as in Delta.
 
 ### Flame flicker: rotate the colours, not the flames
 
