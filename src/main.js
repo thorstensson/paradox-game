@@ -1,4 +1,5 @@
 import { Game } from "phaser";
+import { COLOUR_SHINE, ColourShine } from "./fx/ColourShine";
 import { Preloader } from "./preloader";
 import { GameOverScene } from "./scenes/GameOverScene";
 import { HudScene } from "./scenes/HudScene";
@@ -45,6 +46,10 @@ const config = {
         mode: Phaser.Scale.NONE,
         zoom: integerZoom(),
         autoCenter: Phaser.Scale.CENTER_BOTH,
+    },
+    // Custom shaders, put on game objects with setPostPipeline().
+    pipeline: {
+        [COLOUR_SHINE]: ColourShine,
     },
     physics: {
         default: "arcade",

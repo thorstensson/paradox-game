@@ -23,8 +23,9 @@ const WALL_SIZE = 6;
 const POINTS = 100;
 
 // Bullets a greywing soaks up before it blows. No sign of the hits before
-// then, as with the firering.
-const HITS = 3;
+// then, as with the firering. 5 (was 3) since the double bullets came in,
+// to keep the difficulty up.
+const HITS = 5;
 
 // What kills the ship on contact, in native pixels from the centre: the
 // whole wing, tips included.

@@ -78,6 +78,16 @@ const FIRE_INTERVAL = 120;
 const MUZZLE_X = 14 * SHIP_SCALE;
 const MUZZLE_Y = 0 * SHIP_SCALE;
 
+// Double bullets, from the bullet power-up: no centre shot, one from each
+// arm instead, both together. The arm tips sit 5 native px above and below
+// the centre on the level frame; fixed for every bank state, like the
+// centre muzzle.
+const ARM_Y = 5 * SHIP_SCALE;
+
+// How long double bullets last once caught, ms. Losing the ship ends them
+// at once.
+const DOUBLE_TIME = 60000;
+
 // Where the ship waits off-screen before flying in.
 const START_X = -190;
 
@@ -107,6 +117,11 @@ export class Player extends Physics.Arcade.Sprite {
 
     // Timestamp the next shot is allowed at.
     next_fire = 0;
+
+    // Double bullets on, and the timer that turns them off. A scene timer,
+    // so the minute stops while the game is paused.
+    double = false;
+    double_timer = null;
 
     // Earliest time the current bank may be given up.
     bank_until = 0;
@@ -220,6 +235,31 @@ export class Player extends Physics.Arcade.Sprite {
     leavePlay() {
         this.state = "removed";
         this.setVisible(false);
+        this.endDouble();
+    }
+
+    // The bullet power-up is caught: double bullets for DOUBLE_TIME. Catching
+    // another while they are on starts the time again.
+    startDouble() {
+        this.double = true;
+
+        if (this.double_timer) {
+            this.double_timer.remove();
+        }
+
+        this.double_timer = this.scene.time.delayedCall(
+            DOUBLE_TIME, () => this.endDouble()
+        );
+    }
+
+    // Back to the single centre bullet.
+    endDouble() {
+        this.double = false;
+
+        if (this.double_timer) {
+            this.double_timer.remove();
+            this.double_timer = null;
+        }
     }
 
     // Back in after losing a life: level, mid-height, flying in at once.
@@ -309,7 +349,13 @@ export class Player extends Physics.Arcade.Sprite {
         }
 
         this.next_fire = time + FIRE_INTERVAL;
-        this.bullets.fire(this.x + MUZZLE_X, this.y + MUZZLE_Y);
+
+        if (this.double) {
+            this.bullets.fire(this.x + MUZZLE_X, this.y - ARM_Y);
+            this.bullets.fire(this.x + MUZZLE_X, this.y + ARM_Y);
+        } else {
+            this.bullets.fire(this.x + MUZZLE_X, this.y + MUZZLE_Y);
+        }
     }
 
     // Tags: level (one frame), bank-up and bank-down (three frames each,

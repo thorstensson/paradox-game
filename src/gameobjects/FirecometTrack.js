@@ -49,9 +49,10 @@ const SPEED = 716;
 // Score for shooting one down.
 const POINTS = 100;
 
-// Bullets a firecomet soaks up before it blows. No sign of the first hit,
-// as with the firering.
-const HITS = 2;
+// Bullets a firecomet soaks up before it blows. No sign of the hits before
+// then, as with the firering. 4 (was 2): the ship enters the fire cave with
+// more power.
+const HITS = 4;
 
 export class FirecometTrack {
 
@@ -152,7 +153,7 @@ export class FirecometTrack {
 
 // The painted pixels over every frame, as a box in native px from the
 // sprite's centre: what kills the ship on contact. Read once from the image.
-function paintedBox(scene, key) {
+export function paintedBox(scene, key) {
     const texture = scene.textures.get(key);
     const image = texture.getSourceImage();
 
@@ -172,7 +173,10 @@ function paintedBox(scene, key) {
     let frame_width = 0;
     let frame_height = 0;
 
-    for (const name of texture.getFrameNames()) {
+    // A plain image (no atlas) has only its base frame.
+    const names = texture.getFrameNames();
+
+    for (const name of names.length ? names : [ "__BASE" ]) {
         const frame = texture.get(name);
         frame_width = frame.cutWidth;
         frame_height = frame.cutHeight;

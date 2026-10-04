@@ -1,5 +1,6 @@
 import { Scene } from "phaser";
 import { CloverWave } from "../gameobjects/CloverWave";
+import { EmberstarWave } from "../gameobjects/EmberstarWave";
 import { Explosions } from "../gameobjects/Explosions";
 import { FireCave } from "../gameobjects/FireCave";
 import { FirecometTrack } from "../gameobjects/FirecometTrack";
@@ -7,6 +8,7 @@ import { FireringWave } from "../gameobjects/FireringWave";
 import { GreywingWave } from "../gameobjects/GreywingWave";
 import { NeutronDiveWave, NeutronWave } from "../gameobjects/NeutronWave";
 import { Player } from "../gameobjects/Player";
+import { PowerUps } from "../gameobjects/PowerUps";
 import { StarField } from "../gameobjects/StarField";
 
 // Black band along the top of the canvas, as in Delta: the HUD sits in it,
@@ -62,12 +64,22 @@ const WAVES = [
     withGap(500, (scene) => new GreywingWave(scene, true))
 ];
 
+// Level 2 in order (notes.md -> Level 2 Concepts -> Wave sequence), after
+// the firecomets (A1), which run alongside the whole level: A2, two blocks
+// of emberstars swinging between the flames and the centre line.
+const LEVEL_2_WAVES = [
+    (scene) => new EmberstarWave(scene)
+];
+
 export class MainScene extends Scene {
     star_field = null;
     player = null;
     wave = null;
     wave_index = 0;
     explosions = null;
+
+    // Power drops in flight. They outlive the wave that dropped them.
+    powerups = null;
     fire_cave = null;
 
     // Level 2's firecomets: out of the fire walls for the whole cave,
@@ -138,12 +150,18 @@ export class MainScene extends Scene {
         this.anims.createFromAseprite("greywing");
         this.anims.createFromAseprite("neutron-odd");
         this.anims.createFromAseprite("firecomet");
+        this.anims.createFromAseprite("bullet-enemy");
+        this.anims.createFromAseprite("powerup-bullets");
 
         // One animation each, played once per explosion: boom (ours) and
         // Animation (explosion-2, on trial). Explosions picks which one.
         this.anims.createFromAseprite("explosion");
         this.anims.createFromAseprite("explosion-2");
         this.explosions = new Explosions(this);
+
+        // A drop is added after the explosion pool, so it shows over the
+        // blast it comes out of.
+        this.powerups = new PowerUps(this);
 
         // Player
         this.player = new Player({ scene: this });
@@ -213,6 +231,14 @@ export class MainScene extends Scene {
         title.setCenterAlign();
         title.setLineSpacing(6);
 
+        // PAUSED sits in the same spot, so the title steps aside while it is
+        // up and comes back to finish its fade once play resumes.
+        const hide = () => title.setVisible(false);
+        const show = () => title.setVisible(true);
+
+        this.events.on("pause", hide);
+        this.events.on("resume", show);
+
         this.tweens.add({
             targets: title,
             alpha: 1,
@@ -220,6 +246,8 @@ export class MainScene extends Scene {
             hold: LEVEL_TITLE_HOLD,
             yoyo: true,
             onComplete: () => {
+                this.events.off("pause", hide);
+                this.events.off("resume", show);
                 title.destroy();
                 onDone();
             }
@@ -232,18 +260,21 @@ export class MainScene extends Scene {
         this.wave = null;
         this.wave_index++;
 
-        const next = WAVES[this.wave_index];
+        const level = this.level;
+        const next = (level === 1 ? WAVES : LEVEL_2_WAVES)[this.wave_index];
 
         if (next) {
             this.time.delayedCall(next.gap ?? WAVE_GAP, () => {
-                if (this.level === 1) {
+                if (this.level === level) {
                     this.wave = next(this);
                 }
             });
-        } else {
+        } else if (level === 1) {
             this.level = 2;
             this.time.delayedCall(LEVEL_2_DELAY, () => this.enterLevel2());
         }
+
+        // After level 2's last wave nothing follows yet.
     }
 
     // Dev only (the N key): clears the wave on screen, no points, drops the
@@ -272,9 +303,17 @@ export class MainScene extends Scene {
         }
 
         this.showLevelTitle(LEVEL_2_TITLE, () => {
-            // The comets start once the cave fills the screen.
+            // The comets start once the cave fills the screen, and the
+            // level's first wave a WAVE_GAP after them.
             this.fire_cave = new FireCave(this, () => {
                 this.firecomets = new FirecometTrack(this);
+
+                this.wave_index = 0;
+                this.time.delayedCall(WAVE_GAP, () => {
+                    if (this.level === 2 && this.playing) {
+                        this.wave = LEVEL_2_WAVES[0](this);
+                    }
+                });
             });
         });
     }
@@ -349,7 +388,7 @@ export class MainScene extends Scene {
         }
 
         for (const wave of this.skipped) {
-            for (const list of [ wave.neutrons, wave.clovers, wave.rings, wave.wings ]) {
+            for (const list of [ wave.neutrons, wave.clovers, wave.rings, wave.wings, wave.stars ]) {
                 if (list) {
                     list.forEach((alien) => alien.destroy());
                     list.length = 0;
@@ -380,5 +419,6 @@ export class MainScene extends Scene {
         }
 
         this.player.bullets.update(time, delta);
+        this.powerups.update(delta, this.player);
     }
 }

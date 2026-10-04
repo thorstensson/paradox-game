@@ -58,6 +58,21 @@ import explosion2JsonUrl from "./assets/fx/explosion-2/explosion.json?url";
 import firecometUrl from "./assets/enemies/firecomet/firecomet.png?url";
 import firecometJsonUrl from "./assets/enemies/firecomet/firecomet.json?url";
 
+// Emberstar, level 2 A2. 32x32 indexed, one frame -- Phaser spins it, so a
+// plain image, not an atlas.
+import emberstarUrl from "./assets/enemies/emberstar/emberstar.png?url";
+
+// Enemy bullet, fired by aliens from level 2's A2 on. 6x6 indexed, two
+// frames under one looping tag, bullet-enemy-blink. Same export settings as
+// the ship.
+import bulletEnemyUrl from "./assets/enemies/bullet/bullet-enemy.png?url";
+import bulletEnemyJsonUrl from "./assets/enemies/bullet/bullet-enemy.json?url";
+
+// Power-up, the bullet power drop. 16x16 indexed, two frames under one
+// looping tag, powerup-blink. Same export settings as the ship.
+import powerupBulletsUrl from "./assets/powerups/powerup-bullets.png?url";
+import powerupBulletsJsonUrl from "./assets/powerups/powerup-bullets.json?url";
+
 // Fire cave, level 2's walls. 128x64 indexed, ten frames under the tag
 // firecave-loop. Same export settings as the ship.
 import firecaveUrl from "./assets/enviro/firecave/firecave.png?url";
@@ -98,6 +113,9 @@ export class Preloader extends Phaser.Scene {
         this.load.aseprite("explosion-2", explosion2Url, explosion2JsonUrl);
         this.load.aseprite("firecave", firecaveUrl, firecaveJsonUrl);
         this.load.aseprite("firecomet", firecometUrl, firecometJsonUrl);
+        this.load.image("emberstar", emberstarUrl);
+        this.load.aseprite("bullet-enemy", bulletEnemyUrl, bulletEnemyJsonUrl);
+        this.load.aseprite("powerup-bullets", powerupBulletsUrl, powerupBulletsJsonUrl);
 
         // Fonts
         this.load.bitmapFont("main-font", mainFontUrl, mainFontXmlUrl);

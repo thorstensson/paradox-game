@@ -57,6 +57,10 @@ export class CloverWave {
 
     top_sent = false;
 
+    // Top-chain clovers shot down. All of them drops the power-up, out of
+    // the last one's explosion; one flying off means no drop.
+    top_shot = 0;
+
     constructor(scene) {
         this.scene = scene;
 
@@ -152,6 +156,15 @@ export class CloverWave {
             if (hit) {
                 explosions.spawn(clover.x, clover.y);
                 this.scene.addPoints(clover.points);
+
+                if (clover.side === -1) {
+                    this.top_shot++;
+
+                    if (this.top_shot === CHAIN_LENGTH) {
+                        this.scene.powerups.spawn(clover.x, clover.y);
+                    }
+                }
+
                 clover.destroy();
                 return false;
             }

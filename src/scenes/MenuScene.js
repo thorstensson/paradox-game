@@ -1,4 +1,5 @@
 import { Scene } from "phaser";
+import { COLOUR_SHINE } from "../fx/ColourShine";
 
 export class MenuScene extends Scene {
     constructor() {
@@ -21,7 +22,8 @@ export class MenuScene extends Scene {
         // Knocked slightly off pure white so the shine has headroom to
         // brighten into -- a white highlight over white is invisible.
         logo_game.setTint(0xc8d0e0);
-        logo_game.postFX.addShine();
+        // Phaser's shine, but sweeping in #b9bffb (see ColourShine.js).
+        logo_game.setPostPipeline(COLOUR_SHINE);
 
         const start_msg = this.add.bitmapText(
             this.scale.width / 2,

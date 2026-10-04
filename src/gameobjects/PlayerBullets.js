@@ -120,6 +120,32 @@ export class PlayerBullets {
         }
     }
 
+    // As collide(), against a circle instead of the target's bounds: for a
+    // spinning alien, whose bounds grow and shrink as it turns while the
+    // shape it sweeps stays a circle.
+    collideCircle(x, y, radius, onHit) {
+        const circle = new Geom.Circle(x, y, radius);
+        const box = new Geom.Rectangle(0, 0, this.width, this.height);
+
+        for (const bullet of this.bullets) {
+            if (!bullet.active) {
+                continue;
+            }
+
+            box.setTo(
+                bullet.x - this.width / 2,
+                bullet.y - this.height / 2,
+                this.width,
+                this.height
+            );
+
+            if (Geom.Intersects.CircleToRectangle(circle, box)) {
+                this.deactivate(bullet);
+                onHit(bullet.x, bullet.y);
+            }
+        }
+    }
+
     deactivate(bullet) {
         bullet.active = false;
         bullet.bob.visible = false;
