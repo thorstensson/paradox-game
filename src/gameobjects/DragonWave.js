@@ -25,12 +25,12 @@ const HEAD_FRAME = "0";
 const BODY_FRAME = "1";
 
 // Circles behind the head.
-const BODY_LENGTH = 5;
+const BODY_LENGTH = 9;
 
 // Bullets the head soaks up before the dragon blows.
 const HITS = 10;
 
-// Score per piece when the dragon blows: 6 pieces, 1200.
+// Score per piece when the dragon blows: 10 pieces, 2000.
 const POINTS = 200;
 
 // Toward the ship, px/s, right to left: half the slowest alien's speed.
