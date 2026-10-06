@@ -1,5 +1,6 @@
 import { Scene } from "phaser";
 import { CloverWave } from "../gameobjects/CloverWave";
+import { DragonWave } from "../gameobjects/DragonWave";
 import { EmberstarWave } from "../gameobjects/EmberstarWave";
 import { Explosions } from "../gameobjects/Explosions";
 import { FireCave } from "../gameobjects/FireCave";
@@ -66,9 +67,11 @@ const WAVES = [
 
 // Level 2 in order (notes.md -> Level 2 Concepts -> Wave sequence), after
 // the firecomets (A1), which run alongside the whole level: A2, two blocks
-// of emberstars swinging between the flames and the centre line.
+// of emberstars swinging between the flames and the centre line, then B1,
+// the dragon zigzagging flame to flame.
 const LEVEL_2_WAVES = [
-    (scene) => new EmberstarWave(scene)
+    (scene) => new EmberstarWave(scene),
+    (scene) => new DragonWave(scene)
 ];
 
 export class MainScene extends Scene {
@@ -150,13 +153,12 @@ export class MainScene extends Scene {
         this.anims.createFromAseprite("greywing");
         this.anims.createFromAseprite("neutron-odd");
         this.anims.createFromAseprite("firecomet");
+        this.anims.createFromAseprite("dragon");
         this.anims.createFromAseprite("bullet-enemy");
         this.anims.createFromAseprite("powerup-bullets");
 
-        // One animation each, played once per explosion: boom (ours) and
-        // Animation (explosion-2, on trial). Explosions picks which one.
+        // One animation, Animation, played once per explosion.
         this.anims.createFromAseprite("explosion");
-        this.anims.createFromAseprite("explosion-2");
         this.explosions = new Explosions(this);
 
         // A drop is added after the explosion pool, so it shows over the

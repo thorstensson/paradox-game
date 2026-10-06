@@ -153,7 +153,8 @@ export class FirecometTrack {
 
 // The painted pixels over every frame, as a box in native px from the
 // sprite's centre: what kills the ship on contact. Read once from the image.
-export function paintedBox(scene, key) {
+// Given a frame name, only that frame is read.
+export function paintedBox(scene, key, only = null) {
     const texture = scene.textures.get(key);
     const image = texture.getSourceImage();
 
@@ -174,7 +175,7 @@ export function paintedBox(scene, key) {
     let frame_height = 0;
 
     // A plain image (no atlas) has only its base frame.
-    const names = texture.getFrameNames();
+    const names = only !== null ? [ only ] : texture.getFrameNames();
 
     for (const name of names.length ? names : [ "__BASE" ]) {
         const frame = texture.get(name);

@@ -44,14 +44,10 @@ import fireringJsonUrl from "./assets/enemies/firering/firering.json?url";
 import greywingUrl from "./assets/enemies/greywing/greywing.png?url";
 import greywingJsonUrl from "./assets/enemies/greywing/greywing.json?url";
 
-// Explosion. 32x32, nine frames under one tag, boom, played once.
+// Explosion. From a free Aseprite pack on itch, re-exported with our
+// settings. 64x64, one tag, Animation (frames 0-8; frame 9 is empty).
 import explosionUrl from "./assets/fx/explosion/explosion.png?url";
 import explosionJsonUrl from "./assets/fx/explosion/explosion.json?url";
-
-// Explosion 2, on trial. From a free Aseprite pack on itch, re-exported with
-// our settings. 128x128, one tag, Animation (frames 0-8; frame 9 is empty).
-import explosion2Url from "./assets/fx/explosion-2/explosion.png?url";
-import explosion2JsonUrl from "./assets/fx/explosion-2/explosion.json?url";
 
 // Firecomet, level 2 A1. 32x32 indexed, six frames under one looping tag,
 // firecomet-pulse. Same export settings as the ship.
@@ -61,6 +57,12 @@ import firecometJsonUrl from "./assets/enemies/firecomet/firecomet.json?url";
 // Emberstar, level 2 A2. 32x32 indexed, one frame -- Phaser spins it, so a
 // plain image, not an atlas.
 import emberstarUrl from "./assets/enemies/emberstar/emberstar.png?url";
+
+// Dragon, level 2 B1. 64x32 indexed, two frames: the head under dragon-head
+// and one body circle under dragon-circle, painted where they join. Same
+// export settings as the ship.
+import dragonUrl from "./assets/enemies/dragon/dragon.png?url";
+import dragonJsonUrl from "./assets/enemies/dragon/dragon.json?url";
 
 // Enemy bullet, fired by aliens from level 2's A2 on. 6x6 indexed, two
 // frames under one looping tag, bullet-enemy-blink. Same export settings as
@@ -110,10 +112,10 @@ export class Preloader extends Phaser.Scene {
         this.load.aseprite("firering", fireringUrl, fireringJsonUrl);
         this.load.aseprite("greywing", greywingUrl, greywingJsonUrl);
         this.load.aseprite("explosion", explosionUrl, explosionJsonUrl);
-        this.load.aseprite("explosion-2", explosion2Url, explosion2JsonUrl);
         this.load.aseprite("firecave", firecaveUrl, firecaveJsonUrl);
         this.load.aseprite("firecomet", firecometUrl, firecometJsonUrl);
         this.load.image("emberstar", emberstarUrl);
+        this.load.aseprite("dragon", dragonUrl, dragonJsonUrl);
         this.load.aseprite("bullet-enemy", bulletEnemyUrl, bulletEnemyJsonUrl);
         this.load.aseprite("powerup-bullets", powerupBulletsUrl, powerupBulletsJsonUrl);
 

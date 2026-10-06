@@ -1,13 +1,11 @@
 import { Animations } from "phaser";
 
-// Hand-painted, Delta style (notes.md -> Explosions): 32x32, nine frames
-// under one tag, boom, played once where the enemy died. Drawn at 3x, the
-// same scale as the enemies, so it fills the footprint it replaces.
+// From a free Aseprite pack: 64x64, nine frames under one tag, Animation,
+// played once where the enemy died. Drawn at 3x, the same scale as the
+// enemies.
 const EXPLOSION_SCALE = 3;
 
-// Which explosion plays. On trial: explosion-2, from a free Aseprite pack,
-// 128x128 at the same 3x. Ours is "explosion" / "boom".
-const TEXTURE = "explosion-2";
+const TEXTURE = "explosion";
 const ANIMATION = "Animation";
 
 // Fixed size, like the bullet pool. A spent explosion goes invisible and
