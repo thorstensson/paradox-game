@@ -1,5 +1,6 @@
 import { Scene } from "phaser";
 import { CloverWave } from "../gameobjects/CloverWave";
+import { DeltaWave } from "../gameobjects/DeltaWave";
 import { DragonWave } from "../gameobjects/DragonWave";
 import { EmberstarWave } from "../gameobjects/EmberstarWave";
 import { Explosions } from "../gameobjects/Explosions";
@@ -24,13 +25,13 @@ const FIRST_WAVE_DELAY = 2500;
 
 // Shown mid-screen before the level starts, as Delta does: fades in, holds,
 // fades out, and only then does the ship fly in. ms.
-const LEVEL_TITLE = "ENTERING\nSPACE";
+const LEVEL_TITLE = "DEEP SPACE";
 const LEVEL_TITLE_FADE = 500;
 const LEVEL_TITLE_HOLD = 2000;
 
 // Level 2 follows level 1 without a break: the ship flies on, the title comes
 // up over the stars, then the fire cave slides in over them.
-const LEVEL_2_TITLE = "ENTERING\nCAVES OF FIRE";
+const LEVEL_2_TITLE = "EMBER CAVES";
 
 // From the last level 1 wave being gone to the level 2 title, ms.
 const LEVEL_2_DELAY = 3000;
@@ -71,7 +72,8 @@ const WAVES = [
 // the dragon zigzagging flame to flame.
 const LEVEL_2_WAVES = [
     (scene) => new EmberstarWave(scene),
-    (scene) => new DragonWave(scene)
+    (scene) => new DragonWave(scene),
+    (scene) => new DeltaWave(scene)
 ];
 
 export class MainScene extends Scene {
@@ -154,6 +156,7 @@ export class MainScene extends Scene {
         this.anims.createFromAseprite("neutron-odd");
         this.anims.createFromAseprite("firecomet");
         this.anims.createFromAseprite("dragon");
+        this.anims.createFromAseprite("delta");
         this.anims.createFromAseprite("bullet-enemy");
         this.anims.createFromAseprite("powerup-bullets");
 
@@ -228,8 +231,6 @@ export class MainScene extends Scene {
             18
         ).setOrigin(0.5, 0.5).setAlpha(0);
 
-        // ENTERING on its own line above the level name: each line centred,
-        // spaced like PLAYER ONE / CLICK TO START.
         title.setCenterAlign();
         title.setLineSpacing(6);
 

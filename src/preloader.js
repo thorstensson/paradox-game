@@ -65,6 +65,11 @@ import emberstarUrl from "./assets/enemies/emberstar/emberstar.png?url";
 import dragonUrl from "./assets/enemies/dragon/dragon.png?url";
 import dragonJsonUrl from "./assets/enemies/dragon/dragon.json?url";
 
+// Delta, level 2. 32x32 indexed, 13 frames under one looping tag,
+// delta-spin. Same export settings as the ship.
+import deltaUrl from "./assets/enemies/delta/delta.png?url";
+import deltaJsonUrl from "./assets/enemies/delta/delta.json?url";
+
 // Enemy bullet, fired by aliens from level 2's A2 on. 6x6 indexed, two
 // frames under one looping tag, bullet-enemy-blink. Same export settings as
 // the ship.
@@ -117,6 +122,7 @@ export class Preloader extends Phaser.Scene {
         this.load.aseprite("firecomet", firecometUrl, firecometJsonUrl);
         this.load.image("emberstar", emberstarUrl);
         this.load.aseprite("dragon", dragonUrl, dragonJsonUrl);
+        this.load.aseprite("delta", deltaUrl, deltaJsonUrl);
         this.load.aseprite("bullet-enemy", bulletEnemyUrl, bulletEnemyJsonUrl);
         this.load.aseprite("powerup-bullets", powerupBulletsUrl, powerupBulletsJsonUrl);
 

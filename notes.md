@@ -7,21 +7,11 @@ I am building a 2D horizontal space shooter in Phaser 3 using pure JavaScript. W
 - **Clear colour:** `#000000`, framed by the page's `#111111` (`style.css`).
 - **Sprites (ships, enemies, bullets):** 3x. See **Sprite Scale: 3x** below.
 - **Title logo:** 4x.
-- **Main font:** Electron Pulse, drawn 1:1 at 32px. See **Fonts** below.
+- **Main font:** Techbase, drawn 1:1 at 27px (HUD) and 18px (all other text). See **Fonts** below.
 - **Stars:** 1/2/3px screen-pixel dots (`StarField.js`), not on any texel grid.
 
 * **Rendering Rule:** Always apply `pixelArt: true` in the Phaser config. This already forces `NEAREST` filtering globally, so per-object `setFilterMode` calls are not needed.
 * **Integer vs non-integer scale:** anything can be drawn at any size. Integer scales keep every pixel the same width; non-integer ones stay hard-edged but make some pixels a screen pixel wider than others, so they read less clean. A choice per asset, not a rule.
-
-### 🌌 Parallax Backgrounds -- parked
-
-`GalaxyBackground.js` (two scrolling TileSprites) was removed 2026-09-24:
-Level 1 is stars only, and the intro and Game Over screens are plain
-`#000000`. The template backgrounds (`galaxy/`, `purple-nebula/`, `planets/`)
-and the generated `oil6/` tile are kept in `src/assets/backgrounds/` in case
-one comes back in-game; none are loaded. If one does, the technique was: a
-TileSprite per layer, `tilePositionX += speed * delta / 1000`, back layer
-slower than front. The old class is in git history.
 
 ### 📦 Asset Pipeline (Vite)
 
@@ -56,7 +46,8 @@ obsidion/
 │ │ └── bullet/ # ship-bullet.png, 8x2
 │ └── fonts/
 │ ├── scifiadventure.png # Title logo image (OBSIDION only, not a full font)
-│ └── electron-pulse.fnt + electron-pulse_0.png # Main font (BMFont)
+│ ├── techbase-27.fnt + techbase-27_0.png # main-font, HUD (BMFont)
+│ └── techbase-18.fnt + techbase-18_0.png # small-font, intro / pause / level titles / game over (BMFont)
 │
 ├── gameobjects/
 │ ├── Player.js # Mouse-steered ship, banking, autofire. SHIP_SCALE = 3
@@ -71,25 +62,6 @@ obsidion/
 
 Enemies get their own folder under `src/assets/enemies/` when the first one is
 drawn (see Enemies & Waves).
-
----
-
-### ✅ Status
-
-**Done 2026-09-24:**
-
-- Template enemy (`BlueEnemy`), its glow bullets (`Bullet.js`, bloom postFX, `flares` particles) and their assets removed.
-- `GalaxyBackground` removed from gameplay, intro and Game Over. Stars only.
-- Clear colour `#000000`.
-- Game Over: stripes and click-to-restart gone; holds 3s, fades out, back to the intro. Delta style.
-- Main font is Electron Pulse everywhere except the logo. `pixelfont` and Knighthawks deleted.
-- Ship and bullets at 3x.
-
-**Next up:**
-
-- First enemy, 32x32 canvas at 3x.
-- Score font in Delta's layout (score, hi-score table) -- Electron Pulse is the candidate.
-- The 20s game-over timer and the POINTS/REMAINING HUD are still template placeholders.
 
 ---
 
@@ -119,11 +91,12 @@ Everything there is for version 1, in order:
 
 ## Level Concepts
 
-Three levels sketched. Names to come later.
+Four levels sketched.
 
-1. **Pure space** — stars only.
-2. **Caves of fire** — walls of flame, top and bottom.
-3. Undecided.
+1. **Deep Space** — stars only.
+2. **Ember Caves** — walls of flame, top and bottom.
+3. **Osiris Belt** (working title) — an asteroid belt challenge, as in Delta; asteroids drawn in the background, dark lila.
+4. **Final level** — the hardest; to be decided.
 
 Backgrounds are to be hand-drawn in Aseprite, indexed, same C64 palette as
 the ship.
@@ -142,7 +115,7 @@ which a tilemap cannot beat for a backdrop.
 
 ## Level 1 Concepts
 
-**Pure space.** Nothing but space, in the spirit of Nemesis on the C64.
+**Deep Space.** Nothing but space, in the spirit of Nemesis on the C64.
 
 **Nothing to draw for this level.** The stars are already there and they are
 _code, not art_ — `src/gameobjects/StarField.js` is a Phaser **Blitter**
@@ -159,85 +132,31 @@ So no background texture is needed here — the clear colour (`#000000`, set in
 
 ## Level 2 Concepts
 
-**Caves of fire.** Idea from a level in Delta. The stars stay, as in Delta. Walls of flame
+**Ember Caves.** Idea from a level in Delta. The stars stay, as in Delta. Walls of flame
 running horizontally along the top and bottom of the screen, looping. All
 flame — no rock, no cave edge.
 
-### Wave sequence
-
-Taken from Delta's level 3, the pattern only -- not the graphics.
+### Wave sequence per level
 
 ```
-A1 (flames, span entire level) A2(so = new)  B1x2  C1x2  B1  Ax2  D1
+Level 1:  neutron4x - clover - firering - neutron - greywing2x
+Level 2:  firecomet (whole level) - emberstar - dragon - delta 2x - neutron4x - New alien2x (b)
 ```
 
-Notation: the letters start from A again for this level. A number after the
-letter marks a new alien (A1 is level 2's first new alien, not level 1's A).
-`x2` is how many times that wave comes. So every wave here is a new alien
-except **Ax2**, level 1's A returning, just before D1.
+### Wave Attack Patterns
 
-Each alien is worked through one at a time.
+Named by the motion, not the alien, so any alien can fly any pattern and
+patterns come back through the levels, as in Delta. For now each class is
+still tied to its alien; they get detached later.
 
-**The first power-up drops in level 1, not here:** shoot down the clovers'
-whole top chain (level 1, B1) and the bullet power-up comes out of the last
-one's explosion. It gives double bullets -- one from each arm, no centre
-shot -- for a minute, lost with the ship. A1 here is the firecomet; it drops
-nothing.
-
-**A1 is also where aliens start firing.** Enemy bullets are simple grey round
-circles that pulsate in light, as in Delta.
-
-### Flame flicker: rotate the colours, not the flames
-
-`TileSprite` has **no Animation component** — `play()` does not exist on it.
-It does have `setFrame()`.
-
-So the flicker is drawn as frames in Aseprite, and swapped by hand at
-runtime:
-
-1. Draw the flame strip **once**.
-2. Duplicate it to 5–6 frames.
-3. In each frame rotate the fire colours one step along the ramp
-   (dark red → red → orange → yellow → white). The flame shape stays
-   pixel-identical; only each pixel's position on the ramp moves. This is
-   how C64 fire actually worked — colour cycling, not redrawn flames — and
-   it is what reads as heat boiling rather than flames sliding.
-4. Export as a **spritesheet** (`load.spritesheet`, fixed frame size). No
-   atlas JSON, so the trim question never arises.
-
-At runtime, advance the frame on a timer (~80ms) with `setFrame()`, and
-offset the bottom strip by a few frames so the two edges never pulse in
-unison. `setFrame()` marks the TileSprite dirty and re-uploads its texture to
-the GPU — fine at ~12 swaps a second, wasteful every frame.
-
-Two further motions come free from code, from the same single drawing:
-`tilePositionX` for the horizontal rush (match the level's scroll speed), and
-a slow negative `tilePositionY` so the flames rise.
-
-**Draw the strip power-of-two in both dimensions** — 64x32 native, or 64x16,
-or 128x32. `updateTileTexture()` draws the frame into a power-of-two canvas
-with `drawImage(..., 0, 0, potWidth, potHeight)`, which _stretches_ a non-POT
-texture to the padded size. A 64x24 strip would come out vertically
-distorted.
-
-**Needs rebalancing since the ship went to 3x.** This was first worked out
-with a 4x ship: 32px of flame top and bottom left 136 of the 200 native rows,
-about 4.25 ship-heights -- tight, Delta-ish, playable. With the hull now ~60px
-on screen, 32px flames at 4x (128px each) leave 544px, about 9 ship-heights;
-at 3x (96px each) about 10. To get back to the tight feel: thicker flames, or
-decide the gap in ship-heights first and size the strips from that.
-
----
-
-## Level 3 Concepts
-
-Theme parked -- Thomas will decide it later.
-
-What is settled: this is the final level, and it **ends with a boss**. Boss
-canvas convention is 64x64 or 96x96 (see Canvas convention in the Aseprite
-section) -- 192px or 288px on screen at 3x.
-
----
+| Pattern          | Motion                                                                                                                                                              | Used in                          | Code              |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ----------------- |
+| **sinus-pinch**  | Two mirrored chains, above and below the middle, dip toward each other and pull apart again                                                                         | Level 1 waves 1, 4 (neutron)     | `NeutronWave`     |
+| **sinus-center** | One chain enters above or below the middle, swings out, curves onto the centre line and flies straight at the ship                                                  | Level 1 waves 2, 3 (neutron)     | `NeutronDiveWave` |
+| **sinus-edges**  | A chain of seven enters just in from the bottom, eases onto the bottom edge and races off; 2s later the same along the top. Fast, a memory test                     | Level 1 wave 5 (clover)          | `CloverWave`      |
+| **flame-v**      | Comes out of the flames at the right edge, top and bottom in turn, and flies a straight line to the left edge's centre (a V on its side). 15 at fixed, uneven times | Level 2, whole level (firecomet) | `FirecometTrack`  |
+| **block-swing**  | Two mirrored 2x2 blocks, top and bottom, swing between their flames and the centre line while drifting slowly left. Four fire one aimed bullet each                 | Level 2 wave 1 (emberstar)       | `EmberstarWave`   |
+| **snake-sine**   | A head and a tail of circles on a slow flame-to-flame sine, each circle following the head's path. Only the head kills it                                           | Level 2 wave 2 (dragon)          | `DragonWave`      |
 
 ## Sprite Scale: 3x
 
@@ -258,24 +177,24 @@ changes again.
 
 ## Fonts
 
-**Main font: Electron Pulse** (Darrell Flood / HAWTPIXEL; free for personal
-use, commercial licence $25 indie / $100 unlimited). Used for everything --
-HUD, intro text, Game Over -- except the logo, as Delta uses one font
-throughout. Its squared, notched letters match the OBSIDION logo.
+**Main font: Techbase** (FontStruct, Omegaville --
+https://fontstruct.com/fontstructions/show/2075073/techbase). Used for all
+text except the logo. Its grid is 9 bricks, so it is exported at multiples of
+9 to keep every brick an even square:
 
-Made with **AngelCode BMFont** from the installed TTF:
+- `techbase-27.fnt` + `techbase-27_0.png` (key `main-font`): 3px per brick,
+  the HUD score at 27.
+- `techbase-18.fnt` + `techbase-18_0.png` (key `small-font`): 2px per brick,
+  intro, pause, level titles and Game Over at 18.
 
-- Font Settings: **size 32**, _Match char height_ **off** (on, BMFont writes a
-  negative size and Phaser renders the text flipped on both axes), font
-  smoothing off.
-- Export Options: bit depth 32, preset _White text with alpha_, font
-  descriptor **XML**, textures **png**, **512x256** so it fits one page
-  (Phaser's loader reads one page only). _Equalize cell heights_ and _Force
-  offsets to zero_ off.
-- Saved as `src/assets/fonts/electron-pulse.fnt` + `electron-pulse_0.png`.
+Made with **AngelCode BMFont**: font smoothing off, preset _White text with
+alpha_, font descriptor **XML**, textures **png**, **256x256**, one page each
+(Phaser's loader reads one page only). The `.fnt` files record a negative
+size; `preloader.js` flips it back.
 
-Drawn at 32 in game, i.e. 1:1. At 16px the font lost its thin cuts and the
-gaps between letters (A and P came out identical), so it needs the room.
+Drawn 1:1 in game. The PNGs are grey-tinted in Photoshop with a Halftone
+Pattern (Dot, size 4, contrast ~20); no tint in code, as a tint would
+multiply over the painted colour.
 
 **Title logo** is `scifiadventure.png`: the word OBSIDION set in Sci Fi
 Adventure, as an image, drawn at 4x with a tint and shine. Not a usable font.
@@ -306,105 +225,6 @@ sprite.play("level", true);
 The `ignoreIfPlaying` flag is not optional: without it, calling `play()` every
 tick while a key is held restarts the animation continuously.
 
-### The technique that worked: skew the hull, hold the detail layers out
-
-Hand-stepping the bars was tried and rejected — anchoring the spine and moving
-only the bar ends tilts the extremities while the body stays put, which reads
-as bent wings rather than a banked ship. A tilt has to be **pervasive**.
-
-What worked:
-
-1. **Skew `main hull` only.** The shear carries the whole shape at once —
-   top bar shortens, bottom bar lengthens, and the rear curve alters too. That
-   rear curve is what sells it: the tilt becomes a property of the whole
-   object rather than something happening at the tips.
-2. **Keep `hud` and `race stripes` out of the skew.** They stay as fixed
-   reference points, so the hull reads as rotating _relative to_ something
-   stable. It also keeps the dome perfectly circular — a skewed circle reads
-   as damage, not tilt.
-3. **Pen work after.** Lengthen the light edge along the top of the upper bar,
-   shorten it underneath. A lit surface rotating does more for the illusion
-   than the silhouette does.
-4. **Clean up.** Skew interpolates, and indexed mode snaps the new colours to
-   the nearest palette entry, so edges need filling in by hand. Unavoidable
-   labour, not a flaw in the method.
-5. **bank-down is bank-up flipped vertically.** Alt+N to duplicate the frame
-   with all cels, select all four cels in the timeline, `Edit → Flip
-Vertical`. Lossless. Check the race stripes went with it — flip acts on
-   selected cels only, and the hull dominates the silhouette enough to hide a
-   partial flip.
-
-### Export, when the time comes
-
-`File → Export Sprite Sheet`: JSON Data on, **Array** format, **Tags** ticked,
-**trim off**. Phaser indexes Aseprite frames numerically, so Hash format will
-not load. Trim off keeps every frame 32x32 sharing one centre — trimmed
-asymmetric frames put the origin in a slightly different place per frame and
-the ship jitters a pixel between states, which is 3px on screen at 3x.
-
-**Next:** thruster flicker, hit flash, then enemy art.
-
-### HUD lives icon: more pixellated -- to do
-
-The ship next to the score is the right size but too sharp: it is the full
-32x32 ship at 1.2x, so each art pixel is ~1 screen px, while the font's
-bricks are 3px. Make a **separate copy of the ship for the score**, shrunk in
-Aseprite (`Sprite → Sprite Size`, Nearest-neighbor, then touch up by hand),
-and draw it bigger in `HudScene.js` so it stays the same size but chunkier:
-
-| Export | Scale | On screen         | Pixel size                |
-| ------ | ----- | ----------------- | ------------------------- |
-| 16x16  | 2.4   | 38px, same as now | ~2.4px (recommended)      |
-| 16x16  | 2     | 32px              | 2px, even                 |
-| 11x11  | 3.5   | 38px              | ~3.5px, close to the font |
-
----
-
-## Enemies & Waves
-
-**No single enemies.** Everything arrives as a formation, Delta style. A lone
-drifting enemy is the thing that makes a shooter feel empty; a wave that has
-to be read and threaded is the thing that makes it feel alive.
-
-### Wave structure
-
-The wave **sequence** is lifted from Delta, one level at a time: which kind
-of wave comes when, how often a kind repeats, where a new one breaks in. Not
-the enemy art, and not the exact motion -- only the order and rhythm of
-variation. A flirt with Delta, not a copy.
-
-Each level's sequence is worked out when that level is reached. Nothing is
-planned ahead.
-
-Notation: each letter is a **kind** of wave (an enemy type plus the way it
-moves). Repeating a letter means the same kind again, and it can take a
-different formation shape.
-
-#### Level 1 -- from Delta level 2
-
-```
-A1x4  B1  C1  A1  D1x2
-```
-
-Same notation as level 2: a number after the letter marks a new alien, `xN`
-is how many times that wave comes in a row.
-
-| Wave | Kind | In the game                                                                     | Delta reference                                          |
-| ---- | ---- | ------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| 1    | A1   | Neutron, sinus-pinch                                                            | Ring craft, two curved groups above and below the middle |
-| 2    | A1   | Neutron, sinus-center from the bottom                                           | Ring craft, loose diagonal string                        |
-| 3    | A1   | Neutron, sinus-center from the top                                              | Ring craft, loose arc                                    |
-| 4    | A1   | Neutron, sinus-pinch                                                            | Ring craft, tall curved column                           |
-| 5    | B1   | Clover, sinus-edges, bottom then top; full top chain drops the bullet power-up | Hex blocks linked into a chain, bent into an arch        |
-| 6    | C1   | Firering circle                                                                 | Blocky craft in a straight horizontal line, mid-height   |
-| 7    | A1   | Neutron, sinus-center from the bottom, 4th odd                                  | Ring craft returns                                       |
-| 8    | D1   | Greywing wall, 5 hits                                                           | Multicoloured blocks in a diagonal chain                 |
-| 9    | D1   | Greywing wall, flipped stagger, 0.5s behind                                     | --                                                       |
-
-The rhythm: one kind carries the opening four waves, two new kinds arrive
-back to back, the familiar kind returns as a breather, and a last new kind
-closes the level. Four kinds over eight waves.
-
 ### Speeds
 
 Settled 2026-09-29, by playing. Two speeds, fast-paced like Delta:
@@ -417,29 +237,6 @@ Settled 2026-09-29, by playing. Two speeds, fast-paced like Delta:
 New aliens start from one of these. The gap between aliens in a chain is
 worked out from the speed, so it stays one sprite width either way.
 
-### Wave Attack Patterns
-
-Named by the motion, not the alien, so any alien can fly any pattern and
-patterns come back through the levels, as in Delta. For now each class is
-still tied to its alien; they get detached later.
-
-| Pattern          | Motion                                                                                                                                          | Used in                      | Code              |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ----------------- |
-| **sinus-pinch**  | Two mirrored chains, above and below the middle, dip toward each other and pull apart again                                                     | Level 1 waves 1, 4 (neutron) | `NeutronWave`     |
-| **sinus-center** | One chain enters above or below the middle, swings out, curves onto the centre line and flies straight at the ship                              | Level 1 waves 2, 3 (neutron) | `NeutronDiveWave` |
-| **sinus-edges**  | A chain of seven enters just in from the bottom, eases onto the bottom edge and races off; 2s later the same along the top. Fast, a memory test | Level 1 wave 5 (clover)      | `CloverWave`      |
-
-### Future patterns
-
-Not built yet; to come later.
-
-**Static pulse -- an alternate greywing pattern.** The greywing wall
-(`GreywingWave`: six stacked, odd and even rows), but it does not fly across
-the screen. It stays where it is and pulses, as in Armalyte: the ships
-appear, then one set suddenly backs off as the other moves forward, then they
-swap -- the ones that backed off come forward again. Odd rows pulse forward
-while even rows pulse back, with some inertia. No sinus-to-centre in it.
-
 ### Enemy roster
 
 This is the main body of art still to draw. Canvas convention as the player
@@ -448,25 +245,6 @@ ship: 32x32, indexed, untrimmed, one folder per entity under
 Tags on, trim off, and **Item Filename set to `{frame}`** — Phaser's
 `createFromAseprite()` looks the frames up by index, and Aseprite's default
 filename template silently breaks it.
-
-### Wave B -- pulsating blobs (idea)
-
-Five oscillating blobs in a row, each a different colour, moving together
-and pulsating: `O O O O O`.
-
-- **One file, five colour tags.** Paint the blob's frames, copy the whole
-  frame range four times (Ctrl-drag in the timeline), recolour each copy,
-  and tag them `blob-red`, `blob-green` and so on. One export, one sheet,
-  one load.
-- **Each O is its own sprite.** Aseprite has one timeline, but in the game
-  every sprite has its own playhead on the same sheet, so five sprites can
-  each play their own colour tag at once. Started together, with the same
-  frame count and timing, they pulse in perfect sync, one long blob.
-- **Ripple for free:** start each O a little after the one before and the
-  pulse travels along the chain like a wave. Same art, different start
-  times in code.
-- Separate sprites also mean each O can be shot on its own, and the chain
-  can bend and move like the neutron chains.
 
 ### Power drops
 
@@ -566,38 +344,6 @@ impacts carry the entire feel of the game**. That is an argument for spending
 real time on the first 100ms of a kill — the hit flash and the debris — over
 anything more elaborate.
 
-## Not in this build
-
-**Powerups are v2.** Deliberately out of scope until the three levels, the
-enemy roster and the wave patterns are done.
-
----
-
-## Aseprite
-
-### The timeline model
-
-Three separate things, easy to conflate:
-
-- **Layers** (vertical, left panel) — construction aids. Hull, cockpit,
-  shading. On export they are **flattened** into one image. The game never
-  sees them.
-- **Frames** (horizontal, top of timeline) — animation steps. Each frame is
-  all visible layers composited at that point.
-- **Cels** — the intersection of a layer and a frame: the pixels belonging to
-  _this layer_ at _this frame_. You never create cels directly; you create a
-  frame and Aseprite gives you a cel on every layer.
-- **Tags** — a named range _over frames_. Select frames 5–8, right-click, New
-  Tag, call it `bank-up`. That is all a tag is.
-
-`Frame → New Frame` (Alt+N) duplicates the current frame _including all its
-cels_. `New Empty Frame` (Alt+Shift+N) gives blank cels instead.
-
-Avoid linked cels for banking — every layer shifts, so linking fights you.
-
-The timeline is **1-based**; the exported JSON and Phaser are **0-based**.
-Tags insulate you from this entirely, which is the point of them.
-
 ### Held state vs played animation
 
 Same mechanism, different use.
@@ -636,13 +382,3 @@ sprites by a square 3x. Get the multicolour feel by drawing in 2px-wide horizont
 instead.
 
 Palette is DB32 — see the Palette section above.
-
-### Banking: skew, do not rotate
-
-The working technique is in the Player Ship section above. The short version:
-skew `main hull` only, hold the detail layers out so the eye has fixed
-reference points, pen the light edges afterwards, clean up the interpolated
-pixels by hand.
-
-Do **not** hand-step the bars while anchoring the spine. It was tried and it
-reads as bent wings rather than a banked ship — a tilt has to be pervasive.
