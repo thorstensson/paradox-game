@@ -58,9 +58,10 @@ import firecometJsonUrl from "./assets/enemies/firecomet/firecomet.json?url";
 // plain image, not an atlas.
 import emberstarUrl from "./assets/enemies/emberstar/emberstar.png?url";
 
-// Dragon, level 2 B1. 64x32 indexed, two frames: the head under dragon-head
-// and one body circle under dragon-circle, painted where they join. Same
-// export settings as the ship.
+// Dragon, level 2 B1. 64x32 indexed, three frames: the head under
+// dragon-head, the paler hit head under dragon-head-hit, and one body circle
+// under dragon-body, painted where they join. Same export settings as the
+// ship.
 import dragonUrl from "./assets/enemies/dragon/dragon.png?url";
 import dragonJsonUrl from "./assets/enemies/dragon/dragon.json?url";
 

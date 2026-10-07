@@ -11,26 +11,31 @@ import { paintedBox } from "./FirecometTrack";
 // moment before, so a bend in the head rolls down the body one joint after
 // another. Every piece tilts to point along the curve.
 //
-// Only the head can kill it: 10 hits and the whole dragon blows, every piece
-// at once. The circles soak up shots and shield the head.
+// Only the head can kill it: 60 hits and the whole dragon blows, every piece
+// at once. Each hit shows the paler head for a moment. The circles soak up
+// shots and shield the head.
 //
 // The numbers are a first pass, to be tuned by eye.
 
 // 64x32 frames, drawn at 3x like every alien.
 const DRAGON_SCALE = 3;
 
-// Frame names in dragon.json: the head, then one circle, painted in the same
-// spot they join in.
+// Frame names in dragon.json (counted from 0): the head (dragon-head), the
+// paler head shown when hit (dragon-head-hit), then one circle
+// (dragon-body), painted in the same spot they join in.
 const HEAD_FRAME = "0";
-const BODY_FRAME = "1";
+const BODY_FRAME = "2";
 
 // Circles behind the head.
-const BODY_LENGTH = 9;
+const BODY_LENGTH = 13;
 
 // Bullets the head soaks up before the dragon blows.
-const HITS = 10;
+const HITS = 60;
 
-// Score per piece when the dragon blows: 10 pieces, 2000.
+// How long the paler head shows after a hit, ms.
+const HIT_FLASH = 50;
+
+// Score per piece when the dragon blows: 14 pieces, 2800.
 const POINTS = 200;
 
 // Toward the ship, px/s, right to left: half the slowest alien's speed.
@@ -105,11 +110,14 @@ export class DragonWave {
 
         for (let i = 0; i < BODY_LENGTH; i++) {
             const behind = this.head_gap + i * this.body_gap;
-            this.pieces.push(this.makePiece(BODY_FRAME, "dragon-circle", body_box, behind));
+            this.pieces.push(this.makePiece(BODY_FRAME, "dragon-body", body_box, behind));
         }
 
         this.head = this.pieces[0];
         this.head.hits = HITS;
+
+        // Game time the paler head goes back to normal; 0 while it is normal.
+        this.head.hit_until = 0;
 
         this.place();
     }
@@ -209,7 +217,7 @@ export class DragonWave {
         return this.pieces.some((piece) => player.touches(this.bounds(piece, rect)));
     }
 
-    update(_time, delta, bullets, explosions) {
+    update(time, delta, bullets, explosions) {
         if (this.done) {
             return;
         }
@@ -237,8 +245,19 @@ export class DragonWave {
             bullets.collide(target, () => {
                 if (piece === this.head) {
                     this.head.hits--;
+
+                    if (this.head.hit_until === 0) {
+                        this.head.play({ key: "dragon-head-hit", repeat: -1 });
+                    }
+
+                    this.head.hit_until = time + HIT_FLASH;
                 }
             });
+        }
+
+        if (this.head.hit_until !== 0 && time >= this.head.hit_until) {
+            this.head.hit_until = 0;
+            this.head.play({ key: "dragon-head", repeat: -1 });
         }
 
         if (this.head.hits <= 0) {
