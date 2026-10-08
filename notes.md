@@ -4,10 +4,10 @@ I am building a 2D horizontal space shooter in Phaser 3 using pure JavaScript. W
 
 - **Canvas:** 1280 x 800 -- 4x the C64 playfield (320 x 200).
 - **Window fit:** `Scale.NONE` plus an integer `zoom` (largest whole multiple that fits the window), so the canvas is never stretched by a fractional amount.
-- **Clear colour:** `#000000`, framed by the page's `#111111` (`style.css`).
+- **Clear colour:** `#000000`, framed by the page's `#7488c8` (`style.css`).
 - **Sprites (ships, enemies, bullets):** 3x. See **Sprite Scale: 3x** below.
 - **Title logo:** 4x.
-- **Main font:** Techbase, drawn 1:1 at 27px (HUD) and 18px (all other text). See **Fonts** below.
+- **Main font:** Techbase, drawn 1:1 at 27px (all text). See **Fonts** below.
 - **Stars:** 1/2/3px screen-pixel dots (`StarField.js`), not on any texel grid.
 
 * **Rendering Rule:** Always apply `pixelArt: true` in the Phaser config. This already forces `NEAREST` filtering globally, so per-object `setFilterMode` calls are not needed.
@@ -46,8 +46,8 @@ obsidion/
 │ │ └── bullet/ # ship-bullet.png, 8x2
 │ └── fonts/
 │ ├── scifiadventure.png # Title logo image (OBSIDION only, not a full font)
-│ ├── techbase-27.fnt + techbase-27_0.png # main-font, HUD (BMFont)
-│ └── techbase-18.fnt + techbase-18_0.png # small-font, intro / pause / level titles / game over (BMFont)
+│ ├── techbase-27.fnt + techbase-27_0.png # main-font, all text (BMFont)
+│ └── techbase-18.fnt + techbase-18_0.png # unused
 │
 ├── gameobjects/
 │ ├── Player.js # Mouse-steered ship, banking, autofire. SHIP_SCALE = 3
@@ -183,9 +183,7 @@ text except the logo. Its grid is 9 bricks, so it is exported at multiples of
 9 to keep every brick an even square:
 
 - `techbase-27.fnt` + `techbase-27_0.png` (key `main-font`): 3px per brick,
-  the HUD score at 27.
-- `techbase-18.fnt` + `techbase-18_0.png` (key `small-font`): 2px per brick,
-  intro, pause, level titles and Game Over at 18.
+  all text at 27 -- HUD, intro, pause, level titles and Game Over.
 
 Made with **AngelCode BMFont**: font smoothing off, preset _White text with
 alpha_, font descriptor **XML**, textures **png**, **256x256**, one page each
@@ -227,12 +225,15 @@ tick while a key is held restarts the animation continuously.
 
 ### Speeds
 
-Settled 2026-09-29, by playing. Two speeds, fast-paced like Delta:
+Settled by playing, fast-paced like Delta:
 
-| Kind    | Speed    | Used by          |
-| ------- | -------- | ---------------- |
-| Regular | 415 px/s | Neutron (wave A) |
-| Fast    | 623 px/s | Clover (wave B)  |
+| Kind    | Speed      | Used by                       |
+| ------- | ---------- | ----------------------------- |
+| Fast    | 716 px/s   | Clover, greywing, firecomet   |
+| Medium  | 596.5 px/s | Delta                         |
+| Regular | 477 px/s   | Neutron                       |
+| Slow    | 161 px/s   | Firering, emberstar           |
+| Dragon  | 80 px/s    | Dragon                        |
 
 New aliens start from one of these. The gap between aliens in a chain is
 worked out from the speed, so it stays one sprite width either way.

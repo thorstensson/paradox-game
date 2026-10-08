@@ -91,9 +91,6 @@ import firecaveJsonUrl from "./assets/enviro/firecave/firecave.json?url";
 // so every brick stays an even square.
 import mainFontUrl from "./assets/fonts/techbase-27_0.png?url";
 import mainFontXmlUrl from "./assets/fonts/techbase-27.fnt?url";
-// The same font exported at 18px (2px per brick) for the smaller intro text.
-import smallFontUrl from "./assets/fonts/techbase-18_0.png?url";
-import smallFontXmlUrl from "./assets/fonts/techbase-18.fnt?url";
 
 // Class to preload all the assets
 // Remember you can load this assets in another scene if you need it
@@ -128,7 +125,6 @@ export class Preloader extends Phaser.Scene {
 
         // Fonts
         this.load.bitmapFont("main-font", mainFontUrl, mainFontXmlUrl);
-        this.load.bitmapFont("small-font", smallFontUrl, smallFontXmlUrl);
 
         // Event to update the loading bar
         this.load.on("progress", (progress) => {
@@ -143,8 +139,6 @@ export class Preloader extends Phaser.Scene {
         // draws every string upside down. Flipped back once, here.
         const main_font = this.cache.bitmapFont.get("main-font").data;
         main_font.size = Math.abs(main_font.size);
-        const small_font = this.cache.bitmapFont.get("small-font").data;
-        small_font.size = Math.abs(small_font.size);
 
         // When all the assets are loaded go to the next scene
         this.scene.start("MainScene");

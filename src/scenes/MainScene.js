@@ -25,13 +25,13 @@ const FIRST_WAVE_DELAY = 2500;
 
 // Shown mid-screen before the level starts, as Delta does: fades in, holds,
 // fades out, and only then does the ship fly in. ms.
-const LEVEL_TITLE = "DEEP SPACE";
+const LEVEL_TITLE = "INTO THE BREACH\nPLAYER ONE";
 const LEVEL_TITLE_FADE = 500;
 const LEVEL_TITLE_HOLD = 2000;
 
 // Level 2 follows level 1 without a break: the ship flies on, the title comes
 // up over the stars, then the fire cave slides in over them.
-const LEVEL_2_TITLE = "EMBER CAVES";
+const LEVEL_2_TITLE = "ENTERING\nEMBER CAVES";
 
 // From the last level 1 wave being gone to the level 2 title, ms.
 const LEVEL_2_DELAY = 3000;
@@ -226,13 +226,13 @@ export class MainScene extends Scene {
             // and GAME OVER.
             this.scale.width / 2,
             this.scale.height / 2 - HUD_BAND,
-            "small-font",
+            "main-font",
             text,
-            18
+            27
         ).setOrigin(0.5, 0.5).setAlpha(0);
 
         title.setCenterAlign();
-        title.setLineSpacing(6);
+        title.setLineSpacing(9);
 
         // PAUSED sits in the same spot, so the title steps aside while it is
         // up and comes back to finish its fade once play resumes.

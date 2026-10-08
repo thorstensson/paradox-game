@@ -28,9 +28,9 @@ export class MenuScene extends Scene {
         const start_msg = this.add.bitmapText(
             this.scale.width / 2,
             this.scale.height / 2 + 120,
-            "small-font",
+            "main-font",
             "PLAYER ONE\nCLICK TO START",
-            18
+            27
         ).setOrigin(0.5, 0.5);
 
         // setOrigin centres the block; this centres the lines within it.
@@ -38,7 +38,7 @@ export class MenuScene extends Scene {
 
         // The font's own line gap is one brick (2px); 6px more makes it
         // four bricks, so the two lines don't touch.
-        start_msg.setLineSpacing(6);
+        start_msg.setLineSpacing(9);
 
         // The year in Roman numerals above the logo, as Delta has it. Same
         // gap above the logo as PLAYER ONE sits below it, measured from the
@@ -49,18 +49,18 @@ export class MenuScene extends Scene {
         this.add.bitmapText(
             this.scale.width / 2,
             logo_bounds.top - gap,
-            "small-font",
+            "main-font",
             "MMXXVI",
-            18
+            27
         ).setOrigin(0.5, 1);
 
         // Byline, centred along the bottom of the screen.
         this.add.bitmapText(
             this.scale.width / 2,
             this.scale.height - 40,
-            "small-font",
+            "main-font",
             "BY THOMAS THORSTENSSON",
-            18
+            27
         ).setOrigin(0.5, 1);
 
 

@@ -13,16 +13,16 @@ export class PauseScene extends Scene {
         const msg = this.add.bitmapText(
             this.scale.width / 2,
             this.scale.height / 2,
-            "small-font",
+            "main-font",
             "PAUSED\nCLICK TO CONTINUE",
-            18
+            27
         ).setOrigin(0.5, 0.5);
 
         // setOrigin centres the block; this centres the lines within it.
         msg.setCenterAlign();
 
         // Same as the intro: 6px on top of the font's one-brick line gap.
-        msg.setLineSpacing(6);
+        msg.setLineSpacing(9);
 
         // Chrome refuses a new lock for about a second after Esc. If the
         // click comes too soon nothing happens, and the next click works.

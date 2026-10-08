@@ -3,24 +3,25 @@ import { paintedBox } from "./FirecometTrack";
 
 // Level 2, the delta (notes.md -> Wave sequence per level).
 //
-// Two chains of seven deltas, one after the other. The first enters from
+// Two chains of ten deltas, one after the other. The first enters from
 // the right just clear of the bottom flames, dips up to touch the centre
 // line at mid-screen and heads back out to the bottom, then races off. The
 // second comes almost on its tail and does the same from the top: -_-.
-// Fast and merciless, like the clover.
+// Between the neutron's pace and the clover's.
 //
 // The numbers are a first pass, to be tuned by eye.
 
 // 32x32 native, drawn at 3x like every alien.
 const DELTA_SCALE = 3;
 
-const CHAIN_LENGTH = 7;
+const CHAIN_LENGTH = 10;
 
 // Score for shooting one down.
 const POINTS = 100;
 
-// Horizontal speed, px/s, right to left: the clover's.
-const SPEED = 716;
+// Horizontal speed, px/s, right to left: exactly between the neutron's 477
+// and the clover's 716.
+const SPEED = 596.5;
 
 // Time between deltas in a chain, ms, worked out from SPEED so the gap
 // between their centres stays one sprite width (96px) at any speed.
@@ -39,8 +40,9 @@ const DIP_START = 0.25;
 const DIP_END = 0.75;
 
 // From the bottom chain's last delta appearing to the top chain's first, ms:
-// the top chain comes in almost on the bottom chain's tail (~360px behind).
-const TOP_DELAY = 500;
+// the top chain comes in almost on the bottom chain's tail, 358px behind.
+// Worked out from SPEED so the distance holds at any speed.
+const TOP_DELAY = 358 / SPEED * 1000;
 
 export class DeltaWave {
 
