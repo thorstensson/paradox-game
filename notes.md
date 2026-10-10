@@ -260,6 +260,11 @@ Instead of Delta's block pick-ups, a Nemesis-style power drop.
 - A missed drop drifts off slowly and steadily.
 - Power-ups are temporary (lives are not). Durations to try out later.
 - Needs ship collision first.
+- **Shield** (built): drops from level 2's last neutron wave, top chain. A
+  quarter ring spins round the ship for 60s and stops enemy bullets, not
+  aliens.
+- **Seeking missile** (to build): fired from the top of the ship every 3s,
+  steers to the nearest alien, hits harder than a bullet.
 
 ### Testing a single wave -- later
 
