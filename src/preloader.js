@@ -70,6 +70,10 @@ import dragonJsonUrl from "./assets/enemies/dragon/dragon.json?url";
 import deltaUrl from "./assets/enemies/delta/delta.png?url";
 import deltaJsonUrl from "./assets/enemies/delta/delta.json?url";
 
+// Ember ring, level 2's last wave. 64x64 indexed, one frame -- Phaser spins
+// it, so a plain image, not an atlas.
+import emberRingUrl from "./assets/enemies/ember-ring/ember-ring.png?url";
+
 // Enemy bullet, fired by aliens from level 2's A2 on. 6x6 indexed, two
 // frames under one looping tag, bullet-enemy-blink. Same export settings as
 // the ship.
@@ -80,6 +84,16 @@ import bulletEnemyJsonUrl from "./assets/enemies/bullet/bullet-enemy.json?url";
 // looping tag, powerup-blink. Same export settings as the ship.
 import powerupBulletsUrl from "./assets/powerups/powerup-bullets.png?url";
 import powerupBulletsJsonUrl from "./assets/powerups/powerup-bullets.json?url";
+
+// Power-up, the shield drop. Same as the bullet drop, its own icon, tag
+// powerup-shield-blink.
+import powerupShieldUrl from "./assets/powerups/powerup-shield.png?url";
+import powerupShieldJsonUrl from "./assets/powerups/powerup-shield.json?url";
+
+// The shield round the ship. 32x32 indexed, a quarter ring, two frames under
+// shield-spin (a dark blue blink); Phaser turns it.
+import shieldUrl from "./assets/shield/shield.png?url";
+import shieldJsonUrl from "./assets/shield/shield.json?url";
 
 // Fire cave, level 2's walls. 128x64 indexed, ten frames under the tag
 // firecave-loop. Same export settings as the ship.
@@ -120,8 +134,11 @@ export class Preloader extends Phaser.Scene {
         this.load.image("emberstar", emberstarUrl);
         this.load.aseprite("dragon", dragonUrl, dragonJsonUrl);
         this.load.aseprite("delta", deltaUrl, deltaJsonUrl);
+        this.load.image("ember-ring", emberRingUrl);
         this.load.aseprite("bullet-enemy", bulletEnemyUrl, bulletEnemyJsonUrl);
         this.load.aseprite("powerup-bullets", powerupBulletsUrl, powerupBulletsJsonUrl);
+        this.load.aseprite("powerup-shield", powerupShieldUrl, powerupShieldJsonUrl);
+        this.load.aseprite("shield", shieldUrl, shieldJsonUrl);
 
         // Fonts
         this.load.bitmapFont("main-font", mainFontUrl, mainFontXmlUrl);

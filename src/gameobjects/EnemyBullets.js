@@ -78,7 +78,8 @@ export class EnemyBullets {
                 || bullet.y < -this.margin
                 || bullet.y > this.height + this.margin;
 
-            if (gone) {
+            // Stopped by the ship's shield, if it is on.
+            if (gone || this.scene.player.shieldBlocks(bullet.x, bullet.y)) {
                 bullet.destroy();
                 return false;
             }

@@ -7,7 +7,13 @@ import { paintedBox } from "./FirecometTrack";
 // to it; missed, it drifts off the left edge. The player's shots pass
 // through it.
 //
-// Catching one switches on double bullets (Player.startDouble).
+// Two kinds, alike in every way but the icon and what catching one does:
+// "bullets" switches on double bullets (Player.startDouble), "shield" the
+// spinning shield (Player.startShield).
+const KINDS = {
+    bullets: { key: "powerup-bullets", tag: "powerup-blink", start: "startDouble" },
+    shield: { key: "powerup-shield", tag: "powerup-shield-blink", start: "startShield" }
+};
 
 // 16x16 native, drawn at 3x like everything else: 48px on screen.
 const POWERUP_SCALE = 3;
@@ -30,10 +36,12 @@ export class PowerUps {
     }
 
     // A drop appears at (x, y), where the wave's last alien blew up.
-    spawn(x, y) {
-        const drop = this.scene.add.sprite(x, y, "powerup-bullets");
+    spawn(x, y, kind = "bullets") {
+        const { key, tag } = KINDS[kind];
+        const drop = this.scene.add.sprite(x, y, key);
         drop.setScale(POWERUP_SCALE);
-        drop.play({ key: "powerup-blink", repeat: -1 });
+        drop.play({ key: tag, repeat: -1 });
+        drop.kind = kind;
 
         this.drops.push(drop);
     }
@@ -57,9 +65,9 @@ export class PowerUps {
                 this.hit_box.h * POWERUP_SCALE
             );
 
-            // Caught: double bullets.
+            // Caught.
             if (player.touches(box)) {
-                player.startDouble();
+                player[KINDS[drop.kind].start]();
                 drop.destroy();
                 return false;
             }

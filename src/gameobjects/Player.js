@@ -40,7 +40,7 @@ const MAX_SLICE = 1 / 120;
 // fast, forceful move -- faster than the neutrons fly (415). A slow drift,
 // diagonal or not, stays level. EXIT lets it level out once the throw is
 // over rather than holding the bank through the glide after it.
-const BANK_ENTER = 450;
+const BANK_ENTER = 400;
 const BANK_EXIT = 150;
 
 // Once a bank starts it holds at least this long, in ms. Mouse events arrive
@@ -88,6 +88,27 @@ const ARM_Y = 5 * SHIP_SCALE;
 // at once.
 const DOUBLE_TIME = 60000;
 
+// The shield, from the shield power-up: a quarter ring (shield.png, painted
+// 12 to 3 o'clock round the canvas centre) spinning round the ship. Enemy
+// bullets that reach it on the quarter it covers are destroyed; aliens are
+// not stopped. Lasts SHIELD_TIME; losing the ship ends it at once.
+const SHIELD_TIME = 60000;
+
+// Spin, degrees per second, clockwise.
+const SHIELD_SPIN = 360;
+
+// How far out a bullet is stopped, screen px from the ship's centre: the
+// ring's outer edge (15 native px) plus a bullet's half-width (3 native).
+const SHIELD_REACH = (15 + 3) * SHIP_SCALE;
+
+// The ring's centre sits this far left of the ship's, screen px: 2 native
+// px, since the Raven is painted a little toward the back of its canvas.
+const SHIELD_NUDGE = 2 * SHIP_SCALE;
+
+// The painted quarter, degrees, at an angle of 0: 12 o'clock to 3 o'clock.
+const SHIELD_FROM = -90;
+const SHIELD_TO = 0;
+
 // Where the ship waits off-screen before flying in.
 const START_X = -190;
 
@@ -122,6 +143,10 @@ export class Player extends Physics.Arcade.Sprite {
     // so the minute stops while the game is paused.
     double = false;
     double_timer = null;
+
+    // The shield sprite while it is on, and the timer that turns it off.
+    shield = null;
+    shield_timer = null;
 
     // Earliest time the current bank may be given up.
     bank_until = 0;
@@ -210,7 +235,8 @@ export class Player extends Physics.Arcade.Sprite {
     }
 
     // delay: ms before the fly-in begins.
-    start(delay = 1000) {
+    // onReady: called once the ship is in and under control.
+    start(delay = 1000, onReady = null) {
         this.state = "start";
 
         // Fly in from off-screen left, then hand control to the mouse.
@@ -226,6 +252,7 @@ export class Player extends Physics.Arcade.Sprite {
                 this.speed_x = 0;
                 this.speed_y = 0;
                 this.state = "can_move";
+                onReady?.();
             }
         });
     }
@@ -236,6 +263,7 @@ export class Player extends Physics.Arcade.Sprite {
         this.state = "removed";
         this.setVisible(false);
         this.endDouble();
+        this.endShield();
     }
 
     // The bullet power-up is caught: double bullets for DOUBLE_TIME. Catching
@@ -262,8 +290,55 @@ export class Player extends Physics.Arcade.Sprite {
         }
     }
 
+    // The shield power-up is caught: the ring spins round the ship for
+    // SHIELD_TIME.
+    startShield() {
+        this.endShield();
+
+        this.shield = this.scene.add.sprite(this.x - SHIELD_NUDGE, this.y, "shield");
+        this.shield.setScale(SHIP_SCALE);
+        this.shield.play({ key: "shield-spin", repeat: -1 });
+
+        this.shield_timer = this.scene.time.delayedCall(
+            SHIELD_TIME, () => this.endShield()
+        );
+    }
+
+    endShield() {
+        if (this.shield) {
+            this.shield.destroy();
+            this.shield = null;
+        }
+
+        if (this.shield_timer) {
+            this.shield_timer.remove();
+            this.shield_timer = null;
+        }
+    }
+
+    // True if the shield stops an enemy bullet at (x, y): within reach of
+    // the ship's centre, on the quarter the ring covers right now.
+    shieldBlocks(x, y) {
+        if (!this.shield) {
+            return false;
+        }
+
+        const dx = x - this.shield.x;
+        const dy = y - this.shield.y;
+
+        if (dx * dx + dy * dy > SHIELD_REACH * SHIELD_REACH) {
+            return false;
+        }
+
+        const at = PhaserMath.Angle.WrapDegrees(
+            PhaserMath.RadToDeg(Math.atan2(dy, dx)) - this.shield.angle
+        );
+
+        return at >= SHIELD_FROM && at <= SHIELD_TO;
+    }
+
     // Back in after losing a life: level, mid-height, flying in at once.
-    respawn() {
+    respawn(onReady = null) {
         this.setPosition(START_X, this.scene.cameras.main.height / 2);
         this.setVisible(true);
         this.bank_velocity = 0;
@@ -272,7 +347,7 @@ export class Player extends Physics.Arcade.Sprite {
         this.speed_y = 0;
         this.bank = null;
         this.setBank("level", 0, true);
-        this.start(0);
+        this.start(0, onReady);
     }
 
     // True while the ship can be hit (only in play) and a painted pixel of
@@ -488,6 +563,12 @@ export class Player extends Physics.Arcade.Sprite {
         if (this.bank === "level" && !this.anims.isPlaying
             && this.anims.currentAnim.key !== "level") {
             this.play("level");
+        }
+
+        // The shield rides on the ship's centre, turning.
+        if (this.shield) {
+            this.shield.setPosition(this.x - SHIELD_NUDGE, this.y);
+            this.shield.angle += SHIELD_SPIN * step;
         }
     }
 

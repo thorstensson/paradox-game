@@ -53,8 +53,15 @@ export class NeutronWave {
     // sides: which chains fly, -1 for the top and 1 for the bottom.
     // odd: position in the chain (from 1) of the odd-coloured neutron, or
     // null for none.
-    constructor(scene, sides = [-1, 1], odd = null) {
+    // inverted: level 1's motion mirrored -- the chains fly in from the
+    // centre and spread out, instead of dipping in (level 2).
+    // drop: kind of power-up dropped when every neutron is shot, out of the
+    // last one's explosion, or null for none.
+    constructor(scene, sides = [-1, 1], odd = null, inverted = false, drop = null) {
         this.scene = scene;
+        this.inverted = inverted;
+        this.drop = drop;
+        this.to_shoot = CHAIN_LENGTH * sides.length;
 
         // Neutrons spawn and despawn fully off-screen, half a sprite past
         // each edge.
@@ -96,7 +103,9 @@ export class NeutronWave {
     // x is at the same height there: the chain traces one curve.
     pathY(x, side) {
         const t = (this.start_x - x) / (this.start_x - this.end_x);
-        const offset = EDGE_OFFSET - DIP * Math.sin(Math.PI * t);
+        const offset = this.inverted
+            ? EDGE_OFFSET - DIP + DIP * Math.sin(Math.PI * t)
+            : EDGE_OFFSET - DIP * Math.sin(Math.PI * t);
 
         return this.scene.cameras.main.height / 2 + side * offset;
     }
@@ -145,6 +154,12 @@ export class NeutronWave {
             if (hit) {
                 explosions.spawn(neutron.x, neutron.y);
                 this.scene.addPoints(neutron.points);
+
+                this.to_shoot--;
+
+                if (this.drop && this.to_shoot === 0) {
+                    this.scene.powerups.spawn(neutron.x, neutron.y, this.drop);
+                }
                 neutron.destroy();
                 return false;
             }
@@ -171,16 +186,24 @@ const DIVE_LEVEL_AT = 0.45;
 
 export class NeutronDiveWave extends NeutronWave {
 
-    constructor(scene, side, odd = null) {
-        super(scene, [side], odd);
+    constructor(scene, side, odd = null, inverted = false, drop = null) {
+        super(scene, [side], odd, inverted, drop);
     }
 
     // The half-cosine carries the chain from the edge offset in to the
     // centre, the squared sine adds the swing out; both are flat at each
     // end, so the chain enters level and meets the centre line without a
     // kink.
+    //
+    // Inverted (level 2): the same path mirrored -- the chain enters along
+    // the centre line, swings out and curves away to its edge.
     pathY(x, side) {
-        const t = (this.start_x - x) / (this.start_x - this.end_x);
+        let t = (this.start_x - x) / (this.start_x - this.end_x);
+
+        if (this.inverted) {
+            t = 1 - t;
+        }
+
         const u = Math.min(t / DIVE_LEVEL_AT, 1);
         const offset = DIVE_EDGE_OFFSET * (1 + Math.cos(Math.PI * u)) / 2
             + DIVE_SWING * Math.sin(Math.PI * u) ** 2;

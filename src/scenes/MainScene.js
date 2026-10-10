@@ -1,7 +1,9 @@
-import { Scene } from "phaser";
+import { GameObjects, Scene } from "phaser";
 import { CloverWave } from "../gameobjects/CloverWave";
 import { DeltaWave } from "../gameobjects/DeltaWave";
 import { DragonWave } from "../gameobjects/DragonWave";
+import { EmberRingWave } from "../gameobjects/EmberRingWave";
+import { EnemyBullets } from "../gameobjects/EnemyBullets";
 import { EmberstarWave } from "../gameobjects/EmberstarWave";
 import { Explosions } from "../gameobjects/Explosions";
 import { FireCave } from "../gameobjects/FireCave";
@@ -73,8 +75,36 @@ const WAVES = [
 const LEVEL_2_WAVES = [
     (scene) => new EmberstarWave(scene),
     (scene) => new DragonWave(scene),
-    (scene) => new DeltaWave(scene)
+    (scene) => new DeltaWave(scene),
+    // Level 1's neutrons, mirrored: in from the centre, spreading out.
+    (scene) => new NeutronWave(scene, [-1, 1], null, true),
+    (scene) => new NeutronDiveWave(scene, 1, null, true),
+    // The top chain drops the shield power-up when shot in full.
+    (scene) => new NeutronDiveWave(scene, -1, null, true, "shield"),
+    (scene) => new EmberRingWave(scene)
 ];
+
+// Removes everything a called-off wave has on screen, whatever kind of wave
+// it is: every sprite it holds, alone or in a list, and its bullets. Plain
+// data (a dragon's trail, hit boxes) is left alone.
+function clearWave(wave) {
+    for (const [ name, value ] of Object.entries(wave)) {
+        if (value instanceof GameObjects.GameObject) {
+            value.destroy();
+            wave[name] = null;
+        } else if (Array.isArray(value)) {
+            const kept = value.filter((item) => !(item instanceof GameObjects.GameObject));
+
+            if (kept.length !== value.length) {
+                value.forEach((item) => item instanceof GameObjects.GameObject && item.destroy());
+                value.length = 0;
+                value.push(...kept);
+            }
+        } else if (value instanceof EnemyBullets) {
+            clearWave(value);
+        }
+    }
+}
 
 export class MainScene extends Scene {
     star_field = null;
@@ -96,9 +126,17 @@ export class MainScene extends Scene {
     // skipped stops sending waves.
     level = 1;
 
-    // Dev only: waves ended with the skip key. Their aliens are cleared every
-    // frame, since a chain can still have aliens due to spawn.
-    skipped = [];
+    // Waves called off: by a lost ship (to be replayed) or, dev only, by the
+    // skip key. Their aliens and bullets are cleared every frame, since a
+    // chain can still have aliens due to spawn.
+    cleared = [];
+
+    // A wave is on its way (its gap is running) but not yet on screen.
+    wave_pending = false;
+
+    // Goes up with every ship lost. A wave timer set before a loss sees it
+    // has changed and sends nothing; the wave is replayed instead.
+    attempt = 0;
 
     points = 0;
     lives = LIVES;
@@ -126,7 +164,9 @@ export class MainScene extends Scene {
         this.level = 1;
         this.fire_cave = null;
         this.firecomets = null;
-        this.skipped = [];
+        this.cleared = [];
+        this.wave_pending = false;
+        this.attempt = 0;
         this.playing = false;
 
         // Reset points and lives
@@ -159,6 +199,8 @@ export class MainScene extends Scene {
         this.anims.createFromAseprite("delta");
         this.anims.createFromAseprite("bullet-enemy");
         this.anims.createFromAseprite("powerup-bullets");
+        this.anims.createFromAseprite("powerup-shield");
+        this.anims.createFromAseprite("shield");
 
         // One animation, Animation, played once per explosion.
         this.anims.createFromAseprite("explosion");
@@ -209,11 +251,7 @@ export class MainScene extends Scene {
             this.showLevelTitle(LEVEL_TITLE, () => {
                 this.player.start();
 
-                this.time.delayedCall(FIRST_WAVE_DELAY, () => {
-                    if (this.level === 1) {
-                        this.wave = WAVES[0](this);
-                    }
-                });
+                this.startWave(FIRST_WAVE_DELAY);
             });
         });
     }
@@ -263,21 +301,36 @@ export class MainScene extends Scene {
         this.wave = null;
         this.wave_index++;
 
-        const level = this.level;
-        const next = (level === 1 ? WAVES : LEVEL_2_WAVES)[this.wave_index];
+        const next = this.levelWaves()[this.wave_index];
 
         if (next) {
-            this.time.delayedCall(next.gap ?? WAVE_GAP, () => {
-                if (this.level === level) {
-                    this.wave = next(this);
-                }
-            });
-        } else if (level === 1) {
+            this.startWave(next.gap ?? WAVE_GAP);
+        } else if (this.level === 1) {
             this.level = 2;
             this.time.delayedCall(LEVEL_2_DELAY, () => this.enterLevel2());
         }
 
         // After level 2's last wave nothing follows yet.
+    }
+
+    levelWaves() {
+        return this.level === 1 ? WAVES : LEVEL_2_WAVES;
+    }
+
+    // Sends the level's wave at wave_index after delay, ms -- unless the
+    // level has changed or a ship has been lost by then.
+    startWave(delay) {
+        const level = this.level;
+        const attempt = this.attempt;
+
+        this.wave_pending = true;
+
+        this.time.delayedCall(delay, () => {
+            if (this.level === level && this.attempt === attempt && this.playing) {
+                this.wave_pending = false;
+                this.wave = this.levelWaves()[this.wave_index](this);
+            }
+        });
     }
 
     // Dev only (the N key): clears the wave on screen, no points, drops the
@@ -289,9 +342,10 @@ export class MainScene extends Scene {
         }
 
         this.level = 2;
+        this.wave_pending = false;
 
         if (this.wave) {
-            this.skipped.push(this.wave);
+            this.cleared.push(this.wave);
             this.wave = null;
         }
 
@@ -312,17 +366,18 @@ export class MainScene extends Scene {
                 this.firecomets = new FirecometTrack(this);
 
                 this.wave_index = 0;
-                this.time.delayedCall(WAVE_GAP, () => {
-                    if (this.level === 2 && this.playing) {
-                        this.wave = LEVEL_2_WAVES[0](this);
-                    }
-                });
+                this.startWave(WAVE_GAP);
             });
         });
     }
 
-    // The ship explodes; the neutron that hit it flies on. One life gone,
-    // then either the next ship flies in or it is GAME OVER.
+    // The ship explodes. One life gone, then either the next ship flies in or
+    // it is GAME OVER.
+    //
+    // As in Delta, a lost ship calls off the wave on screen (or on its way):
+    // its aliens and bullets vanish, no points, and once the next ship is in
+    // the same wave starts again from the beginning. At GAME OVER the wave
+    // flies on under the text.
     shipHit() {
         this.explosions.spawn(this.player.x, this.player.y);
         this.player.leavePlay();
@@ -331,7 +386,21 @@ export class MainScene extends Scene {
         this.scene.get("HudScene").update_lives(this.lives);
 
         if (this.lives > 0) {
-            this.time.delayedCall(RESPAWN_DELAY, () => this.player.respawn());
+            const replay = this.wave !== null || this.wave_pending;
+
+            this.attempt++;
+            this.wave_pending = false;
+
+            if (this.wave) {
+                this.cleared.push(this.wave);
+                this.wave = null;
+            }
+
+            this.time.delayedCall(RESPAWN_DELAY, () => this.player.respawn(() => {
+                if (replay) {
+                    this.startWave(WAVE_GAP);
+                }
+            }));
         } else {
             this.gameOver();
         }
@@ -384,20 +453,14 @@ export class MainScene extends Scene {
                 this.shipHit();
             }
 
-            // Dropped at once, so this fires only once per wave.
-            if (this.wave.done) {
+            // Dropped at once, so this fires only once per wave. A hit may
+            // already have called the wave off.
+            if (this.wave && this.wave.done) {
                 this.nextWave();
             }
         }
 
-        for (const wave of this.skipped) {
-            for (const list of [ wave.neutrons, wave.clovers, wave.rings, wave.wings, wave.stars ]) {
-                if (list) {
-                    list.forEach((alien) => alien.destroy());
-                    list.length = 0;
-                }
-            }
-        }
+        this.cleared.forEach(clearWave);
 
         if (this.fire_cave) {
             this.fire_cave.update(time, delta);
