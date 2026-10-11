@@ -3,6 +3,9 @@
 // stand still while their texture scrolls on at the same speed, so the hand
 // over never shows.
 //
+// At the end of the level the same happens backwards: the texture stops and
+// both strips slide off to the left, open space behind them.
+//
 // A TileSprite has no Animation component, so the firecave-loop tag cannot be
 // played -- the flicker steps through the frames by hand with setFrame().
 
@@ -32,6 +35,11 @@ export class FireCave {
     scroll = 0;
     sliding = true;
 
+    // Set by leave(): sliding out, then gone. onLeft runs once it has gone.
+    leaving = false;
+    gone = false;
+    onLeft = null;
+
     // onFormed runs once, when the strips reach the left edge and the cave
     // fills the screen.
     constructor(scene, onFormed) {
@@ -48,6 +56,7 @@ export class FireCave {
         this.heights = flameHeights(scene, this.frames);
         this.frame_width = this.heights[0].length;
         this.view_height = height;
+        this.width = width;
         this.x = width;
 
         const bottom = scene.add.tileSprite(
@@ -78,8 +87,43 @@ export class FireCave {
         });
     }
 
+    // The level is over: the cave slides out to the left. onLeft runs once
+    // it is off the screen and gone.
+    leave(onLeft) {
+        this.leaving = true;
+        this.onLeft = onLeft;
+    }
+
+    // Removes the cave at once.
+    destroy() {
+        this.timer.remove();
+        this.strips.forEach((strip) => strip.destroy());
+        this.strips = [];
+        this.gone = true;
+    }
+
     update(_time, delta) {
+        if (this.gone) {
+            return;
+        }
+
         let step = SPEED * delta / 1000;
+
+        // The texture holds still, so the flames travel with the strips.
+        if (this.leaving) {
+            this.x -= step;
+
+            for (const strip of this.strips) {
+                strip.x = Math.round(this.x);
+            }
+
+            if (this.x <= -this.width) {
+                this.destroy();
+                this.onLeft?.();
+            }
+
+            return;
+        }
 
         if (this.sliding) {
             this.x -= step;
@@ -119,7 +163,7 @@ export class FireCave {
     hits(player) {
         const columns = player.paintedColumns();
 
-        if (!columns) {
+        if (!columns || this.gone) {
             return false;
         }
 
@@ -130,7 +174,8 @@ export class FireCave {
         for (const ship of columns) {
             for (let x = Math.floor(ship.left); x < ship.right; x++) {
                 // Still sliding in: no fire left of the strips' edge yet.
-                if (x < strip_x) {
+                // Sliding out: none right of their trailing edge.
+                if (x < strip_x || x >= strip_x + this.width) {
                     continue;
                 }
 

@@ -7,7 +7,8 @@ import { paintedBox } from "./FirecometTrack";
 // the right just clear of the bottom flames, dips up to touch the centre
 // line at mid-screen and heads back out to the bottom, then races off. The
 // second comes almost on its tail and does the same from the top: -_-.
-// Between the neutron's pace and the clover's.
+// Between the neutron's pace and the clover's. The top chain shot in full
+// drops the bullet power-up, as the clover's does.
 //
 // The numbers are a first pass, to be tuned by eye.
 
@@ -52,6 +53,10 @@ export class DeltaWave {
 
     // Deltas still to come, both chains together.
     to_spawn = CHAIN_LENGTH * 2;
+
+    // Top-chain deltas shot down. All of them drops the power-up, out of
+    // the last one's explosion; one flying off means no drop.
+    top_shot = 0;
 
     constructor(scene) {
         this.scene = scene;
@@ -157,6 +162,15 @@ export class DeltaWave {
             if (hit) {
                 explosions.spawn(ship.x, ship.y);
                 this.scene.addPoints(ship.points);
+
+                if (ship.side === -1) {
+                    this.top_shot++;
+
+                    if (this.top_shot === CHAIN_LENGTH) {
+                        this.scene.powerups.spawn(ship.x, ship.y);
+                    }
+                }
+
                 ship.destroy();
                 return false;
             }

@@ -12,16 +12,15 @@ const HUD_MARGIN = 10;
 // between the painted pixels, not the 32x32 frames.
 const LIVES_ICON_GAP = 5;
 
-// The icon is the ship's "level" frame at 1.2x: a ~28x20 hull, sized to sit
-// beside the Gradius digits (21px capitals at 24).
+// The icon is raven-score-v4.png, a thicker copy of the ship's level frame.
 const LIVES_ICON_SCALE = 1.5;
-const LIVES_ICON_FRAME = "0";
+const LIVES_ICON = "lives-icon";
 
 // No tint on the score or lives: the font's colour and inner bevel are
 // painted into the font image itself, and a tint would multiply over them.
 
-// Techbase at 27 is 1:1 with the size it was exported at.
-const HUD_FONT_SIZE = 27;
+// Katakis at 24 is 1:1 with the size it was exported at.
+const HUD_FONT_SIZE = 24;
 
 // The HUD scene is the scene that shows the points and lives.
 export class HudScene extends Scene {
@@ -62,7 +61,7 @@ export class HudScene extends Scene {
 
         // Right-aligned from the band's right edge, leftwards. Each step is
         // the painted ship's width plus the gap.
-        const painted = paintedWidth(this, "ship", LIVES_ICON_FRAME);
+        const painted = paintedWidth(this, LIVES_ICON);
         const step = painted * LIVES_ICON_SCALE + LIVES_ICON_GAP;
 
         this.lives_icons = [];
@@ -70,7 +69,7 @@ export class HudScene extends Scene {
 
         for (let i = 0; i < this.lives; i++) {
             const icon = this.add.image(
-                x, Math.round(cap_centre), "ship", LIVES_ICON_FRAME
+                x, Math.round(cap_centre), LIVES_ICON
             ).setOrigin(1, 0.5).setScale(LIVES_ICON_SCALE);
 
             this.lives_icons.push(icon);
@@ -92,6 +91,7 @@ export class HudScene extends Scene {
 }
 
 // Width of the painted pixels in one frame, leftmost to rightmost, native px.
+// No frame name = the texture's first frame.
 function paintedWidth(scene, key, frame_name) {
     const texture = scene.textures.get(key);
     const frame = texture.get(frame_name);

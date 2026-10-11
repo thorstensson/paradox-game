@@ -21,7 +21,7 @@ export class MenuScene extends Scene {
 
         // Knocked slightly off pure white so the shine has headroom to
         // brighten into -- a white highlight over white is invisible.
-        logo_game.setTint(0xc8d0e0);
+        logo_game.setTint(0xe4e8f0);
         // Phaser's shine, but sweeping in #b9bffb (see ColourShine.js).
         logo_game.setPostPipeline(COLOUR_SHINE);
 
@@ -30,7 +30,7 @@ export class MenuScene extends Scene {
             this.scale.height / 2 + 120,
             "main-font",
             "PLAYER ONE\nCLICK TO START",
-            27
+            24
         ).setOrigin(0.5, 0.5);
 
         // setOrigin centres the block; this centres the lines within it.
@@ -51,7 +51,7 @@ export class MenuScene extends Scene {
             logo_bounds.top - gap,
             "main-font",
             "MMXXVI",
-            27
+            24
         ).setOrigin(0.5, 1);
 
         // Byline, centred along the bottom of the screen.
@@ -60,7 +60,7 @@ export class MenuScene extends Scene {
             this.scale.height - 40,
             "main-font",
             "BY THOMAS THORSTENSSON",
-            27
+            24
         ).setOrigin(0.5, 1);
 
 

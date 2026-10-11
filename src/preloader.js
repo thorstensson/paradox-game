@@ -14,6 +14,10 @@ import titleLogoUrl from "./assets/fonts/scifiadventure.png?url";
 import shipUrl from "./assets/player/ship/raven.png?url";
 import shipJsonUrl from "./assets/player/ship/raven.json?url";
 
+// Lives icon (HudScene): a thicker copy of the ship's level frame, 32x32,
+// one frame -- a plain image.
+import livesIconUrl from "./assets/player/ship/raven-score-v4.png?url";
+
 // Player bullet. 8x2 native, one frame, no tags -- so a plain image, not an
 // atlas. PlayerBullets blows it up 3x into a canvas texture at runtime,
 // because a Blitter draws its Bobs at raw texture size.
@@ -80,13 +84,14 @@ import emberRingUrl from "./assets/enemies/ember-ring/ember-ring.png?url";
 import bulletEnemyUrl from "./assets/enemies/bullet/bullet-enemy.png?url";
 import bulletEnemyJsonUrl from "./assets/enemies/bullet/bullet-enemy.json?url";
 
-// Power-up, the bullet power drop. 16x16 indexed, two frames under one
-// looping tag, powerup-blink. Same export settings as the ship.
+// Power-up, the bullet power drop. 24x24 indexed, six frames under one
+// looping tag, powerup-bullet-spin (the slanted bar inside turns). Same
+// export settings as the ship.
 import powerupBulletsUrl from "./assets/powerups/powerup-bullets.png?url";
 import powerupBulletsJsonUrl from "./assets/powerups/powerup-bullets.json?url";
 
-// Power-up, the shield drop. Same as the bullet drop, its own icon, tag
-// powerup-shield-blink.
+// Power-up, the shield drop. Same as the bullet drop, its own colour, tag
+// powerup-shield-spin.
 import powerupShieldUrl from "./assets/powerups/powerup-shield.png?url";
 import powerupShieldJsonUrl from "./assets/powerups/powerup-shield.json?url";
 
@@ -100,11 +105,17 @@ import shieldJsonUrl from "./assets/shield/shield.json?url";
 import firecaveUrl from "./assets/enviro/firecave/firecave.png?url";
 import firecaveJsonUrl from "./assets/enviro/firecave/firecave.json?url";
 
-// Main font: Techbase (FontStruct, Omegaville), a bitmap font exported from
-// BMFont at 27px -- its 9-brick grid at 3px per brick. Drawn at 27 (1:1)
-// so every brick stays an even square.
-import mainFontUrl from "./assets/fonts/techbase-27_0.png?url";
-import mainFontXmlUrl from "./assets/fonts/techbase-27.fnt?url";
+// Asteroids, level 3's belt. 32x32 indexed, one frame each, no tags -- plain
+// images.
+import asteroid1Url from "./assets/enviro/asteroid/asteroid-1.png?url";
+import asteroid2Url from "./assets/enviro/asteroid/asteroid-2.png?url";
+import asteroid3Url from "./assets/enviro/asteroid/asteroid-3.png?url";
+
+// Main font: Katakis (C64) (FontStruct, Patrick H. Lauke), a bitmap font
+// exported from BMFont at 24px -- its 8-brick grid at 3px per brick. Drawn
+// at 24 (1:1) so every brick stays an even square.
+import mainFontUrl from "./assets/fonts/katakis-24_0.png?url";
+import mainFontXmlUrl from "./assets/fonts/katakis-24.fnt?url";
 
 // Class to preload all the assets
 // Remember you can load this assets in another scene if you need it
@@ -122,6 +133,7 @@ export class Preloader extends Phaser.Scene {
         // Phaser reads Aseprite atlases natively; createFromAseprite() in the
         // scene turns each frameTag into an animation of the same name.
         this.load.aseprite("ship", shipUrl, shipJsonUrl);
+        this.load.image("lives-icon", livesIconUrl);
         this.load.image("ship-bullet", shipBulletUrl);
         this.load.aseprite("neutron", neutronUrl, neutronJsonUrl);
         this.load.aseprite("neutron-odd", neutronOddUrl, neutronOddJsonUrl);
@@ -139,6 +151,9 @@ export class Preloader extends Phaser.Scene {
         this.load.aseprite("powerup-bullets", powerupBulletsUrl, powerupBulletsJsonUrl);
         this.load.aseprite("powerup-shield", powerupShieldUrl, powerupShieldJsonUrl);
         this.load.aseprite("shield", shieldUrl, shieldJsonUrl);
+        this.load.image("asteroid-1", asteroid1Url);
+        this.load.image("asteroid-2", asteroid2Url);
+        this.load.image("asteroid-3", asteroid3Url);
 
         // Fonts
         this.load.bitmapFont("main-font", mainFontUrl, mainFontXmlUrl);

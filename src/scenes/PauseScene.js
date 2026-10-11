@@ -15,7 +15,7 @@ export class PauseScene extends Scene {
             this.scale.height / 2,
             "main-font",
             "PAUSED\nCLICK TO CONTINUE",
-            27
+            24
         ).setOrigin(0.5, 0.5);
 
         // setOrigin centres the block; this centres the lines within it.

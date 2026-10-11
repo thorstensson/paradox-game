@@ -80,10 +80,23 @@ export class FirecometTrack {
 
         let at = 0;
 
-        LAUNCH_GAPS.forEach((gap, i) => {
+        this.timers = LAUNCH_GAPS.map((gap, i) => {
             at += gap;
-            scene.time.delayedCall(at, () => this.launch(i % 2));
+            return scene.time.delayedCall(at, () => this.launch(i % 2));
         });
+    }
+
+    // The cave is leaving: no more comets come out of it. Those in flight
+    // fly on and off as usual.
+    stopLaunching() {
+        this.timers.forEach((timer) => timer.remove());
+    }
+
+    // Removes every comet and every launch still to come, at once (dev skip).
+    destroy() {
+        this.stopLaunching();
+        this.comets.forEach((comet) => comet.destroy());
+        this.comets = [];
     }
 
     // side: 0 for the top wall, 1 for the bottom.

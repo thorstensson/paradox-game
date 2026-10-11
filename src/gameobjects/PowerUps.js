@@ -11,11 +11,11 @@ import { paintedBox } from "./FirecometTrack";
 // "bullets" switches on double bullets (Player.startDouble), "shield" the
 // spinning shield (Player.startShield).
 const KINDS = {
-    bullets: { key: "powerup-bullets", tag: "powerup-blink", start: "startDouble" },
-    shield: { key: "powerup-shield", tag: "powerup-shield-blink", start: "startShield" }
+    bullets: { key: "powerup-bullets", tag: "powerup-bullet-spin", start: "startDouble" },
+    shield: { key: "powerup-shield", tag: "powerup-shield-spin", start: "startShield" }
 };
 
-// 16x16 native, drawn at 3x like everything else: 48px on screen.
+// 24x24 native, drawn at 3x like everything else: 72px on screen.
 const POWERUP_SCALE = 3;
 
 // px/s, right to left: slow and steady.
@@ -32,7 +32,7 @@ export class PowerUps {
         this.hit_box = paintedBox(scene, "powerup-bullets");
 
         // Dropped once fully past the left edge.
-        this.end_x = -8 * POWERUP_SCALE;
+        this.end_x = -12 * POWERUP_SCALE;
     }
 
     // A drop appears at (x, y), where the wave's last alien blew up.

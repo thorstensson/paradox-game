@@ -18,7 +18,7 @@ export class GameOverScene extends Scene {
             this.scale.height / 2,
             "main-font",
             "GAME OVER",
-            27
+            24
         ).setOrigin(0.5, 0.5);
 
         // No restart prompt: hold, then cut straight to the intro. start()

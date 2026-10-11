@@ -90,16 +90,23 @@ const DOUBLE_TIME = 60000;
 
 // The shield, from the shield power-up: a quarter ring (shield.png, painted
 // 12 to 3 o'clock round the canvas centre) spinning round the ship. Enemy
-// bullets that reach it on the quarter it covers are destroyed; aliens are
-// not stopped. Lasts SHIELD_TIME; losing the ship ends it at once.
+// bullets and asteroids that reach it on the quarter it covers are
+// destroyed; aliens are not stopped. Lasts SHIELD_TIME; losing the ship ends it at once.
+//
+// Two levels: a second shield caught before the first runs out adds a second
+// quarter ring opposite the first, spinning with it. Each has its own
+// SHIELD_TIME; when the first runs out, the second carries on alone.
 const SHIELD_TIME = 60000;
 
 // Spin, degrees per second, clockwise.
 const SHIELD_SPIN = 360;
 
+// The ring's outer edge, native px from its centre.
+const SHIELD_OUTER = 15;
+
 // How far out a bullet is stopped, screen px from the ship's centre: the
-// ring's outer edge (15 native px) plus a bullet's half-width (3 native).
-const SHIELD_REACH = (15 + 3) * SHIP_SCALE;
+// ring's outer edge plus a bullet's half-width (3 native).
+const SHIELD_REACH = (SHIELD_OUTER + 3) * SHIP_SCALE;
 
 // The ring's centre sits this far left of the ship's, screen px: 2 native
 // px, since the Raven is painted a little toward the back of its canvas.
@@ -108,6 +115,10 @@ const SHIELD_NUDGE = 2 * SHIP_SCALE;
 // The painted quarter, degrees, at an angle of 0: 12 o'clock to 3 o'clock.
 const SHIELD_FROM = -90;
 const SHIELD_TO = 0;
+
+// Where each shield sits, degrees on from the shared spin: the second
+// opposite the first.
+const SHIELD_SLOTS = [ 0, 180 ];
 
 // Where the ship waits off-screen before flying in.
 const START_X = -190;
@@ -144,9 +155,11 @@ export class Player extends Physics.Arcade.Sprite {
     double = false;
     double_timer = null;
 
-    // The shield sprite while it is on, and the timer that turns it off.
-    shield = null;
-    shield_timer = null;
+    // The shields that are on, at most two, oldest first: each its sprite,
+    // its slot (SHIELD_SLOTS) and the timer that turns it off. They turn
+    // together, shield_angle on.
+    shields = [];
+    shield_angle = 0;
 
     // Earliest time the current bank may be given up.
     bank_until = 0;
@@ -290,51 +303,96 @@ export class Player extends Physics.Arcade.Sprite {
         }
     }
 
-    // The shield power-up is caught: the ring spins round the ship for
-    // SHIELD_TIME.
+    // The shield power-up is caught: a ring spins round the ship for
+    // SHIELD_TIME -- the second ring, opposite the first, if one is on
+    // already. With two on, a catch restarts the time of the one that would
+    // run out first.
     startShield() {
-        this.endShield();
+        if (this.shields.length === SHIELD_SLOTS.length) {
+            const oldest = this.shields.shift();
+            oldest.timer.remove();
+            oldest.timer = this.shieldTimer(oldest);
+            this.shields.push(oldest);
+            return;
+        }
 
-        this.shield = this.scene.add.sprite(this.x - SHIELD_NUDGE, this.y, "shield");
-        this.shield.setScale(SHIP_SCALE);
-        this.shield.play({ key: "shield-spin", repeat: -1 });
+        const taken = this.shields.map((shield) => shield.slot);
+        const slot = SHIELD_SLOTS.find((s) => !taken.includes(s));
 
-        this.shield_timer = this.scene.time.delayedCall(
-            SHIELD_TIME, () => this.endShield()
-        );
+        const sprite = this.scene.add.sprite(this.x - SHIELD_NUDGE, this.y, "shield");
+        sprite.setScale(SHIP_SCALE);
+        sprite.angle = this.shield_angle + slot;
+        sprite.play({ key: "shield-spin", repeat: -1 });
+
+        const shield = { sprite, slot, timer: null };
+        shield.timer = this.shieldTimer(shield);
+        this.shields.push(shield);
     }
 
+    // Turns one shield off after SHIELD_TIME.
+    shieldTimer(shield) {
+        return this.scene.time.delayedCall(SHIELD_TIME, () => {
+            shield.sprite.destroy();
+            this.shields = this.shields.filter((s) => s !== shield);
+        });
+    }
+
+    // Every shield off at once.
     endShield() {
-        if (this.shield) {
-            this.shield.destroy();
-            this.shield = null;
+        for (const shield of this.shields) {
+            shield.sprite.destroy();
+            shield.timer.remove();
         }
 
-        if (this.shield_timer) {
-            this.shield_timer.remove();
-            this.shield_timer = null;
-        }
+        this.shields = [];
     }
 
-    // True if the shield stops an enemy bullet at (x, y): within reach of
-    // the ship's centre, on the quarter the ring covers right now.
+    // True if a shield stops an enemy bullet at (x, y): within reach of the
+    // ship's centre, on a quarter a ring covers right now.
     shieldBlocks(x, y) {
-        if (!this.shield) {
-            return false;
-        }
+        return this.shields.some(({ sprite }) => {
+            const dx = x - sprite.x;
+            const dy = y - sprite.y;
 
-        const dx = x - this.shield.x;
-        const dy = y - this.shield.y;
+            if (dx * dx + dy * dy > SHIELD_REACH * SHIELD_REACH) {
+                return false;
+            }
 
-        if (dx * dx + dy * dy > SHIELD_REACH * SHIELD_REACH) {
-            return false;
-        }
+            const at = PhaserMath.Angle.WrapDegrees(
+                PhaserMath.RadToDeg(Math.atan2(dy, dx)) - sprite.angle
+            );
 
-        const at = PhaserMath.Angle.WrapDegrees(
-            PhaserMath.RadToDeg(Math.atan2(dy, dx)) - this.shield.angle
-        );
+            return at >= SHIELD_FROM && at <= SHIELD_TO;
+        });
+    }
 
-        return at >= SHIELD_FROM && at <= SHIELD_TO;
+    // As shieldBlocks(), for something round and bigger than a bullet -- an
+    // asteroid -- with its centre at (x, y), radius screen px: true if it
+    // reaches a ring's outer edge on a quarter the ring covers right now.
+    shieldBlocksCircle(x, y, radius) {
+        const reach = SHIELD_OUTER * SHIP_SCALE + radius;
+
+        return this.shields.some(({ sprite }) => {
+            const dx = x - sprite.x;
+            const dy = y - sprite.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance > reach) {
+                return false;
+            }
+
+            // How far round the circle the body spreads either side of its
+            // centre, seen from the ship, degrees.
+            const spread = distance > radius
+                ? PhaserMath.RadToDeg(Math.asin(radius / distance))
+                : 180;
+
+            const at = PhaserMath.Angle.WrapDegrees(
+                PhaserMath.RadToDeg(Math.atan2(dy, dx)) - sprite.angle
+            );
+
+            return at >= SHIELD_FROM - spread && at <= SHIELD_TO + spread;
+        });
     }
 
     // Back in after losing a life: level, mid-height, flying in at once.
@@ -565,10 +623,12 @@ export class Player extends Physics.Arcade.Sprite {
             this.play("level");
         }
 
-        // The shield rides on the ship's centre, turning.
-        if (this.shield) {
-            this.shield.setPosition(this.x - SHIELD_NUDGE, this.y);
-            this.shield.angle += SHIELD_SPIN * step;
+        // The shields ride on the ship's centre, turning together.
+        this.shield_angle += SHIELD_SPIN * step;
+
+        for (const { sprite, slot } of this.shields) {
+            sprite.setPosition(this.x - SHIELD_NUDGE, this.y);
+            sprite.angle = this.shield_angle + slot;
         }
     }
 

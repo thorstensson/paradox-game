@@ -1,4 +1,5 @@
 import { GameObjects, Scene } from "phaser";
+import { AsteroidBelt } from "../gameobjects/AsteroidBelt";
 import { CloverWave } from "../gameobjects/CloverWave";
 import { DeltaWave } from "../gameobjects/DeltaWave";
 import { DragonWave } from "../gameobjects/DragonWave";
@@ -37,6 +38,12 @@ const LEVEL_2_TITLE = "ENTERING\nEMBER CAVES";
 
 // From the last level 1 wave being gone to the level 2 title, ms.
 const LEVEL_2_DELAY = 3000;
+
+// Level 3 follows level 2 the same way: once the ember ring is gone, the fire
+// cave slides out to the left, the ship flies on into open space, and after
+// LEVEL_3_DELAY ms of it the title comes up, then the asteroid belt.
+const LEVEL_3_TITLE = "ENTERING\nBELT OF OSIRIS";
+const LEVEL_3_DELAY = 3000;
 
 // Ships per game. Losing the last one is GAME OVER.
 const LIVES = 3;
@@ -120,6 +127,9 @@ export class MainScene extends Scene {
     // Level 2's firecomets: out of the fire walls for the whole cave,
     // alongside its waves.
     firecomets = null;
+
+    // Level 3: the asteroid belt, the whole level.
+    asteroid_belt = null;
     cursors = null;
 
     // The level being played. Wave timers check it, so a level that is
@@ -164,6 +174,7 @@ export class MainScene extends Scene {
         this.level = 1;
         this.fire_cave = null;
         this.firecomets = null;
+        this.asteroid_belt = null;
         this.cleared = [];
         this.wave_pending = false;
         this.attempt = 0;
@@ -266,7 +277,7 @@ export class MainScene extends Scene {
             this.scale.height / 2 - HUD_BAND,
             "main-font",
             text,
-            27
+            24
         ).setOrigin(0.5, 0.5).setAlpha(0);
 
         title.setCenterAlign();
@@ -296,7 +307,7 @@ export class MainScene extends Scene {
     }
 
     // The wave on screen is over: the next one follows after its gap, or,
-    // after the last, level 2.
+    // after the last, the next level.
     nextWave() {
         this.wave = null;
         this.wave_index++;
@@ -308,9 +319,10 @@ export class MainScene extends Scene {
         } else if (this.level === 1) {
             this.level = 2;
             this.time.delayedCall(LEVEL_2_DELAY, () => this.enterLevel2());
+        } else if (this.level === 2) {
+            this.level = 3;
+            this.leaveLevel2();
         }
-
-        // After level 2's last wave nothing follows yet.
     }
 
     levelWaves() {
@@ -334,14 +346,15 @@ export class MainScene extends Scene {
     }
 
     // Dev only (the N key): clears the wave on screen, no points, drops the
-    // rest of level 1 and goes straight into level 2. Not before the ship is
-    // in, and only once.
+    // rest of the level and goes straight into the next: level 1 to 2, or
+    // level 2 to 3 (the cave and its comets vanish at once). Not before the
+    // ship is in.
     skipLevel() {
-        if (!this.playing || this.level !== 1 || this.player.state === "waiting") {
+        if (!this.playing || this.level > 2 || this.player.state === "waiting") {
             return;
         }
 
-        this.level = 2;
+        this.level++;
         this.wave_pending = false;
 
         if (this.wave) {
@@ -349,17 +362,32 @@ export class MainScene extends Scene {
             this.wave = null;
         }
 
-        this.enterLevel2();
+        if (this.level === 2) {
+            this.enterLevel2();
+            return;
+        }
+
+        this.fire_cave?.destroy();
+        this.fire_cave = null;
+        this.firecomets?.destroy();
+        this.firecomets = null;
+
+        this.enterLevel3();
     }
 
     // Level 1 is cleared; the ship flies straight on into level 2. Skipped if
     // the last ship was lost in the meantime.
     enterLevel2() {
-        if (!this.playing) {
+        if (!this.playing || this.level !== 2) {
             return;
         }
 
         this.showLevelTitle(LEVEL_2_TITLE, () => {
+            // Skipped on to level 3 (dev only) while the title was up.
+            if (this.level !== 2) {
+                return;
+            }
+
             // The comets start once the cave fills the screen, and the
             // level's first wave a WAVE_GAP after them.
             this.fire_cave = new FireCave(this, () => {
@@ -368,6 +396,29 @@ export class MainScene extends Scene {
                 this.wave_index = 0;
                 this.startWave(WAVE_GAP);
             });
+        });
+    }
+
+    // Level 2 is cleared: the fire cave slides out, and once it is gone and
+    // the ship has flown on through open space, level 3.
+    leaveLevel2() {
+        this.firecomets.stopLaunching();
+
+        this.fire_cave.leave(() => {
+            this.fire_cave = null;
+            this.time.delayedCall(LEVEL_3_DELAY, () => this.enterLevel3());
+        });
+    }
+
+    // The ship flies on into the asteroid belt. Skipped if the last ship was
+    // lost in the meantime.
+    enterLevel3() {
+        if (!this.playing || this.level !== 3) {
+            return;
+        }
+
+        this.showLevelTitle(LEVEL_3_TITLE, () => {
+            this.asteroid_belt = new AsteroidBelt(this);
         });
     }
 
@@ -465,7 +516,8 @@ export class MainScene extends Scene {
         if (this.fire_cave) {
             this.fire_cave.update(time, delta);
 
-            if (this.fire_cave.hits(this.player)) {
+            // Gone by now, if this update slid it off the screen.
+            if (this.fire_cave?.hits(this.player)) {
                 this.shipHit();
             }
         }
@@ -474,6 +526,15 @@ export class MainScene extends Scene {
             this.firecomets.update(time, delta, this.player.bullets, this.explosions);
 
             if (this.firecomets.hits(this.player)) {
+                this.shipHit();
+            }
+        }
+
+        // After the belt's last rock nothing follows yet.
+        if (this.asteroid_belt) {
+            this.asteroid_belt.update(time, delta, this.player.bullets, this.explosions);
+
+            if (this.asteroid_belt.hits(this.player)) {
                 this.shipHit();
             }
         }
