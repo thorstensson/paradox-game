@@ -266,6 +266,15 @@ Instead of Delta's block pick-ups, a Nemesis-style power drop.
 - **Seeking missile** (to build): fired from the top of the ship every 3s,
   steers to the nearest alien, hits harder than a bullet.
 
+Where each power-up drops:
+
+| Power-up | Level | Drops when                                              | Code                                  |
+| -------- | ----- | ------------------------------------------------------- | ------------------------------------- |
+| Bullets  | 1     | The clover wave's whole top chain is shot               | `CloverWave.js:164`                   |
+| Bullets  | 2     | The delta wave's whole top chain (all 10) is shot       | `DeltaWave.js:170`                    |
+| Shield   | 2     | The last neutron dive wave (the top chain) is shot in full | `MainScene.js:90`, `NeutronWave.js:161` |
+| Shield   | 3     | Either of two fixed rocks mid-belt, near the centre line, is destroyed (shot or by the shield ring); about 5.6 s apart | `asteroid-belt.js:205, 245`, `AsteroidBelt.js:185` |
+
 ### Testing a single wave -- later
 
 Not now: playing the full sequence is part of testing for the moment. But

@@ -14,9 +14,9 @@ import titleLogoUrl from "./assets/fonts/scifiadventure.png?url";
 import shipUrl from "./assets/player/ship/raven.png?url";
 import shipJsonUrl from "./assets/player/ship/raven.json?url";
 
-// Lives icon (HudScene): a thicker copy of the ship's level frame, 32x32,
-// one frame -- a plain image.
-import livesIconUrl from "./assets/player/ship/raven-score-v4.png?url";
+// Lives icon (HudScene): the ship repainted at 12x12, one frame -- a plain
+// image.
+import livesIconUrl from "./assets/player/ship/raven-score-12p.png?url";
 
 // Player bullet. 8x2 native, one frame, no tags -- so a plain image, not an
 // atlas. PlayerBullets blows it up 3x into a canvas texture at runtime,

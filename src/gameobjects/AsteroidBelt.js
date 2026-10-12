@@ -8,8 +8,12 @@ import { paintedBox } from "./FirecometTrack";
 //
 // Every rock comes from the fixed list in asteroid-belt.js, so the belt is
 // the same every game and can be learnt. Each rock turns slowly at its own
-// spin from the list; Phaser turns the painted image. The ship's hit box does
-// not turn with it (first pass).
+// spin from the list. The ship's hit box does not turn with it (first pass).
+//
+// The turning is done on the 32x32 painting, before the 3x: each painting is
+// baked once at every TURN_STEP degrees, and the rock shows the bake nearest
+// its angle. So every painted pixel stays an upright 3x3 square on the grid.
+// Phaser turning the 3x image instead tilts the pixels, which softens them.
 
 // 32x32 native, drawn at 3x like every alien.
 const ROCK_SCALE = 3;
@@ -25,7 +29,46 @@ const HITS = 3;
 // Score for shooting one down.
 const POINTS = 100;
 
+// Degrees between baked turns.
+const TURN_STEP = 5;
+
+// Native px of each baked turn: room for the 32x32 painting's corners at
+// 45 degrees.
+const TURN_SIZE = 46;
+
 const ROCK_KEYS = { 1: "asteroid-1", 2: "asteroid-2", 3: "asteroid-3" };
+
+// Baked turns per row -- rows keep the sheet narrow enough for any graphics
+// card.
+const TURNS_PER_ROW = 18;
+
+// Bakes the painting at every TURN_STEP into one sheet, a frame per turn
+// ("0" = upright), once per game. Returns the sheet's texture key.
+function bakeTurns(scene, key) {
+    const turned = `${key}-turned`;
+
+    if (scene.textures.exists(turned)) {
+        return turned;
+    }
+
+    const count = 360 / TURN_STEP;
+    const rows = Math.ceil(count / TURNS_PER_ROW);
+    const texture = scene.textures.addDynamicTexture(
+        turned, TURN_SIZE * TURNS_PER_ROW, TURN_SIZE * rows
+    );
+
+    for (let i = 0; i < count; i++) {
+        const left = (i % TURNS_PER_ROW) * TURN_SIZE;
+        const top = Math.floor(i / TURNS_PER_ROW) * TURN_SIZE;
+
+        texture.stamp(key, null, left + TURN_SIZE / 2, top + TURN_SIZE / 2, {
+            angle: i * TURN_STEP
+        });
+        texture.add(String(i), 0, left, top, TURN_SIZE, TURN_SIZE);
+    }
+
+    return turned;
+}
 
 export class AsteroidBelt {
 
@@ -47,7 +90,7 @@ export class AsteroidBelt {
             const box = paintedBox(scene, key);
             const radius = (Math.max(box.w, box.h) / 2) * ROCK_SCALE;
 
-            this.shapes[rock] = { key, box, radius };
+            this.shapes[rock] = { key, turned: bakeTurns(scene, key), box, radius };
         }
 
         // Spawned and dropped half a sprite past each edge.
@@ -86,20 +129,29 @@ export class AsteroidBelt {
 
         for (const rock of this.rocks) {
             rock.x -= dx;
-            rock.angle += rock.spin * step;
+
+            // The turn runs on smoothly; the rock shows the bake it has
+            // reached.
+            rock.turned += rock.spin * step;
+
+            const count = 360 / TURN_STEP;
+            const turn = Math.floor(rock.turned / TURN_STEP);
+            rock.setFrame(String(((turn % count) + count) % count));
         }
 
         // Rocks whose place on the belt has reached the right edge. Placed
         // by how far past it they are, so the spacing stays exact.
         while (this.next < ASTEROID_BELT.length && ASTEROID_BELT[this.next].x <= this.travelled) {
-            const { x, y, rock: kind, spin } = ASTEROID_BELT[this.next++];
+            const { x, y, rock: kind, spin, drop } = ASTEROID_BELT[this.next++];
 
             const rock = this.scene.add.image(
-                this.start_x - (this.travelled - x), y, this.shapes[kind].key
+                this.start_x - (this.travelled - x), y, this.shapes[kind].turned, "0"
             );
             rock.setScale(ROCK_SCALE);
             rock.kind = kind;
             rock.spin = spin;
+            rock.turned = 0;
+            rock.drop = drop;
             rock.hits = HITS;
 
             this.rocks.push(rock);
@@ -128,6 +180,11 @@ export class AsteroidBelt {
             if (rock.hits <= 0) {
                 explosions.spawn(rock.x, rock.y);
                 this.scene.addPoints(POINTS);
+
+                // Shot or blown by the shield ring alike.
+                if (rock.drop) {
+                    this.scene.powerups.spawn(rock.x, rock.y, rock.drop);
+                }
                 rock.destroy();
                 return false;
             }

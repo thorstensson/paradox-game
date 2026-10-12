@@ -6,6 +6,8 @@
 // y: height in the playfield, screen px from the top, to the rock's centre.
 // rock: which painting, asteroid-1, -2 or -3.
 // spin: degrees per second, clockwise; negative turns the other way.
+// drop: (hand-added) power-up the rock leaves when destroyed. Running the
+//    script again rewrites this file, so add these back by hand.
 export const ASTEROID_BELT = [
     { x: 0, y: 26, rock: 2, spin: 30 },
     { x: 225, y: 458, rock: 1, spin: 19 },
@@ -200,7 +202,7 @@ export const ASTEROID_BELT = [
     { x: 19473, y: 456, rock: 3, spin: -10 },
     { x: 19567, y: 603, rock: 2, spin: 20 },
     { x: 19645, y: 278, rock: 3, spin: -14 },
-    { x: 19714, y: 390, rock: 2, spin: -18 },
+    { x: 19714, y: 390, rock: 2, spin: -18, drop: "shield" },
     { x: 19785, y: 259, rock: 3, spin: 23 },
     { x: 19833, y: 644, rock: 3, spin: -28 },
     { x: 19880, y: 736, rock: 2, spin: 15 },
@@ -240,7 +242,7 @@ export const ASTEROID_BELT = [
     { x: 22431, y: 101, rock: 3, spin: -13 },
     { x: 22496, y: 133, rock: 2, spin: -17 },
     { x: 22555, y: 680, rock: 1, spin: 17 },
-    { x: 22654, y: 365, rock: 2, spin: 19 },
+    { x: 22654, y: 365, rock: 2, spin: 19, drop: "shield" },
     { x: 22748, y: 513, rock: 2, spin: -22 },
     { x: 22848, y: 446, rock: 1, spin: -12 },
     { x: 22934, y: 82, rock: 2, spin: 17 },

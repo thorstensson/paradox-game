@@ -78,14 +78,18 @@ const FIRE_INTERVAL = 120;
 const MUZZLE_X = 14 * SHIP_SCALE;
 const MUZZLE_Y = 0 * SHIP_SCALE;
 
-// Double bullets, from the bullet power-up: no centre shot, one from each
-// arm instead, both together. The arm tips sit 5 native px above and below
-// the centre on the level frame; fixed for every bank state, like the
-// centre muzzle.
+// Bullet power-ups, two levels, as the shield. One on: no centre shot, one
+// from each arm instead, both together. Two on: both arms and the centre.
+// The arm tips sit 5 native px above and below the centre on the level
+// frame; fixed for every bank state, like the centre muzzle.
 const ARM_Y = 5 * SHIP_SCALE;
 
-// How long double bullets last once caught, ms. Losing the ship ends them
-// at once.
+// Bullet power-ups on at once, at most.
+const BULLET_LEVELS = 2;
+
+// How long each bullet power-up lasts once caught, ms, each on its own
+// timer: when the first runs out, the second carries on alone. Losing the
+// ship ends them all at once.
 const DOUBLE_TIME = 60000;
 
 // The shield, from the shield power-up: a quarter ring (shield.png, painted
@@ -150,10 +154,10 @@ export class Player extends Physics.Arcade.Sprite {
     // Timestamp the next shot is allowed at.
     next_fire = 0;
 
-    // Double bullets on, and the timer that turns them off. A scene timer,
-    // so the minute stops while the game is paused.
-    double = false;
-    double_timer = null;
+    // The bullet power-ups that are on, at most BULLET_LEVELS, oldest first:
+    // each the timer that turns it off. Scene timers, so the minute stops
+    // while the game is paused.
+    bullet_powerups = [];
 
     // The shields that are on, at most two, oldest first: each its sprite,
     // its slot (SHIELD_SLOTS) and the timer that turns it off. They turn
@@ -279,28 +283,28 @@ export class Player extends Physics.Arcade.Sprite {
         this.endShield();
     }
 
-    // The bullet power-up is caught: double bullets for DOUBLE_TIME. Catching
-    // another while they are on starts the time again.
+    // The bullet power-up is caught: one more level for DOUBLE_TIME, on its
+    // own timer. With two on, a catch restarts the time of the one that
+    // would run out first, as the shield does.
     startDouble() {
-        this.double = true;
-
-        if (this.double_timer) {
-            this.double_timer.remove();
+        if (this.bullet_powerups.length === BULLET_LEVELS) {
+            this.bullet_powerups.shift().remove();
         }
 
-        this.double_timer = this.scene.time.delayedCall(
-            DOUBLE_TIME, () => this.endDouble()
-        );
+        const timer = this.scene.time.delayedCall(DOUBLE_TIME, () => {
+            this.bullet_powerups = this.bullet_powerups.filter((t) => t !== timer);
+        });
+
+        this.bullet_powerups.push(timer);
     }
 
-    // Back to the single centre bullet.
+    // Every bullet power-up off at once: back to the single centre bullet.
     endDouble() {
-        this.double = false;
-
-        if (this.double_timer) {
-            this.double_timer.remove();
-            this.double_timer = null;
+        for (const timer of this.bullet_powerups) {
+            timer.remove();
         }
+
+        this.bullet_powerups = [];
     }
 
     // The shield power-up is caught: a ring spins round the ship for
@@ -483,10 +487,15 @@ export class Player extends Physics.Arcade.Sprite {
 
         this.next_fire = time + FIRE_INTERVAL;
 
-        if (this.double) {
+        // None on: centre. One: both arms. Two: both arms and the centre.
+        const level = this.bullet_powerups.length;
+
+        if (level > 0) {
             this.bullets.fire(this.x + MUZZLE_X, this.y - ARM_Y);
             this.bullets.fire(this.x + MUZZLE_X, this.y + ARM_Y);
-        } else {
+        }
+
+        if (level !== 1) {
             this.bullets.fire(this.x + MUZZLE_X, this.y + MUZZLE_Y);
         }
     }
