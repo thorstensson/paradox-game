@@ -227,13 +227,13 @@ tick while a key is held restarts the animation continuously.
 
 Settled by playing, fast-paced like Delta:
 
-| Kind    | Speed      | Used by                       |
-| ------- | ---------- | ----------------------------- |
-| Fast    | 716 px/s   | Clover, greywing, firecomet   |
-| Medium  | 596.5 px/s | Delta                         |
-| Regular | 477 px/s   | Neutron                       |
-| Slow    | 161 px/s   | Firering, emberstar           |
-| Dragon  | 80 px/s    | Dragon                        |
+| Kind    | Speed      | Used by                     |
+| ------- | ---------- | --------------------------- |
+| Fast    | 716 px/s   | Clover, greywing, firecomet |
+| Medium  | 596.5 px/s | Delta                       |
+| Regular | 477 px/s   | Neutron                     |
+| Slow    | 161 px/s   | Firering, emberstar         |
+| Dragon  | 80 px/s    | Dragon                      |
 
 New aliens start from one of these. The gap between aliens in a chain is
 worked out from the speed, so it stays one sprite width either way.
@@ -268,11 +268,11 @@ Instead of Delta's block pick-ups, a Nemesis-style power drop.
 
 Where each power-up drops:
 
-| Power-up | Level | Drops when                                              | Code                                  |
-| -------- | ----- | ------------------------------------------------------- | ------------------------------------- |
-| Bullets  | 1     | The clover wave's whole top chain is shot               | `CloverWave.js:164`                   |
-| Bullets  | 2     | The delta wave's whole top chain (all 10) is shot       | `DeltaWave.js:170`                    |
-| Shield   | 2     | The last neutron dive wave (the top chain) is shot in full | `MainScene.js:90`, `NeutronWave.js:161` |
+| Power-up | Level | Drops when                                                                                                             | Code                                               |
+| -------- | ----- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Bullets  | 1     | The clover wave's whole top chain is shot                                                                              | `CloverWave.js:164`                                |
+| Bullets  | 2     | The delta wave's whole top chain (all 10) is shot                                                                      | `DeltaWave.js:170`                                 |
+| Shield   | 2     | The last neutron dive wave (the top chain) is shot in full                                                             | `MainScene.js:90`, `NeutronWave.js:161`            |
 | Shield   | 3     | Either of two fixed rocks mid-belt, near the centre line, is destroyed (shot or by the shield ring); about 5.6 s apart | `asteroid-belt.js:205, 245`, `AsteroidBelt.js:185` |
 
 ### Testing a single wave -- later

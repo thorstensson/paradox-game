@@ -117,6 +117,11 @@ import asteroid3Url from "./assets/enviro/asteroid/asteroid-3.png?url";
 import mainFontUrl from "./assets/fonts/katakis-24_0.png?url";
 import mainFontXmlUrl from "./assets/fonts/katakis-24.fnt?url";
 
+// HUD font: the same Katakis 24 repainted dark lilac, for the top HUD's
+// score and HI. Same glyph layout as the main font's PNG, so it shares
+// katakis-24.fnt.
+import hudFontUrl from "./assets/fonts/katakis-lilac-24_0.png?url";
+
 // Class to preload all the assets
 // Remember you can load this assets in another scene if you need it
 export class Preloader extends Phaser.Scene {
@@ -157,6 +162,7 @@ export class Preloader extends Phaser.Scene {
 
         // Fonts
         this.load.bitmapFont("main-font", mainFontUrl, mainFontXmlUrl);
+        this.load.bitmapFont("hud-font", hudFontUrl, mainFontXmlUrl);
 
         // Event to update the loading bar
         this.load.on("progress", (progress) => {
@@ -168,9 +174,11 @@ export class Preloader extends Phaser.Scene {
         // BMFont's "Match char height" is what renders the font at its true
         // design size, but it records that size as negative (-24). Phaser
         // scales text by requested size / font size, so a negative font size
-        // draws every string upside down. Flipped back once, here.
-        const main_font = this.cache.bitmapFont.get("main-font").data;
-        main_font.size = Math.abs(main_font.size);
+        // draws every string upside down. Flipped back once per font, here.
+        for (const key of ["main-font", "hud-font"]) {
+            const font = this.cache.bitmapFont.get(key).data;
+            font.size = Math.abs(font.size);
+        }
 
         // When all the assets are loaded go to the next scene
         this.scene.start("MainScene");

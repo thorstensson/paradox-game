@@ -41,6 +41,36 @@ const HUD_FONT_SIZE = 24;
 // to see the proportions before a real 16 export.
 const HI_FONT_SIZE = 16;
 
+// Thin band along the bottom of the canvas, as on Nemesis: one label per
+// power-up, in the HI font size, starting where the lives icons start. A
+// label has a grey box behind it, which blinks while its power-up is on. MainScene keeps
+// the playfield clear of the band.
+export const BOTTOM_BAND = 24;
+
+// In order, left to right. Each name is the key update_powerups() takes.
+const POWERUP_LABELS = [
+    { name: "railgun", text: "RAILGUN" },
+    { name: "shield", text: "SHIELD" },
+    { name: "speed", text: "SPEED" }
+];
+
+// Every box the same width, as on Nemesis: RAILGUN (112 px at 16) plus 8 px
+// each side. Each word is centred in its box.
+const POWERUP_BOX_WIDTH = 128;
+const POWERUP_BOX_GAP = 32;
+
+// 18 px tall in the 24 px band: 3 px clear above and below, 2 px between the
+// 14 px capitals and the box's top and bottom.
+const POWERUP_BOX_HEIGHT = 18;
+
+// The box's colour while its power-up is off; always shown.
+const POWERUP_BOX_COLOUR = 0x6d758d;
+
+// While its power-up is on, the box blinks through these, in order, each
+// shown for POWERUP_BLINK_MS.
+const POWERUP_BLINK_COLOURS = [0xdae0ea, 0xb9bffb, 0x849be4];
+const POWERUP_BLINK_MS = 100;
+
 // The HUD scene is the scene that shows the points, HI and lives.
 export class HudScene extends Scene {
 
@@ -53,6 +83,15 @@ export class HudScene extends Scene {
     // One per life; the leftmost is lives_icons[0]. Lost lives go from the
     // right end, so the ships left stay at the left.
     lives_icons = [];
+
+    // The box behind each power-up label, by name.
+    powerup_boxes = {};
+
+    // Names of the power-ups that are on; their boxes blink.
+    powerups_on = new Set();
+
+    // Index into POWERUP_BLINK_COLOURS, shared by every blinking box.
+    blink_index = 0;
 
     // Starting lives, passed in by MainScene, which owns the count.
     lives = 0;
@@ -69,7 +108,7 @@ export class HudScene extends Scene {
 
     create() {
         this.points_text = this.add.bitmapText(
-            SCORE_X, HUD_MARGIN, "main-font", this.format_points(0), HUD_FONT_SIZE
+            SCORE_X, HUD_MARGIN, "hud-font", this.format_points(0), HUD_FONT_SIZE
         );
 
         // The font's measurements are in its own native pixels, so they are
@@ -85,7 +124,7 @@ export class HudScene extends Scene {
 
         this.hi_text = this.add.bitmapText(
             HI_X, Math.round(digits_top - font.chars[72].yOffset * hi_scale),
-            "main-font", this.format_hi(), HI_FONT_SIZE
+            "hud-font", this.format_hi(), HI_FONT_SIZE
         );
 
         // Centred on the digits' cap height, not on the text box, whose top
@@ -107,6 +146,69 @@ export class HudScene extends Scene {
 
             this.lives_icons.push(icon);
             x += step;
+        }
+
+        // The bottom band's labels, the first box's left edge where the
+        // first lives icon's ship starts.
+        const box_top = this.scale.height - BOTTOM_BAND + (BOTTOM_BAND - POWERUP_BOX_HEIGHT) / 2;
+        const caps_height = font.chars[72].height * hi_scale;
+        let box_x = LIVES_LEFT_IN_SHIPS * painted.width * LIVES_ICON_SCALE;
+
+        this.powerup_boxes = {};
+
+        for (const { name, text } of POWERUP_LABELS) {
+            // Added first, so the word draws over it.
+            const box = this.add.rectangle(
+                box_x, box_top, POWERUP_BOX_WIDTH, POWERUP_BOX_HEIGHT, POWERUP_BOX_COLOUR
+            ).setOrigin(0, 0);
+
+            const label = this.add.bitmapText(0, 0, "main-font", text, HI_FONT_SIZE);
+            label.setPosition(
+                Math.round(box_x + (POWERUP_BOX_WIDTH - label.width) / 2),
+                Math.round(box_top + (POWERUP_BOX_HEIGHT - caps_height) / 2
+                    - font.chars[72].yOffset * hi_scale)
+            );
+
+            this.powerup_boxes[name] = box;
+            box_x += POWERUP_BOX_WIDTH + POWERUP_BOX_GAP;
+        }
+
+        this.powerups_on = new Set();
+        this.blink_index = 0;
+
+        // Steps every blinking box to the next colour.
+        this.time.addEvent({
+            delay: POWERUP_BLINK_MS,
+            loop: true,
+            callback: () => {
+                this.blink_index = (this.blink_index + 1) % POWERUP_BLINK_COLOURS.length;
+
+                for (const name of this.powerups_on) {
+                    this.powerup_boxes[name].setFillStyle(POWERUP_BLINK_COLOURS[this.blink_index]);
+                }
+            }
+        });
+    }
+
+    // Which power-ups are on, by name ({ railgun: true, ... }); a name left
+    // out is left as it is. An on box blinks; an off box goes back to grey.
+    update_powerups(on) {
+        for (const [name, live] of Object.entries(on)) {
+            const box = this.powerup_boxes[name];
+
+            if (!box) {
+                continue;
+            }
+
+            if (live) {
+                if (!this.powerups_on.has(name)) {
+                    this.powerups_on.add(name);
+                    box.setFillStyle(POWERUP_BLINK_COLOURS[this.blink_index]);
+                }
+            } else {
+                this.powerups_on.delete(name);
+                box.setFillStyle(POWERUP_BOX_COLOUR);
+            }
         }
     }
 

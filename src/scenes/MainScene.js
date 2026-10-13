@@ -15,11 +15,13 @@ import { NeutronDiveWave, NeutronWave } from "../gameobjects/NeutronWave";
 import { Player } from "../gameobjects/Player";
 import { PowerUps } from "../gameobjects/PowerUps";
 import { StarField } from "../gameobjects/StarField";
+import { BOTTOM_BAND } from "./HudScene";
 
 // Black band along the top of the canvas, as in Delta: the HUD sits in it,
 // clear of the playfield (and the fire cave's flames). The playfield is the
-// rest of the canvas below it, 1280x760; everything in the game measures
-// from the playfield camera, not the canvas.
+// rest of the canvas between it and the power-up band along the bottom
+// (BOTTOM_BAND, HudScene), 1280x736; everything in the game measures from the
+// playfield camera, not the canvas.
 const HUD_BAND = 40;
 
 // Time from start-game to the first wave, ms. The player's fly-in takes
@@ -188,7 +190,7 @@ export class MainScene extends Scene {
     create() {
         // First, so everything below is placed inside the playfield.
         this.cameras.main.setViewport(
-            0, HUD_BAND, this.scale.width, this.scale.height - HUD_BAND
+            0, HUD_BAND, this.scale.width, this.scale.height - HUD_BAND - BOTTOM_BAND
         );
 
         // Scrolling parallax starfield

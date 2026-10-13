@@ -293,9 +293,11 @@ export class Player extends Physics.Arcade.Sprite {
 
         const timer = this.scene.time.delayedCall(DOUBLE_TIME, () => {
             this.bullet_powerups = this.bullet_powerups.filter((t) => t !== timer);
+            this.showPowerups();
         });
 
         this.bullet_powerups.push(timer);
+        this.showPowerups();
     }
 
     // Every bullet power-up off at once: back to the single centre bullet.
@@ -305,6 +307,20 @@ export class Player extends Physics.Arcade.Sprite {
         }
 
         this.bullet_powerups = [];
+        this.showPowerups();
+    }
+
+    // Tells the HUD's bottom band which power-ups are on: RAILGUN is the
+    // bullet power-up, at either level.
+    showPowerups() {
+        if (!this.scene.scene.isActive("HudScene")) {
+            return;
+        }
+
+        this.scene.scene.get("HudScene").update_powerups({
+            railgun: this.bullet_powerups.length > 0,
+            shield: this.shields.length > 0
+        });
     }
 
     // The shield power-up is caught: a ring spins round the ship for
@@ -331,6 +347,7 @@ export class Player extends Physics.Arcade.Sprite {
         const shield = { sprite, slot, timer: null };
         shield.timer = this.shieldTimer(shield);
         this.shields.push(shield);
+        this.showPowerups();
     }
 
     // Turns one shield off after SHIELD_TIME.
@@ -338,6 +355,7 @@ export class Player extends Physics.Arcade.Sprite {
         return this.scene.time.delayedCall(SHIELD_TIME, () => {
             shield.sprite.destroy();
             this.shields = this.shields.filter((s) => s !== shield);
+            this.showPowerups();
         });
     }
 
@@ -349,6 +367,7 @@ export class Player extends Physics.Arcade.Sprite {
         }
 
         this.shields = [];
+        this.showPowerups();
     }
 
     // True if a shield stops an enemy bullet at (x, y): within reach of the
