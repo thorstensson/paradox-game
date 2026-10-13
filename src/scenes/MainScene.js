@@ -20,7 +20,7 @@ import { BOTTOM_BAND } from "./HudScene";
 // Black band along the top of the canvas, as in Delta: the HUD sits in it,
 // clear of the playfield (and the fire cave's flames). The playfield is the
 // rest of the canvas between it and the power-up band along the bottom
-// (BOTTOM_BAND, HudScene), 1280x736; everything in the game measures from the
+// (BOTTOM_BAND, HudScene), 1280x720; everything in the game measures from the
 // playfield camera, not the canvas.
 const HUD_BAND = 40;
 
@@ -277,7 +277,7 @@ export class MainScene extends Scene {
             // and GAME OVER.
             this.scale.width / 2,
             this.scale.height / 2 - HUD_BAND,
-            "main-font",
+            "halftone-font",
             text,
             24
         ).setOrigin(0.5, 0.5).setAlpha(0);

@@ -13,7 +13,7 @@ export class PauseScene extends Scene {
         const msg = this.add.bitmapText(
             this.scale.width / 2,
             this.scale.height / 2,
-            "main-font",
+            "halftone-font",
             "PAUSED\nCLICK TO CONTINUE",
             24
         ).setOrigin(0.5, 0.5);

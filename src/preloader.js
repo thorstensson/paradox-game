@@ -122,6 +122,11 @@ import mainFontXmlUrl from "./assets/fonts/katakis-24.fnt?url";
 // katakis-24.fnt.
 import hudFontUrl from "./assets/fonts/katakis-lilac-24_0.png?url";
 
+// Halftone font: the same Katakis 24 with a halftone, for the intro page,
+// PAUSED, GAME OVER and the level titles, as Nemesis has it. Same glyph
+// layout as the main font's PNG, so it shares katakis-24.fnt.
+import halftoneFontUrl from "./assets/fonts/katakis-halftone-24_0.png?url";
+
 // Class to preload all the assets
 // Remember you can load this assets in another scene if you need it
 export class Preloader extends Phaser.Scene {
@@ -163,6 +168,7 @@ export class Preloader extends Phaser.Scene {
         // Fonts
         this.load.bitmapFont("main-font", mainFontUrl, mainFontXmlUrl);
         this.load.bitmapFont("hud-font", hudFontUrl, mainFontXmlUrl);
+        this.load.bitmapFont("halftone-font", halftoneFontUrl, mainFontXmlUrl);
 
         // Event to update the loading bar
         this.load.on("progress", (progress) => {
@@ -175,7 +181,7 @@ export class Preloader extends Phaser.Scene {
         // design size, but it records that size as negative (-24). Phaser
         // scales text by requested size / font size, so a negative font size
         // draws every string upside down. Flipped back once per font, here.
-        for (const key of ["main-font", "hud-font"]) {
+        for (const key of ["main-font", "hud-font", "halftone-font"]) {
             const font = this.cache.bitmapFont.get(key).data;
             font.size = Math.abs(font.size);
         }

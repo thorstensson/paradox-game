@@ -42,16 +42,18 @@ const HUD_FONT_SIZE = 24;
 const HI_FONT_SIZE = 16;
 
 // Thin band along the bottom of the canvas, as on Nemesis: one label per
-// power-up, in the HI font size, starting where the lives icons start. A
+// power-up, in the HI font size, the row centred across the canvas. A
 // label has a grey box behind it, which blinks while its power-up is on. MainScene keeps
-// the playfield clear of the band.
-export const BOTTOM_BAND = 24;
+// the playfield clear of the band. 40 px, as tall as the top band.
+export const BOTTOM_BAND = 40;
 
 // In order, left to right. Each name is the key update_powerups() takes.
+// SPEED and MISSILE have no power-up yet, so they never light.
 const POWERUP_LABELS = [
     { name: "railgun", text: "RAILGUN" },
     { name: "shield", text: "SHIELD" },
-    { name: "speed", text: "SPEED" }
+    { name: "speed", text: "SPEED" },
+    { name: "missile", text: "MISSILE" }
 ];
 
 // Every box the same width, as on Nemesis: RAILGUN (112 px at 16) plus 8 px
@@ -59,9 +61,10 @@ const POWERUP_LABELS = [
 const POWERUP_BOX_WIDTH = 128;
 const POWERUP_BOX_GAP = 32;
 
-// 18 px tall in the 24 px band: 3 px clear above and below, 2 px between the
-// 14 px capitals and the box's top and bottom.
-const POWERUP_BOX_HEIGHT = 18;
+// 26 px tall in the 40 px band: 7 px clear above and below, 6 px between the
+// 14 px capitals and the box's top and bottom -- 3 bricks of the 16 font,
+// the same 3 bricks of space the score has in the top band.
+const POWERUP_BOX_HEIGHT = 26;
 
 // The box's colour while its power-up is off; always shown.
 const POWERUP_BOX_COLOUR = 0x6d758d;
@@ -148,11 +151,13 @@ export class HudScene extends Scene {
             x += step;
         }
 
-        // The bottom band's labels, the first box's left edge where the
-        // first lives icon's ship starts.
+        // The bottom band's labels, the whole row of boxes centred across
+        // the canvas.
         const box_top = this.scale.height - BOTTOM_BAND + (BOTTOM_BAND - POWERUP_BOX_HEIGHT) / 2;
         const caps_height = font.chars[72].height * hi_scale;
-        let box_x = LIVES_LEFT_IN_SHIPS * painted.width * LIVES_ICON_SCALE;
+        const row_width = POWERUP_LABELS.length * POWERUP_BOX_WIDTH
+            + (POWERUP_LABELS.length - 1) * POWERUP_BOX_GAP;
+        let box_x = (this.scale.width - row_width) / 2;
 
         this.powerup_boxes = {};
 

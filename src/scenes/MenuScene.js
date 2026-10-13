@@ -28,7 +28,7 @@ export class MenuScene extends Scene {
         const start_msg = this.add.bitmapText(
             this.scale.width / 2,
             this.scale.height / 2 + 120,
-            "main-font",
+            "halftone-font",
             "PLAYER ONE\nCLICK TO START",
             24
         ).setOrigin(0.5, 0.5);
@@ -49,7 +49,7 @@ export class MenuScene extends Scene {
         this.add.bitmapText(
             this.scale.width / 2,
             logo_bounds.top - gap,
-            "main-font",
+            "halftone-font",
             "MMXXVI",
             24
         ).setOrigin(0.5, 1);
@@ -58,7 +58,7 @@ export class MenuScene extends Scene {
         this.add.bitmapText(
             this.scale.width / 2,
             this.scale.height - 40,
-            "main-font",
+            "halftone-font",
             "BY THOMAS THORSTENSSON",
             24
         ).setOrigin(0.5, 1);
