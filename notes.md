@@ -27,11 +27,11 @@ Assets live in **`src/assets/`** and are resolved by Vite at build time, not in 
 
 We are using a modular, ES6-module approach splitting files by their functional roles:
 
-obsidion/
+zynthex/
 ├── index.html
 ├── vite.config.js
 ├── art/ # Aseprite masters (not loaded by the game)
-│ └── player/ # obsidion-ship.aseprite, ship-bullet.aseprite
+│ └── fonts/
 ├── public/
 │ └── favicon.png # Only truly static, unprocessed files
 │
@@ -42,10 +42,10 @@ obsidion/
 ├── assets/ # Structured strictly by runtime function
 │ ├── backgrounds/ # Parked: galaxy/, purple-nebula/, planets/, oil6/ -- none loaded
 │ ├── player/
-│ │ ├── ship/ # obsidion-ship.png + .json (Aseprite atlas)
+│ │ ├── ship/ # raven.aseprite + raven.png + .json (Aseprite atlas)
 │ │ └── bullet/ # ship-bullet.png, 8x2
 │ └── fonts/
-│ ├── scifiadventure.png # Title logo image (OBSIDION only, not a full font)
+│ ├── scifiadventure.png # Title logo image (ZYNTHEX only, not a full font)
 │ ├── techbase-27.fnt + techbase-27_0.png # main-font, all text (BMFont)
 │ └── techbase-18.fnt + techbase-18_0.png # unused
 │
@@ -73,7 +73,7 @@ Everything there is for version 1, in order:
 2. **Audio effects** -- from good sound resources Thomas knows.
 3. **Hi-score table on Supabase** -- simple, online only, no local table.
 
-**Domain:** `obsidion-game.io`, registered once all three levels are done.
+**Domain:** `zynthex-game.io`, registered once all three levels are done.
 
 ## Credits
 
@@ -194,14 +194,14 @@ Drawn 1:1 in game. The PNGs are grey-tinted in Photoshop with a Halftone
 Pattern (Dot, size 4, contrast ~20); no tint in code, as a tint would
 multiply over the painted colour.
 
-**Title logo** is `scifiadventure.png`: the word OBSIDION set in Sci Fi
+**Title logo** is `scifiadventure.png`: the word ZYNTHEX set in Sci Fi
 Adventure, as an image, drawn at 4x with a tint and shine. Not a usable font.
 
 ---
 
 ## Player Ship
 
-Working master: `art/player/obsidion-ship.aseprite`. 32x32, indexed, four
+Working master: `src/assets/player/ship/raven.aseprite`. 32x32, indexed, four
 layers — `race stripes` / `litecyan` / `hud` / `main hull`.
 
 **Done 2026-09-20: banking.** Three frames, three one-frame tags:

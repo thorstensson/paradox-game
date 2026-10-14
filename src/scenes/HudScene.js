@@ -28,7 +28,7 @@ const LIVES_ICON = "lives-icon";
 
 // The best score so far, kept in this browser (as the C64 kept it until
 // switched off). Later the top of the Supabase table may take its place.
-const HI_STORAGE_KEY = "obsidion-hi";
+const HI_STORAGE_KEY = "zynthex-hi";
 
 // No tint on the score or lives: the font's colour and inner bevel are
 // painted into the font image itself, and a tint would multiply over them.

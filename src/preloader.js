@@ -3,7 +3,7 @@
 // object and does not recognise .xml as an asset at all. Files under
 // 4096 bytes are inlined as base64 data URIs, which Phaser 3.80 accepts.
 
-// Title logo: OBSIDION set in Sci Fi Adventure, halved to 142x16 and drawn
+// Title logo: ZYNTHEX set in Sci Fi Adventure, halved to 152x16 and drawn
 // at 7x (MenuScene) -- chunkier pixels, one letter's width from each edge.
 import titleLogoUrl from "./assets/fonts/scifiadventure.png?url";
 
