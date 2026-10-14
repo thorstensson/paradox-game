@@ -6,8 +6,8 @@ I am building a 2D horizontal space shooter in Phaser 3 using pure JavaScript. W
 - **Window fit:** `Scale.NONE` plus an integer `zoom` (largest whole multiple that fits the window), so the canvas is never stretched by a fractional amount.
 - **Clear colour:** `#000000`, framed by the page's `#7488c8` (`style.css`).
 - **Sprites (ships, enemies, bullets):** 3x. See **Sprite Scale: 3x** below.
-- **Title logo:** 4x.
-- **Main font:** Techbase, drawn 1:1 at 27px (all text). See **Fonts** below.
+- **Title logo:** 7x.
+- **Main font:** Katakis (C64), drawn 1:1 at 24px (all text). See **Fonts** below.
 - **Stars:** 1/2/3px screen-pixel dots (`StarField.js`), not on any texel grid.
 
 * **Rendering Rule:** Always apply `pixelArt: true` in the Phaser config. This already forces `NEAREST` filtering globally, so per-object `setFilterMode` calls are not needed.
@@ -46,8 +46,9 @@ zynthex/
 │ │ └── bullet/ # ship-bullet.png, 8x2
 │ └── fonts/
 │ ├── scifiadventure.png # Title logo image (ZYNTHEX only, not a full font)
-│ ├── techbase-27.fnt + techbase-27_0.png # main-font, all text (BMFont)
-│ └── techbase-18.fnt + techbase-18_0.png # unused
+│ ├── katakis-24.fnt + katakis-24_0.png # main-font (BMFont); the .fnt is shared by all three PNGs
+│ ├── katakis-lilac-24_0.png # hud-font, top HUD score and HI
+│ └── katakis-halftone-24_0.png # halftone-font, intro, PAUSED, GAME OVER, level titles
 │
 ├── gameobjects/
 │ ├── Player.js # Mouse-steered ship, banking, autofire. SHIP_SCALE = 3
@@ -177,25 +178,25 @@ changes again.
 
 ## Fonts
 
-**Main font: Techbase** (FontStruct, Omegaville --
-https://fontstruct.com/fontstructions/show/2075073/techbase). Used for all
-text except the logo. Its grid is 9 bricks, so it is exported at multiples of
-9 to keep every brick an even square:
+**Main font: Katakis (C64)** (FontStruct, Patrick H. Lauke). Used for all
+text except the logo. Its grid is 8 bricks, exported at 24px = 3px per brick
+and drawn at 24 (1:1), so every brick stays an even square. One
+`katakis-24.fnt` with three painted PNGs of the same glyph layout:
 
-- `techbase-27.fnt` + `techbase-27_0.png` (key `main-font`): 3px per brick,
-  all text at 27 -- HUD, intro, pause, level titles and Game Over.
+- `katakis-24_0.png` (key `main-font`).
+- `katakis-lilac-24_0.png` (key `hud-font`): dark lilac, the top HUD's score
+  and HI.
+- `katakis-halftone-24_0.png` (key `halftone-font`): halftone, the intro
+  page, PAUSED, GAME OVER and the level titles.
 
 Made with **AngelCode BMFont**: font smoothing off, preset _White text with
 alpha_, font descriptor **XML**, textures **png**, **256x256**, one page each
 (Phaser's loader reads one page only). The `.fnt` files record a negative
 size; `preloader.js` flips it back.
 
-Drawn 1:1 in game. The PNGs are grey-tinted in Photoshop with a Halftone
-Pattern (Dot, size 4, contrast ~20); no tint in code, as a tint would
-multiply over the painted colour.
-
 **Title logo** is `scifiadventure.png`: the word ZYNTHEX set in Sci Fi
-Adventure, as an image, drawn at 4x with a tint and shine. Not a usable font.
+Adventure, as a 152x16 image, drawn at 7x (1064 x 112 px) with a tint and
+shine. Not a usable font.
 
 ---
 
