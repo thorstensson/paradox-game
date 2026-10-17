@@ -111,6 +111,10 @@ import asteroid1Url from "./assets/enviro/asteroid/asteroid-1.png?url";
 import asteroid2Url from "./assets/enviro/asteroid/asteroid-2.png?url";
 import asteroid3Url from "./assets/enviro/asteroid/asteroid-3.png?url";
 
+// Station, level 4: one third of the level as a flat painting,
+// station-x.png, 4224x240 indexed, drawn at 3x. Dev test only for now (StationTest.js).
+import stationXUrl from "./assets/enviro/station-x/station-x.png?url";
+
 // Main font: Katakis (C64) (FontStruct, Patrick H. Lauke), a bitmap font
 // exported from BMFont at 24px -- its 8-brick grid at 3px per brick. Drawn
 // at 24 (1:1) so every brick stays an even square.
@@ -164,6 +168,7 @@ export class Preloader extends Phaser.Scene {
         this.load.image("asteroid-1", asteroid1Url);
         this.load.image("asteroid-2", asteroid2Url);
         this.load.image("asteroid-3", asteroid3Url);
+        this.load.image("station-x", stationXUrl);
 
         // Fonts
         this.load.bitmapFont("main-font", mainFontUrl, mainFontXmlUrl);

@@ -11,7 +11,7 @@ I am building a 2D horizontal space shooter in Phaser 3 using pure JavaScript. W
 - **Stars:** 1/2/3px screen-pixel dots (`StarField.js`), not on any texel grid.
 
 * **Rendering Rule:** Always apply `pixelArt: true` in the Phaser config. This already forces `NEAREST` filtering globally, so per-object `setFilterMode` calls are not needed.
-* **Integer vs non-integer scale:** anything can be drawn at any size. Integer scales keep every pixel the same width; non-integer ones stay hard-edged but make some pixels a screen pixel wider than others, so they read less clean. A choice per asset, not a rule.
+* **One pixel size:** everything is drawn at 3x, the ship's pixel, as on the C64's single screen.
 
 ### 📦 Asset Pipeline (Vite)
 
@@ -70,11 +70,11 @@ drawn (see Enemies & Waves).
 
 Everything there is for version 1, in order:
 
-1. **The three levels** -- the bulk of the work, and it will take time.
+1. **The four levels** -- the bulk of the work, and it will take time.
 2. **Audio effects** -- from good sound resources Thomas knows.
 3. **Hi-score table on Supabase** -- simple, online only, no local table.
 
-**Domain:** `zynthex-game.io`, registered once all three levels are done.
+**Domain:** `zynthex-game.io`, registered once all four levels are done.
 
 ## Credits
 

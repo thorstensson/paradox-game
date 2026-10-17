@@ -15,6 +15,7 @@ import { NeutronDiveWave, NeutronWave } from "../gameobjects/NeutronWave";
 import { Player } from "../gameobjects/Player";
 import { PowerUps } from "../gameobjects/PowerUps";
 import { StarField } from "../gameobjects/StarField";
+import { StationTest } from "../gameobjects/StationTest";
 import { BOTTOM_BAND } from "./HudScene";
 
 // Black band along the top of the canvas, as in Delta: the HUD sits in it,
@@ -46,6 +47,12 @@ const LEVEL_2_DELAY = 3000;
 // LEVEL_3_DELAY ms of it the title comes up, then the asteroid belt.
 const LEVEL_3_TITLE = "ENTERING\nBELT OF OSIRIS";
 const LEVEL_3_DELAY = 3000;
+
+// Level 4 follows level 3 the same way: once the belt's last rock is gone,
+// the ship flies on into open space, and after LEVEL_4_DELAY ms of it the
+// title comes up, then the station.
+const LEVEL_4_TITLE = "ENTERING\nSTATION X";
+const LEVEL_4_DELAY = 3000;
 
 // Ships per game. Losing the last one is GAME OVER.
 const LIVES = 3;
@@ -132,6 +139,9 @@ export class MainScene extends Scene {
 
     // Level 3: the asteroid belt, the whole level.
     asteroid_belt = null;
+
+    // Dev only: level 4's station painting, reached with N from level 3.
+    station_test = null;
     cursors = null;
 
     // The level being played. Wave timers check it, so a level that is
@@ -177,6 +187,7 @@ export class MainScene extends Scene {
         this.fire_cave = null;
         this.firecomets = null;
         this.asteroid_belt = null;
+        this.station_test = null;
         this.cleared = [];
         this.wave_pending = false;
         this.attempt = 0;
@@ -349,10 +360,18 @@ export class MainScene extends Scene {
 
     // Dev only (the N key): clears the wave on screen, no points, drops the
     // rest of the level and goes straight into the next: level 1 to 2, or
-    // level 2 to 3 (the cave and its comets vanish at once). Not before the
-    // ship is in.
+    // level 2 to 3 (the cave and its comets vanish at once), or level 3 to 4
+    // (the belt's rocks vanish at once). Not before the ship is in.
     skipLevel() {
-        if (!this.playing || this.level > 2 || this.player.state === "waiting") {
+        if (!this.playing || this.level > 3 || this.player.state === "waiting") {
+            return;
+        }
+
+        if (this.level === 3) {
+            this.level = 4;
+            this.asteroid_belt?.rocks.forEach((rock) => rock.destroy());
+            this.asteroid_belt = null;
+            this.enterLevel4();
             return;
         }
 
@@ -420,7 +439,24 @@ export class MainScene extends Scene {
         }
 
         this.showLevelTitle(LEVEL_3_TITLE, () => {
+            // Skipped on to level 4 (dev only) while the title was up.
+            if (this.level !== 3) {
+                return;
+            }
+
             this.asteroid_belt = new AsteroidBelt(this);
+        });
+    }
+
+    // The ship flies on into the station. Skipped if the last ship was lost
+    // in the meantime. For now the station is the flat test painting.
+    enterLevel4() {
+        if (!this.playing || this.level !== 4) {
+            return;
+        }
+
+        this.showLevelTitle(LEVEL_4_TITLE, () => {
+            this.station_test = new StationTest(this);
         });
     }
 
@@ -532,14 +568,22 @@ export class MainScene extends Scene {
             }
         }
 
-        // After the belt's last rock nothing follows yet.
+        // Once the belt's last rock is gone: open space, then level 4.
         if (this.asteroid_belt) {
             this.asteroid_belt.update(time, delta, this.player.bullets, this.explosions);
 
             if (this.asteroid_belt.hits(this.player)) {
                 this.shipHit();
             }
+
+            if (this.asteroid_belt?.done) {
+                this.asteroid_belt = null;
+                this.level = 4;
+                this.time.delayedCall(LEVEL_4_DELAY, () => this.enterLevel4());
+            }
         }
+
+        this.station_test?.update(time, delta);
 
         // The mouse steers the ship, so a click cannot also aim -- the ship is
         // already at the cursor. Bullets always travel right.
