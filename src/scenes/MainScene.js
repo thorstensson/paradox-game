@@ -1,5 +1,5 @@
 import { GameObjects, Scene } from "phaser";
-import { AsteroidBelt } from "../gameobjects/AsteroidBelt";
+import { AsteroidBelt, bakeAsteroidTurns } from "../gameobjects/AsteroidBelt";
 import { CloverWave } from "../gameobjects/CloverWave";
 import { DeltaWave } from "../gameobjects/DeltaWave";
 import { DragonWave } from "../gameobjects/DragonWave";
@@ -225,6 +225,10 @@ export class MainScene extends Scene {
         this.anims.createFromAseprite("powerup-bullets");
         this.anims.createFromAseprite("powerup-shield");
         this.anims.createFromAseprite("shield");
+
+        // The Belt of Osiris's turned rocks, baked now rather than as the
+        // belt comes in.
+        bakeAsteroidTurns(this);
 
         // One animation, Animation, played once per explosion.
         this.anims.createFromAseprite("explosion");

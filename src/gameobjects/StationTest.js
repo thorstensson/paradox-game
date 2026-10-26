@@ -9,7 +9,7 @@
 const SCALE = 3;
 
 // Screen px per second, the fire cave's speed.
-const SPEED = 422;
+const SPEED = 337.6;
 
 const COPIES = 3;
 

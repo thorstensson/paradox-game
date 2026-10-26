@@ -13,7 +13,7 @@
 const SCALE = 5;
 
 // Screen px per second -- fast, a rush through the cave.
-const SPEED = 422;
+const SPEED = 337.6;
 
 // ms per flicker frame -- half the 100 in firecave.json, so the flames burn
 // twice as fast.

@@ -35,6 +35,10 @@ const HITS = 60;
 // How long the paler head shows after a hit, ms.
 const HIT_FLASH = 50;
 
+// Each circle starts its colour pulse (dragon-body, Frames 3-4) this many ms
+// after the one in front, so the pulse runs down the tail.
+const RIPPLE_DELAY = 200;
+
 // Score per piece when the dragon blows: 14 pieces, 2800.
 const POINTS = 200;
 
@@ -110,7 +114,7 @@ export class DragonWave {
 
         for (let i = 0; i < BODY_LENGTH; i++) {
             const behind = this.head_gap + i * this.body_gap;
-            this.pieces.push(this.makePiece(BODY_FRAME, "dragon-body", body_box, behind));
+            this.pieces.push(this.makePiece(BODY_FRAME, "dragon-body", body_box, behind, i * RIPPLE_DELAY));
         }
 
         this.head = this.pieces[0];
@@ -122,8 +126,9 @@ export class DragonWave {
         this.place();
     }
 
-    // Each piece turns about its own painted centre, not the frame's.
-    makePiece(frame, tag, box, behind) {
+    // Each piece turns about its own painted centre, not the frame's. Its
+    // tag starts playing after delay ms.
+    makePiece(frame, tag, box, behind, delay = 0) {
         const piece = this.scene.add.sprite(0, 0, "dragon", frame);
         const source = piece.frame;
         piece.setScale(DRAGON_SCALE);
@@ -131,7 +136,7 @@ export class DragonWave {
             0.5 + centreX(box) / source.width,
             0.5 + centreY(box) / source.height
         );
-        piece.play({ key: tag, repeat: -1 });
+        piece.play({ key: tag, repeat: -1, delay });
         piece.box = box;
         piece.behind = behind;
 

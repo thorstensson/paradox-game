@@ -22,9 +22,9 @@ const STAR_SIZES = [ 1, 2, 3 ];
 // stay loose and white. A clump sits inside one band so it drifts as one
 // cloud -- mixed speeds would pull it apart.
 const BANDS = [
-    { count: 60, speed: 70, alpha: 0.4, size: 1, clumps: 4 },
-    { count: 34, speed: 138, alpha: 0.7, size: 2, clumps: 2 },
-    { count: 16, speed: 304, alpha: 1, size: 2, clumps: 0 },
+    { count: 53, speed: 56, alpha: 0.4, size: 1, clumps: 4 },
+    { count: 29, speed: 110.4, alpha: 0.7, size: 2, clumps: 2 },
+    { count: 10, speed: 243.2, alpha: 1, size: 2, clumps: 0 },
 ];
 
 // First-pass clump look, to be tuned by playing.

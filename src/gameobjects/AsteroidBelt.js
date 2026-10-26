@@ -70,6 +70,14 @@ function bakeTurns(scene, key) {
     return turned;
 }
 
+// Bakes every painting's turns at game start (MainScene.create). Done when
+// the belt came in, the 216 stamps made one long frame and the scroll jerked.
+export function bakeAsteroidTurns(scene) {
+    for (const key of Object.values(ROCK_KEYS)) {
+        bakeTurns(scene, key);
+    }
+}
+
 export class AsteroidBelt {
 
     scene = null;

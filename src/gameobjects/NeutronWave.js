@@ -42,6 +42,10 @@ const SPACING = (32 * NEUTRON_SCALE) / SPEED * 1000;
 const EDGE_OFFSET = 300;
 const DIP = 200;
 
+// Inverted (level 2): the furthest the chains swing out from the middle, so
+// the ring stays 10px clear of the tallest flame on the 720px playfield.
+const INVERTED_EDGE_OFFSET = 260;
+
 export class NeutronWave {
 
     scene = null;
@@ -104,7 +108,7 @@ export class NeutronWave {
     pathY(x, side) {
         const t = (this.start_x - x) / (this.start_x - this.end_x);
         const offset = this.inverted
-            ? EDGE_OFFSET - DIP + DIP * Math.sin(Math.PI * t)
+            ? EDGE_OFFSET - DIP + (INVERTED_EDGE_OFFSET - EDGE_OFFSET + DIP) * Math.sin(Math.PI * t)
             : EDGE_OFFSET - DIP * Math.sin(Math.PI * t);
 
         return this.scene.cameras.main.height / 2 + side * offset;
