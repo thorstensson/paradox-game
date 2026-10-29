@@ -16,7 +16,7 @@ export class GameOverScene extends Scene {
         this.add.bitmapText(
             this.scale.width / 2,
             this.scale.height / 2,
-            "halftone-font",
+            "main-font",
             "GAME OVER",
             24
         ).setOrigin(0.5, 0.5);

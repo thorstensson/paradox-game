@@ -111,9 +111,13 @@ import asteroid1Url from "./assets/enviro/asteroid/asteroid-1.png?url";
 import asteroid2Url from "./assets/enviro/asteroid/asteroid-2.png?url";
 import asteroid3Url from "./assets/enviro/asteroid/asteroid-3.png?url";
 
-// Station, level 4: one third of the level as a flat painting,
-// station-x.png, 4224x240 indexed, drawn at 3x. Dev test only for now (StationTest.js).
-import stationXUrl from "./assets/enviro/station-x/station-x.png?url";
+// Station, level 4: Station X traced in Tiled, three maps of the same 8x8
+// tiles (station-x-tiles.png, 3088x8), drawn at 3x (Station.js). Each .tmj is
+// its .tmx exported as JSON.
+import stationXTilesUrl from "./assets/enviro/station-x/station-x-tiles.png?url";
+import stationXMapUrl from "./assets/enviro/station-x/station-x.tmj?url";
+import stationX1MapUrl from "./assets/enviro/station-x/station-x-1.tmj?url";
+import stationX2MapUrl from "./assets/enviro/station-x/station-x-2.tmj?url";
 
 // Main font: Katakis (C64) (FontStruct, Patrick H. Lauke), a bitmap font
 // exported from BMFont at 24px -- its 8-brick grid at 3px per brick. Drawn
@@ -126,9 +130,10 @@ import mainFontXmlUrl from "./assets/fonts/katakis-24.fnt?url";
 // katakis-24.fnt.
 import hudFontUrl from "./assets/fonts/katakis-lilac-24_0.png?url";
 
-// Halftone font: the same Katakis 24 with a halftone, for the intro page,
-// PAUSED, GAME OVER and the level titles, as Nemesis has it. Same glyph
-// layout as the main font's PNG, so it shares katakis-24.fnt.
+// Halftone font: the same Katakis 24 with a halftone. Not drawn anywhere at
+// the moment: the intro page, PAUSED, GAME OVER and the level titles use the
+// flat white main font. Same glyph layout as the main font's PNG, so it
+// shares katakis-24.fnt.
 import halftoneFontUrl from "./assets/fonts/katakis-halftone-24_0.png?url";
 
 // Class to preload all the assets
@@ -168,7 +173,10 @@ export class Preloader extends Phaser.Scene {
         this.load.image("asteroid-1", asteroid1Url);
         this.load.image("asteroid-2", asteroid2Url);
         this.load.image("asteroid-3", asteroid3Url);
-        this.load.image("station-x", stationXUrl);
+        this.load.image("station-x-tiles", stationXTilesUrl);
+        this.load.tilemapTiledJSON("station-x", stationXMapUrl);
+        this.load.tilemapTiledJSON("station-x-1", stationX1MapUrl);
+        this.load.tilemapTiledJSON("station-x-2", stationX2MapUrl);
 
         // Fonts
         this.load.bitmapFont("main-font", mainFontUrl, mainFontXmlUrl);

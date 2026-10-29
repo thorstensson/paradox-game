@@ -1,6 +1,6 @@
 import { Geom } from "phaser";
 
-// Level 1, wave kind C (notes.md -> Wave structure).
+// Level 1, wave kind C (NOTES.md -> Wave structure).
 //
 // Twelve firerings spaced evenly around an invisible circle, like beads on a
 // string. The circle arrives already closed, so the ship cannot get inside

@@ -2,7 +2,7 @@ import { Geom } from "phaser";
 import { EnemyBullets } from "./EnemyBullets";
 import { paintedBox } from "./FirecometTrack";
 
-// Level 2, A2 (notes.md -> Level 2 Concepts -> Wave sequence), the first wave
+// Level 2, A2 (NOTES.md -> Level 2 Concepts -> Wave sequence), the first wave
 // of the fire cave.
 //
 // Eight emberstars in two blocks of four (2x2), one from the top and one from

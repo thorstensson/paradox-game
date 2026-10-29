@@ -67,7 +67,7 @@ const POWERUP_BOX_GAP = 32;
 const POWERUP_BOX_HEIGHT = 26;
 
 // The box's colour while its power-up is off; always shown.
-const POWERUP_BOX_COLOUR = 0x6d758d;
+const POWERUP_BOX_COLOUR = 0x333941;
 
 // While its power-up is on, the box blinks through these, in order, each
 // shown for POWERUP_BLINK_MS.

@@ -15,7 +15,7 @@ import { NeutronDiveWave, NeutronWave } from "../gameobjects/NeutronWave";
 import { Player } from "../gameobjects/Player";
 import { PowerUps } from "../gameobjects/PowerUps";
 import { StarField } from "../gameobjects/StarField";
-import { StationTest } from "../gameobjects/StationTest";
+import { Station } from "../gameobjects/Station";
 import { BOTTOM_BAND } from "./HudScene";
 
 // Black band along the top of the canvas, as in Delta: the HUD sits in it,
@@ -67,7 +67,7 @@ const WAVE_GAP = 1000;
 // Gives one wave its own pause before it, ms, in place of WAVE_GAP.
 const withGap = (gap, make) => Object.assign(make, { gap });
 
-// Level 1 in order (notes.md -> Wave structure): A, then A from the bottom,
+// Level 1 in order (NOTES.md -> Wave structure): A, then A from the bottom,
 // then A from the top, then A again, then B along the bottom and top edges,
 // then C as a turning circle, then A from the bottom again with its last
 // neutron odd-coloured, and last D, a staggered wall of greywings, twice,
@@ -84,7 +84,7 @@ const WAVES = [
     withGap(500, (scene) => new GreywingWave(scene, true))
 ];
 
-// Level 2 in order (notes.md -> Level 2 Concepts -> Wave sequence), after
+// Level 2 in order (NOTES.md -> Level 2 Concepts -> Wave sequence), after
 // the firecomets (A1), which run alongside the whole level: A2, two blocks
 // of emberstars swinging between the flames and the centre line, then B1,
 // the dragon zigzagging flame to flame.
@@ -140,8 +140,8 @@ export class MainScene extends Scene {
     // Level 3: the asteroid belt, the whole level.
     asteroid_belt = null;
 
-    // Dev only: level 4's station painting, reached with N from level 3.
-    station_test = null;
+    // Level 4: Station X, its walls and its waves, the whole level.
+    station = null;
     cursors = null;
 
     // The level being played. Wave timers check it, so a level that is
@@ -187,7 +187,7 @@ export class MainScene extends Scene {
         this.fire_cave = null;
         this.firecomets = null;
         this.asteroid_belt = null;
-        this.station_test = null;
+        this.station = null;
         this.cleared = [];
         this.wave_pending = false;
         this.attempt = 0;
@@ -292,7 +292,7 @@ export class MainScene extends Scene {
             // and GAME OVER.
             this.scale.width / 2,
             this.scale.height / 2 - HUD_BAND,
-            "halftone-font",
+            "main-font",
             text,
             24
         ).setOrigin(0.5, 0.5).setAlpha(0);
@@ -453,14 +453,14 @@ export class MainScene extends Scene {
     }
 
     // The ship flies on into the station. Skipped if the last ship was lost
-    // in the meantime. For now the station is the flat test painting.
+    // in the meantime.
     enterLevel4() {
         if (!this.playing || this.level !== 4) {
             return;
         }
 
         this.showLevelTitle(LEVEL_4_TITLE, () => {
-            this.station_test = new StationTest(this);
+            this.station = new Station(this);
         });
     }
 
@@ -488,6 +488,10 @@ export class MainScene extends Scene {
                 this.cleared.push(this.wave);
                 this.wave = null;
             }
+
+            // The station's ships on screen vanish too. Its place has gone by,
+            // so they are not replayed.
+            this.station?.callOff();
 
             this.time.delayedCall(RESPAWN_DELAY, () => this.player.respawn(() => {
                 if (replay) {
@@ -587,7 +591,18 @@ export class MainScene extends Scene {
             }
         }
 
-        this.station_test?.update(time, delta);
+        if (this.station) {
+            this.station.update(time, delta, this.player.bullets, this.explosions);
+
+            if (this.station.hits(this.player)) {
+                this.shipHit();
+            }
+
+            // Gone once its last map is off the screen and its last ship too.
+            if (this.station.gone) {
+                this.station = null;
+            }
+        }
 
         // The mouse steers the ship, so a click cannot also aim -- the ship is
         // already at the cursor. Bullets always travel right.

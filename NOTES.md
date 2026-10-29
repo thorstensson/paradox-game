@@ -159,6 +159,114 @@ still tied to its alien; they get detached later.
 | **block-swing**  | Two mirrored 2x2 blocks, top and bottom, swing between their flames and the centre line while drifting slowly left. Four fire one aimed bullet each                 | Level 2 wave 1 (emberstar)       | `EmberstarWave`   |
 | **snake-sine**   | A head and a tail of circles on a slow flame-to-flame sine, each circle following the head's path. Only the head kills it                                           | Level 2 wave 2 (dragon)          | `DragonWave`      |
 
+---
+
+## Level 4 Concepts
+
+**Station X.** The last level of V1. You fly inside a space station, in the
+spirit of Katakis's last level -- inspiration, not a blueprint.
+
+### Painted in Aseprite, rebuilt in Tiled
+
+All files are in `src/assets/enviro/station-x/`:
+
+- `station-x.aseprite` -- the painting. 4224x240, indexed, 8x8 tilemap,
+  drawn at 3x (240 x 3 = the 720 playfield).
+- `station-x-tiles.png` -- every tile in one horizontal strip, 3088x8
+  (386 tiles), no padding.
+- `station-x.png` -- the flat painting, 4224x240, the tracing guide in Tiled.
+- `station-x.tmx`, `station-x-1.tmx`, `station-x-2.tmx` -- the station rebuilt
+  in Tiled, 528x30 tiles of 8x8. `-1` and `-2` are copies with a few changes
+  each and a few more guns. Each map gets its own attack waves.
+
+Each map has three layers:
+
+- `guide` -- image layer with `station-x.png`, only to trace from.
+- `station` -- tile layer, the station itself.
+- `gun` -- object layer, the guns.
+
+**Never delete unused tiles in `station-x.aseprite`.** In Auto mode Aseprite
+removes a tile that is no longer used and moves every later tile down one
+place. Tiled stores tiles by their place in the strip, so every map breaks.
+
+### Guns
+
+Aseprite sprites, not tiles, in `src/assets/enviro/guns/` (each `.png` next to
+its `.aseprite`). They don't animate. Placed in Tiled as objects on the `gun`
+layer, from the embedded `guns` tileset (a collection of images).
+
+| Gun            | Size  | What it is                                                                 |
+| -------------- | ----- | -------------------------------------------------------------------------- |
+| `gun`          | 32x32 | The standing gun with its base                                             |
+| `gun-inverted` | 32x32 | `gun` flipped vertically                                                   |
+| `gun-diagonal` | 32x32 | `gun` on its diagonal base. Decoration only: can't be shot, outside the track |
+| `gun-diamond`  | 96x80 | The big floating diamond gun                                               |
+
+In Phaser they come from `createFromObjects` (`Tilemap.js:775`), which can
+pick them out by gid.
+
+### Electrifiers
+
+Fangs painted in the station, top and bottom, so they stay tiles. They don't
+explode. A spark -- its own animated Aseprite sprite, 3x -- flows from the top
+fang to the bottom fang. It can't be shot; you have to time it.
+
+The spark's position comes from a point or line on a Tiled object layer, not
+from the fang's tile number (Aseprite can renumber tiles). Phaser only copies
+Tiled tile animations and never plays them (`ParseTilesets.js:86-89`), so the
+spark is never a tile. Not built yet.
+
+### The X
+
+A dark grey X in the open part: background, fly-through, no collision. How it
+is marked in Tiled is still open.
+
+### Into the game
+
+Phaser reads Tiled JSON only, with the tilesets embedded
+(`ParseTilesets.js:36`), so each map is exported as JSON (`.tmj`, File >
+Export As) next to its `.tmx`. `Station.js` draws the three maps in a row at
+3x after level 3 (or N in level 3): each map's `background` layer (the X,
+flown through) behind its `station` layer (the wall, pixel collision with the
+ship, as the fire cave). Every export reloads the dev server page.
+
+### Speed
+
+Station X is a fast level: every alien flies at **715.8 px/s**, except the
+boss. Settled by playing, 2026-10-29: 20% over the delta's 596.5. In code,
+each station alien's `speed` in the `ALIENS` table, `Station.js`.
+
+**Pacing:** waves are placed edge to edge on the map, the next wave's start
+right behind the last. A gap only where Thomas wants one, such as around the
+electrifiers. Settled by playing, 2026-10-29.
+
+### Attack waves
+
+Drawn in Tiled on each map's `waves` object layer, one polyline per line of
+ships, drawn right to left; the first point is where the ships come in.
+Built 2026-10-29 (`Station.js`), first waves on `station-x`.
+
+- **Name** -- wave, alien, place: `w1-delta-top`, `w1-delta-bottom`,
+  `w1-neutron`. **Class** -- the alien, as its folder is named (`delta`).
+- Each line flies a full chain, as the alien's wave does: 10 deltas, 4
+  neutrons, one sprite width apart, coming in from the right edge along the
+  line's first piece -- so the space right of the start, that way, must be
+  open.
+- The ships ride with the station and curve smoothly through the points.
+- A lost ship clears the station's ships on screen; they are not replayed.
+
+### Later
+
+Thomas's plans, 2026-10-29:
+
+- Guns fire their own bullets; Thomas draws them.
+- New station enemies in steel blue, some of them shooting.
+- The final boss: three parts to its body, each exploding on its own; when
+  the last part is shot, the boss blows up.
+- In the last room of `station-x-2` the scroll stops until the boss is
+  killed: a classic fight. Then the scroll starts again, the ship speeds out
+  to the right by itself, and the end words follow.
+
 ## Sprite Scale: 3x
 
 **Decided 2026-09-24.** Ships are drawn at **3x**: the player ship, and every

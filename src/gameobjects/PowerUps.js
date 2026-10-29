@@ -1,7 +1,7 @@
 import { Geom } from "phaser";
 import { paintedBox } from "./FirecometTrack";
 
-// Power drops (notes.md -> Enemies & Waves -> Power drops). Only a wave shot
+// Power drops (NOTES.md -> Enemies & Waves -> Power drops). Only a wave shot
 // down in full drops one, out of the explosion of its last alien. A drop
 // drifts left at a steady pace and never up or down, so the ship has to fly
 // to it; missed, it drifts off the left edge. The player's shots pass

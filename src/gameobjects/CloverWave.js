@@ -1,6 +1,6 @@
 import { Geom } from "phaser";
 
-// Level 1, wave kind B (notes.md -> Wave structure).
+// Level 1, wave kind B (NOTES.md -> Wave structure).
 //
 // Two chains of seven clovers, one after the other. The first enters from
 // the right a little above the bottom, eases down onto the very bottom of

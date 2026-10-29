@@ -1,6 +1,6 @@
 import { Geom } from "phaser";
 
-// Level 1, wave kind D (notes.md -> Wave structure), the last of the level.
+// Level 1, wave kind D (NOTES.md -> Wave structure), the last of the level.
 //
 // A wall of six greywings stacked top to bottom, flying straight at the
 // ship. Every second one trails behind the rest:

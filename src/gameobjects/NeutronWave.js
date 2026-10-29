@@ -1,6 +1,6 @@
 import { Geom } from "phaser";
 
-// Level 1, wave kind A (notes.md -> Wave structure).
+// Level 1, wave kind A (NOTES.md -> Wave structure).
 //
 // Two chains of four neutrons enter from the right, one high and one low,
 // mirrored about the middle of the screen. Both dip toward the centre and

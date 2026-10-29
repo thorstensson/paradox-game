@@ -1,7 +1,7 @@
 import { Geom, Math as PhaserMath } from "phaser";
 import { paintedBox } from "./FirecometTrack";
 
-// Level 2, B1 (notes.md -> Level 2 Concepts -> Wave sequence): the dragon.
+// Level 2, B1 (NOTES.md -> Level 2 Concepts -> Wave sequence): the dragon.
 //
 // A head and a tail of circles, each circle touching the one before, as
 // painted in dragon.aseprite. It comes in from the right and swims slowly

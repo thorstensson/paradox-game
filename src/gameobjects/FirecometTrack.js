@@ -1,6 +1,6 @@
 import { Geom } from "phaser";
 
-// Level 2, A1 (notes.md -> Level 2 Concepts -> Wave sequence).
+// Level 2, A1 (NOTES.md -> Level 2 Concepts -> Wave sequence).
 //
 // Not a wave: firecomets belong to the fire walls and run alongside the
 // level's waves for the whole cave. Each one comes out of the fire at the

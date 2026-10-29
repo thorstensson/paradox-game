@@ -1,7 +1,7 @@
 import { Geom } from "phaser";
 import { paintedBox } from "./FirecometTrack";
 
-// Level 2, the delta (notes.md -> Wave sequence per level).
+// Level 2, the delta (NOTES.md -> Wave sequence per level).
 //
 // Two chains of ten deltas, one after the other. The first enters from
 // the right just clear of the bottom flames, dips up to touch the centre
