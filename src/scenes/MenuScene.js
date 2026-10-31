@@ -17,7 +17,7 @@ export class MenuScene extends Scene {
             this.scale.width / 2,
             this.scale.height / 2,
             "title-logo"
-        ).setScale(7);
+        ).setScale(8);
 
         // Knocked slightly off pure white so the shine has headroom to
         // brighten into -- a white highlight over white is invisible.

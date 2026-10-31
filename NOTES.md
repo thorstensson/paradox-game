@@ -46,9 +46,8 @@ zynthex/
 │ │ └── bullet/ # ship-bullet.png, 8x2
 │ └── fonts/
 │ ├── scifiadventure.png # Title logo image (ZYNTHEX only, not a full font)
-│ ├── katakis-24.fnt + katakis-24_0.png # main-font (BMFont); the .fnt is shared by all three PNGs
-│ ├── katakis-lilac-24_0.png # hud-font, top HUD score and HI
-│ └── katakis-halftone-24_0.png # halftone-font, intro, PAUSED, GAME OVER, level titles
+│ ├── katakis-24.fnt + katakis-24_0.png # main-font (BMFont); the .fnt is shared by both PNGs
+│ └── katakis-lilac-24_0.png # hud-font, top HUD score and HI
 │
 ├── gameobjects/
 │ ├── Player.js # Mouse-steered ship, banking, autofire. SHIP_SCALE = 3
@@ -289,13 +288,11 @@ changes again.
 **Main font: Katakis (C64)** (FontStruct, Patrick H. Lauke). Used for all
 text except the logo. Its grid is 8 bricks, exported at 24px = 3px per brick
 and drawn at 24 (1:1), so every brick stays an even square. One
-`katakis-24.fnt` with three painted PNGs of the same glyph layout:
+`katakis-24.fnt` with two painted PNGs of the same glyph layout:
 
 - `katakis-24_0.png` (key `main-font`).
 - `katakis-lilac-24_0.png` (key `hud-font`): dark lilac, the top HUD's score
   and HI.
-- `katakis-halftone-24_0.png` (key `halftone-font`): halftone, the intro
-  page, PAUSED, GAME OVER and the level titles.
 
 Made with **AngelCode BMFont**: font smoothing off, preset _White text with
 alpha_, font descriptor **XML**, textures **png**, **256x256**, one page each
