@@ -27,7 +27,7 @@ Assets live in **`src/assets/`** and are resolved by Vite at build time, not in 
 
 We are using a modular, ES6-module approach splitting files by their functional roles:
 
-zynthex/
+paradox/
 ├── index.html
 ├── vite.config.js
 ├── art/ # Aseprite masters (not loaded by the game)
@@ -45,7 +45,7 @@ zynthex/
 │ │ ├── ship/ # raven.aseprite + raven.png + .json (Aseprite atlas)
 │ │ └── bullet/ # ship-bullet.png, 8x2
 │ └── fonts/
-│ ├── scifiadventure.png # Title logo image (ZYNTHEX only, not a full font)
+│ ├── scifiadventure.png # Title logo image (PARADOX only, not a full font)
 │ ├── katakis-24.fnt + katakis-24_0.png # main-font (BMFont); the .fnt is shared by both PNGs
 │ └── katakis-lilac-24_0.png # hud-font, top HUD score and HI
 │
@@ -73,7 +73,7 @@ Everything there is for version 1, in order:
 2. **Audio effects** -- from good sound resources Thomas knows.
 3. **Hi-score table on Supabase** -- simple, online only, no local table.
 
-**Domain:** `zynthex-game.io`, registered once all four levels are done.
+**Domain:** `paradox.io`, registered once all four levels are done.
 
 ## Credits
 
@@ -299,7 +299,7 @@ alpha_, font descriptor **XML**, textures **png**, **256x256**, one page each
 (Phaser's loader reads one page only). The `.fnt` files record a negative
 size; `preloader.js` flips it back.
 
-**Title logo** is `scifiadventure.png`: the word ZYNTHEX set in Sci Fi
+**Title logo** is `scifiadventure.png`: the word PARADOX set in Sci Fi
 Adventure, as a 152x16 image, drawn at 7x (1064 x 112 px) with a tint and
 shine. Not a usable font.
 
