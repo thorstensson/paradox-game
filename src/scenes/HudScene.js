@@ -48,7 +48,7 @@ const HI_FONT_SIZE = 16;
 export const BOTTOM_BAND = 40;
 
 // In order, left to right. Each name is the key update_powerups() takes.
-// SPEED and MISSILE have no power-up yet, so they never light.
+// MISSILE has no power-up yet, so it never lights.
 const POWERUP_LABELS = [
     { name: "railgun", text: "RAILGUN" },
     { name: "shield", text: "SHIELD" },
@@ -137,18 +137,15 @@ export class HudScene extends Scene {
         // Rightwards from the band's left edge. Placed by the painted ship,
         // not the 32x32 frame: each step is the painted width plus the gap.
         const painted = paintedSpan(this, LIVES_ICON);
-        const step = painted.width * LIVES_ICON_SCALE + LIVES_ICON_GAP;
 
         this.lives_icons = [];
-        let x = LIVES_LEFT_IN_SHIPS * painted.width * LIVES_ICON_SCALE;
+        this.lives_painted = painted;
+        this.lives_step = painted.width * LIVES_ICON_SCALE + LIVES_ICON_GAP;
+        this.lives_x = LIVES_LEFT_IN_SHIPS * painted.width * LIVES_ICON_SCALE;
+        this.lives_y = cap_centre;
 
         for (let i = 0; i < this.lives; i++) {
-            const icon = this.add.image(
-                Math.round(x - painted.left * LIVES_ICON_SCALE), Math.round(cap_centre), LIVES_ICON
-            ).setOrigin(0, 0.5).setScale(LIVES_ICON_SCALE);
-
-            this.lives_icons.push(icon);
-            x += step;
+            this.add_life_icon();
         }
 
         // The bottom band's labels, the whole row of boxes centred across
@@ -227,7 +224,24 @@ export class HudScene extends Scene {
         }
     }
 
+    // One more icon at the right end of the row.
+    add_life_icon() {
+        const icon = this.add.image(
+            Math.round(this.lives_x - this.lives_painted.left * LIVES_ICON_SCALE),
+            Math.round(this.lives_y),
+            LIVES_ICON
+        ).setOrigin(0, 0.5).setScale(LIVES_ICON_SCALE);
+
+        this.lives_icons.push(icon);
+        this.lives_x += this.lives_step;
+    }
+
+    // A caught life adds an icon if there are more lives than icons.
     update_lives(lives) {
+        while (this.lives_icons.length < lives) {
+            this.add_life_icon();
+        }
+
         this.lives_icons.forEach((icon, i) => icon.setVisible(i < lives));
     }
 

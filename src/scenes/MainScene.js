@@ -75,11 +75,12 @@ const withGap = (gap, make) => Object.assign(make, { gap });
 const WAVES = [
     (scene) => new NeutronWave(scene),
     (scene) => new NeutronDiveWave(scene, 1),
-    (scene) => new NeutronDiveWave(scene, -1),
+    // Shot in full, this chain drops the speed power-up.
+    (scene) => new NeutronDiveWave(scene, -1, null, false, "speed"),
     (scene) => new NeutronWave(scene),
     (scene) => new CloverWave(scene),
     (scene) => new FireringWave(scene),
-    (scene) => new NeutronDiveWave(scene, 1, 4),
+    (scene) => new NeutronDiveWave(scene, 1, 7),
     (scene) => new GreywingWave(scene),
     withGap(500, (scene) => new GreywingWave(scene, true))
 ];
@@ -224,6 +225,7 @@ export class MainScene extends Scene {
         this.anims.createFromAseprite("bullet-enemy");
         this.anims.createFromAseprite("powerup-bullets");
         this.anims.createFromAseprite("powerup-shield");
+        this.anims.createFromAseprite("powerup-speed");
         this.anims.createFromAseprite("shield");
 
         // The Belt of Osiris's turned rocks, baked now rather than as the
@@ -501,6 +503,17 @@ export class MainScene extends Scene {
         } else {
             this.gameOver();
         }
+    }
+
+    // One ship more, and one more icon in the HUD. Not called yet: it will
+    // run when the player reaches a score still to be decided.
+    addLife() {
+        if (!this.playing) {
+            return;
+        }
+
+        this.lives++;
+        this.scene.get("HudScene").update_lives(this.lives);
     }
 
     // Bullets still in flight after GAME OVER can still pop an alien; those

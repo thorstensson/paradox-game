@@ -72,7 +72,10 @@ export class GreywingWave {
             wing.setScale(GREYWING_SCALE);
             wing.points = POINTS;
             wing.hits = HITS;
-            wing.play("greywing-level");
+            // The lanterns blink like an aircraft beacon: dark, then a
+            // short flash, over and over. Timing is the frame durations in
+            // greywing.aseprite.
+            wing.play({ key: "greywing-level", repeat: -1 });
 
             this.wings.push(wing);
         }

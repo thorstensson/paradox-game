@@ -15,10 +15,11 @@ const SHIP_SCALE = 3;
 //   DRAG  speed lost per second, as a fraction of speed.
 //         lower = longer glide when the mouse stops
 //
-// At 180 / 20 the ship reaches the point in about a fifth of a second,
-// overshoots by ~3% of the move and comes to rest in about 0.4s. DRAG at or
-// above 2 * sqrt(PULL) (~27 here) would stop it with no overshoot at all.
-const PULL = 180;
+// At 130 / 20 the ship reaches the point in about a quarter of a second and
+// overshoots by well under 1% of the move: a touch slower and heavier, as
+// in Zynaps (it was 180 / 20: a fifth of a second, ~3%). DRAG at or above
+// 2 * sqrt(PULL) (~23 here) would stop it with no overshoot at all.
+const PULL = 130;
 const DRAG = 20;
 
 // The spring is stepped in slices no longer than this, s, so a slow frame
@@ -92,6 +93,16 @@ const BULLET_LEVELS = 2;
 // ship ends them all at once.
 const DOUBLE_TIME = 60000;
 
+// Mouse speed: how far the ship's steering point moves for each pixel the
+// mouse moves, by the number of speed power-ups on. None: 0.9, a touch
+// under the mouse, so dodging takes a sure hand, as in Delta. One: 1.25.
+// Two: 1.5. The inertia (PULL, DRAG) stays the same at every level.
+const MOUSE_SPEEDS = [ 0.9, 1.25, 1.5 ];
+
+// How long each speed power-up lasts once caught, ms, each on its own timer,
+// as the bullet power-up. Losing the ship ends them all at once.
+const SPEED_TIME = 60000;
+
 // The shield, from the shield power-up: a quarter ring (shield.png, painted
 // 12 to 3 o'clock round the canvas centre) spinning round the ship. Enemy
 // bullets and asteroids that reach it on the quarter it covers are
@@ -103,7 +114,7 @@ const DOUBLE_TIME = 60000;
 const SHIELD_TIME = 60000;
 
 // Spin, degrees per second, clockwise.
-const SHIELD_SPIN = 360;
+const SHIELD_SPIN = 720;
 
 // The ring's outer edge, native px from its centre.
 const SHIELD_OUTER = 15;
@@ -158,6 +169,10 @@ export class Player extends Physics.Arcade.Sprite {
     // each the timer that turns it off. Scene timers, so the minute stops
     // while the game is paused.
     bullet_powerups = [];
+
+    // The speed power-ups that are on, at most two, oldest first: each the
+    // timer that turns it off. Its length picks the MOUSE_SPEEDS entry.
+    speed_powerups = [];
 
     // The shields that are on, at most two, oldest first: each its sprite,
     // its slot (SHIELD_SLOTS) and the timer that turns it off. They turn
@@ -238,15 +253,16 @@ export class Player extends Physics.Arcade.Sprite {
         }
 
         const zoom = this.scene.scale.zoom;
+        const speed = MOUSE_SPEEDS[this.speed_powerups.length];
         const half_w = this.displayWidth / 2;
         const half_h = this.displayHeight / 2;
 
         this.target_x = PhaserMath.Clamp(
-            this.target_x + event.movementX / zoom,
+            this.target_x + (event.movementX / zoom) * speed,
             half_w, this.scene.scale.width - half_w
         );
         this.target_y = PhaserMath.Clamp(
-            this.target_y + event.movementY / zoom,
+            this.target_y + (event.movementY / zoom) * speed,
             this.min_y, this.scene.cameras.main.height - half_h
         );
     }
@@ -280,7 +296,35 @@ export class Player extends Physics.Arcade.Sprite {
         this.state = "removed";
         this.setVisible(false);
         this.endDouble();
+        this.endSpeed();
         this.endShield();
+    }
+
+    // The speed power-up is caught: one more level for SPEED_TIME, on its
+    // own timer. With two on, a catch restarts the time of the one that
+    // would run out first, as the bullet power-up does.
+    startSpeed() {
+        if (this.speed_powerups.length === MOUSE_SPEEDS.length - 1) {
+            this.speed_powerups.shift().remove();
+        }
+
+        const timer = this.scene.time.delayedCall(SPEED_TIME, () => {
+            this.speed_powerups = this.speed_powerups.filter((t) => t !== timer);
+            this.showPowerups();
+        });
+
+        this.speed_powerups.push(timer);
+        this.showPowerups();
+    }
+
+    // Every speed power-up off at once: back to the default mouse speed.
+    endSpeed() {
+        for (const timer of this.speed_powerups) {
+            timer.remove();
+        }
+
+        this.speed_powerups = [];
+        this.showPowerups();
     }
 
     // The bullet power-up is caught: one more level for DOUBLE_TIME, on its
@@ -319,7 +363,8 @@ export class Player extends Physics.Arcade.Sprite {
 
         this.scene.scene.get("HudScene").update_powerups({
             railgun: this.bullet_powerups.length > 0,
-            shield: this.shields.length > 0
+            shield: this.shields.length > 0,
+            speed: this.speed_powerups.length > 0
         });
     }
 

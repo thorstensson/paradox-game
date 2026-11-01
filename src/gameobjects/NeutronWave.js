@@ -2,7 +2,7 @@ import { Geom } from "phaser";
 
 // Level 1, wave kind A (NOTES.md -> Wave structure).
 //
-// Two chains of four neutrons enter from the right, one high and one low,
+// Two chains of seven neutrons enter from the right, one high and one low,
 // mirrored about the middle of the screen. Both dip toward the centre and
 // rise again as they cross, so the chains pinch together and pull apart --
 // the order and motion of Delta level 2's opening wave, not its art.
@@ -14,7 +14,8 @@ import { Geom } from "phaser";
 // 32x32 native, drawn at 3x like the player ship.
 const NEUTRON_SCALE = 3;
 
-const CHAIN_LENGTH = 4;
+// Seven, as Delta's neutron chains.
+const CHAIN_LENGTH = 7;
 
 // Score for shooting one down.
 const POINTS = 100;
@@ -176,7 +177,7 @@ export class NeutronWave {
 
 // Level 1, waves 2 and 3 -- still kind A, a new movement.
 //
-// One chain of four enters from the right, low for wave 2 (side 1) and high
+// One chain of seven enters from the right, low for wave 2 (side 1) and high
 // for wave 3 (side -1), the same path mirrored. It swings further out, curves
 // back in to the centre line, then flies straight along it at the ship.
 

@@ -33,7 +33,7 @@ const MAPS = [ "station-x", "station-x-1", "station-x-2" ];
 // the delta's own 596.5 (the neutron's own wave flies at 477).
 const ALIENS = {
     delta: { anim: "delta-spin", chain: 10, speed: 715.8, points: 100, box: null },
-    neutron: { anim: "spin", chain: 4, speed: 715.8, points: 100, box: { x: -13, y: -4, w: 26, h: 9 } }
+    neutron: { anim: "spin", chain: 7, speed: 715.8, points: 100, box: { x: -13, y: -4, w: 26, h: 9 } }
 };
 
 // Half a 32x32 alien at 3x: ships wake and leave fully off-screen.

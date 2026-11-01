@@ -95,6 +95,11 @@ import powerupBulletsJsonUrl from "./assets/powerups/powerup-bullets.json?url";
 import powerupShieldUrl from "./assets/powerups/powerup-shield.png?url";
 import powerupShieldJsonUrl from "./assets/powerups/powerup-shield.json?url";
 
+// Power-up, the speed drop. Same as the bullet drop, its own colour, tag
+// powerup-speed-spin.
+import powerupSpeedUrl from "./assets/powerups/powerup-speed.png?url";
+import powerupSpeedJsonUrl from "./assets/powerups/powerup-speed.json?url";
+
 // The shield round the ship. 32x32 indexed, a quarter ring, two frames under
 // shield-spin (a dark blue blink); Phaser turns it.
 import shieldUrl from "./assets/shield/shield.png?url";
@@ -163,6 +168,7 @@ export class Preloader extends Phaser.Scene {
         this.load.aseprite("bullet-enemy", bulletEnemyUrl, bulletEnemyJsonUrl);
         this.load.aseprite("powerup-bullets", powerupBulletsUrl, powerupBulletsJsonUrl);
         this.load.aseprite("powerup-shield", powerupShieldUrl, powerupShieldJsonUrl);
+        this.load.aseprite("powerup-speed", powerupSpeedUrl, powerupSpeedJsonUrl);
         this.load.aseprite("shield", shieldUrl, shieldJsonUrl);
         this.load.image("asteroid-1", asteroid1Url);
         this.load.image("asteroid-2", asteroid2Url);

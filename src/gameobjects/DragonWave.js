@@ -11,9 +11,10 @@ import { paintedBox } from "./FirecometTrack";
 // moment before, so a bend in the head rolls down the body one joint after
 // another. Every piece tilts to point along the curve.
 //
-// Only the head can kill it: 60 hits and the whole dragon blows, every piece
-// at once. Each hit shows the paler head for a moment. The circles soak up
-// shots and shield the head.
+// Only the head can kill it: 60 hits and the whole dragon blows in a chain,
+// the head first, then each circle in turn down to the tail tip, while the
+// rest swims on. Each hit shows the paler head for a moment. The circles soak
+// up shots and shield the head.
 //
 // The numbers are a first pass, to be tuned by eye.
 
@@ -42,6 +43,9 @@ const RIPPLE_DELAY = 200;
 // Score per piece when the dragon blows: 14 pieces, 2800.
 const POINTS = 200;
 
+// Between one piece blowing and the next, down the chain, ms.
+const CHAIN_DELAY = 80;
+
 // Toward the ship, px/s, right to left: half the slowest alien's speed.
 const SPEED = 80;
 
@@ -69,6 +73,11 @@ export class DragonWave {
     // Where the head has been, newest first, as painted centres. The circles
     // are placed along it.
     trail = [];
+
+    // True once the head is shot down: the pieces blow one by one, and
+    // blow_in counts down the ms to the next.
+    blowing = false;
+    blow_in = 0;
 
     constructor(scene) {
         this.scene = scene;
@@ -248,7 +257,7 @@ export class DragonWave {
             const target = { active: true, visible: true, getBounds: () => rect };
 
             bullets.collide(target, () => {
-                if (piece === this.head) {
+                if (piece === this.head && !this.blowing) {
                     this.head.hits--;
 
                     if (this.head.hit_until === 0) {
@@ -260,19 +269,36 @@ export class DragonWave {
             });
         }
 
+        if (this.blowing) {
+            this.blowChain(delta, explosions);
+            return;
+        }
+
         if (this.head.hit_until !== 0 && time >= this.head.hit_until) {
             this.head.hit_until = 0;
             this.head.play({ key: "dragon-head", repeat: -1 });
         }
 
+        // Shot down: the head blows now, the circles after it.
         if (this.head.hits <= 0) {
-            for (const piece of this.pieces) {
-                explosions.spawn(piece.x, piece.y);
-                this.scene.addPoints(POINTS);
-                piece.destroy();
-            }
+            this.blowing = true;
+            this.blow_in = 0;
+            this.blowChain(delta, explosions);
+        }
+    }
 
-            this.pieces = [];
+    // Blows the piece at the front of the chain each time blow_in runs out;
+    // the ones still behind it swim on.
+    blowChain(delta, explosions) {
+        this.blow_in -= delta;
+
+        while (this.blow_in <= 0 && this.pieces.length > 0) {
+            const piece = this.pieces.shift();
+            explosions.spawn(piece.x, piece.y);
+            this.scene.addPoints(POINTS);
+            piece.destroy();
+
+            this.blow_in += CHAIN_DELAY;
         }
     }
 
