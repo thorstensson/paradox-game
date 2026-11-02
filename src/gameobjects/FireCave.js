@@ -15,9 +15,9 @@ const SCALE = 5;
 // Screen px per second -- fast, a rush through the cave.
 const SPEED = 337.6;
 
-// ms per flicker frame -- 50 ms -- the flames move pixel by pixel, so faster
-// than the 100 in firecave.json.
-const FRAME_TIME = 50;
+// ms per flicker frame -- 100 ms, the same as firecave.json, so the 32 frames
+// play as painted in Aseprite.
+const FRAME_TIME = 100;
 
 export class FireCave {
     strips = [];
