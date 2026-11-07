@@ -274,6 +274,80 @@
                  "width":0,
                  "x":935,
                  "y":124
+                }, 
+                {
+                 "height":0,
+                 "id":20,
+                 "name":"w1-enforcer",
+                 "opacity":1,
+                 "polyline":[
+                        {
+                         "x":0,
+                         "y":0
+                        }, 
+                        {
+                         "x":-66,
+                         "y":0
+                        }, 
+                        {
+                         "x":-175,
+                         "y":32
+                        }, 
+                        {
+                         "x":-268,
+                         "y":3
+                        }, 
+                        {
+                         "x":-366,
+                         "y":-18
+                        }, 
+                        {
+                         "x":-387,
+                         "y":-18
+                        }],
+                 "rotation":0,
+                 "type":"enforcer",
+                 "visible":true,
+                 "width":0,
+                 "x":1704,
+                 "y":120
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":11,
+         "name":"zap",
+         "objects":[
+                {
+                 "gid":391,
+                 "height":46,
+                 "id":17,
+                 "name":"",
+                 "opacity":1,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":24,
+                 "x":734,
+                 "y":143
+                }, 
+                {
+                 "gid":392,
+                 "height":118,
+                 "id":18,
+                 "name":"",
+                 "opacity":1,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":24,
+                 "x":1300,
+                 "y":179
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -281,8 +355,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":10,
- "nextobjectid":11,
+ "nextlayerid":12,
+ "nextobjectid":21,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2",
@@ -313,8 +387,8 @@
          "margin":0,
          "name":"guns",
          "spacing":0,
-         "tilecount":4,
-         "tileheight":80,
+         "tilecount":6,
+         "tileheight":118,
          "tiles":[
                 {
                  "id":0,
@@ -339,6 +413,26 @@
                  "image":"..\/guns\/gun-inverted.png",
                  "imageheight":32,
                  "imagewidth":32
+                }, 
+                {
+                 "height":46,
+                 "id":4,
+                 "image":"..\/zap\/zap-46px.png",
+                 "imageheight":46,
+                 "imagewidth":216,
+                 "width":24,
+                 "x":0,
+                 "y":0
+                }, 
+                {
+                 "height":118,
+                 "id":5,
+                 "image":"..\/zap\/zap-118px.png",
+                 "imageheight":118,
+                 "imagewidth":72,
+                 "width":24,
+                 "x":0,
+                 "y":0
                 }],
          "tilewidth":96
         }],

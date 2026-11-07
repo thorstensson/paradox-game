@@ -189,6 +189,7 @@ export class MainScene extends Scene {
         this.firecomets = null;
         this.asteroid_belt = null;
         this.station = null;
+        this.station_ready = null;
         this.cleared = [];
         this.wave_pending = false;
         this.attempt = 0;
@@ -222,6 +223,12 @@ export class MainScene extends Scene {
         this.anims.createFromAseprite("firecomet");
         this.anims.createFromAseprite("dragon");
         this.anims.createFromAseprite("delta");
+        this.anims.createFromAseprite("raider");
+        this.anims.createFromAseprite("xwing");
+        this.anims.createFromAseprite("enforcer");
+        this.anims.createFromAseprite("moon");
+        this.anims.createFromAseprite("zap-46px");
+        this.anims.createFromAseprite("zap-118px");
         this.anims.createFromAseprite("bullet-enemy");
         this.anims.createFromAseprite("powerup-bullets");
         this.anims.createFromAseprite("powerup-shield");
@@ -247,10 +254,17 @@ export class MainScene extends Scene {
         // holding the button keeps shots coming on the cooldown.
         this.cursors = this.input.keyboard.createCursorKeys();
 
+        // Station X, built now behind the intro and kept hidden until level
+        // 4: reading its three maps and its wall in one go would otherwise
+        // stall the frame the station comes in on. After the Player, so its
+        // aliens draw over the ship, as they did when made on the fly.
+        this.station_ready = new Station(this);
+
         // Dev server only, never in the released game: N skips the rest of
         // the level, so the next one can be tested without playing up to it.
         if (import.meta.env.DEV) {
             this.input.keyboard.on("keydown-N", () => this.skipLevel());
+            this.input.keyboard.on("keydown-FOUR", () => this.skipToStation());
         }
 
         // The ship is steered by a locked mouse, so losing the lock mid-game
@@ -270,6 +284,10 @@ export class MainScene extends Scene {
         this.events.once("shutdown", () => {
             this.input.manager.events.off("pointerlockchange", onLockChange);
             document.removeEventListener("pointerlockerror", onLockError);
+
+            // Its maps are not on the display list, so they go by hand.
+            this.station?.destroy();
+            this.station_ready?.destroy();
         });
 
         // This event comes from MenuScene
@@ -402,6 +420,32 @@ export class MainScene extends Scene {
         this.enterLevel3();
     }
 
+    // Dev only (the 4 key): from level 1, 2 or 3 straight to Station X. The
+    // wave on screen, the cave and its comets, or the belt's rocks vanish at
+    // once, no points. Not before the ship is in.
+    skipToStation() {
+        if (!this.playing || this.level > 3 || this.player.state === "waiting") {
+            return;
+        }
+
+        this.level = 4;
+        this.wave_pending = false;
+
+        if (this.wave) {
+            this.cleared.push(this.wave);
+            this.wave = null;
+        }
+
+        this.fire_cave?.destroy();
+        this.fire_cave = null;
+        this.firecomets?.destroy();
+        this.firecomets = null;
+        this.asteroid_belt?.rocks.forEach((rock) => rock.destroy());
+        this.asteroid_belt = null;
+
+        this.enterLevel4();
+    }
+
     // Level 1 is cleared; the ship flies straight on into level 2. Skipped if
     // the last ship was lost in the meantime.
     enterLevel2() {
@@ -462,7 +506,9 @@ export class MainScene extends Scene {
         }
 
         this.showLevelTitle(LEVEL_4_TITLE, () => {
-            this.station = new Station(this);
+            this.station = this.station_ready;
+            this.station_ready = null;
+            this.station.start();
         });
     }
 

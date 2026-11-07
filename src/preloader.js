@@ -74,6 +74,18 @@ import dragonJsonUrl from "./assets/enemies/dragon/dragon.json?url";
 import deltaUrl from "./assets/enemies/delta/delta.png?url";
 import deltaJsonUrl from "./assets/enemies/delta/delta.json?url";
 
+// Station X's own aliens, each 32x32 indexed, same export settings as the
+// ship: raider (raider-loop), xwing (xwing-loop), enforcer (enforcer-roll and
+// enforcer-level) and moon (moon-loop).
+import raiderUrl from "./assets/enemies/raider/raider.png?url";
+import raiderJsonUrl from "./assets/enemies/raider/raider.json?url";
+import xwingUrl from "./assets/enemies/xwing/xwing.png?url";
+import xwingJsonUrl from "./assets/enemies/xwing/xwing.json?url";
+import enforcerUrl from "./assets/enemies/enforcer/enforcer.png?url";
+import enforcerJsonUrl from "./assets/enemies/enforcer/enforcer.json?url";
+import moonUrl from "./assets/enemies/moon/moon.png?url";
+import moonJsonUrl from "./assets/enemies/moon/moon.json?url";
+
 // Ember ring, level 2's last wave. 64x64 indexed, one frame -- Phaser spins
 // it, so a plain image, not an atlas.
 import emberRingUrl from "./assets/enemies/ember-ring/ember-ring.png?url";
@@ -124,6 +136,18 @@ import stationXMapUrl from "./assets/enviro/station-x/station-x.tmj?url";
 import stationX1MapUrl from "./assets/enviro/station-x/station-x-1.tmj?url";
 import stationX2MapUrl from "./assets/enviro/station-x/station-x-2.tmj?url";
 
+// Zap, Station X's electrifier bolt between two fangs: 24x46 (the short
+// fangs' gap), nine frames under zap-46-loop -- eight of crackle, then an
+// empty 1000 ms frame, the gap to fly through. Same export settings as the
+// ship. Placed by the zap object layer in each map (Station.js).
+import zap46Url from "./assets/enviro/zap/zap-46px.png?url";
+import zap46JsonUrl from "./assets/enviro/zap/zap-46px.json?url";
+
+// Zap for the tall fangs: a laser, 24x118, three frames under zap-118-loop --
+// two of blink, then an empty 1000 ms frame.
+import zap118Url from "./assets/enviro/zap/zap-118px.png?url";
+import zap118JsonUrl from "./assets/enviro/zap/zap-118px.json?url";
+
 // Main font: Katakis (C64) (FontStruct, Patrick H. Lauke), a bitmap font
 // exported from BMFont at 24px -- its 8-brick grid at 3px per brick. Drawn
 // at 24 (1:1) so every brick stays an even square.
@@ -164,6 +188,10 @@ export class Preloader extends Phaser.Scene {
         this.load.image("emberstar", emberstarUrl);
         this.load.aseprite("dragon", dragonUrl, dragonJsonUrl);
         this.load.aseprite("delta", deltaUrl, deltaJsonUrl);
+        this.load.aseprite("raider", raiderUrl, raiderJsonUrl);
+        this.load.aseprite("xwing", xwingUrl, xwingJsonUrl);
+        this.load.aseprite("enforcer", enforcerUrl, enforcerJsonUrl);
+        this.load.aseprite("moon", moonUrl, moonJsonUrl);
         this.load.image("ember-ring", emberRingUrl);
         this.load.aseprite("bullet-enemy", bulletEnemyUrl, bulletEnemyJsonUrl);
         this.load.aseprite("powerup-bullets", powerupBulletsUrl, powerupBulletsJsonUrl);
@@ -177,6 +205,8 @@ export class Preloader extends Phaser.Scene {
         this.load.tilemapTiledJSON("station-x", stationXMapUrl);
         this.load.tilemapTiledJSON("station-x-1", stationX1MapUrl);
         this.load.tilemapTiledJSON("station-x-2", stationX2MapUrl);
+        this.load.aseprite("zap-46px", zap46Url, zap46JsonUrl);
+        this.load.aseprite("zap-118px", zap118Url, zap118JsonUrl);
 
         // Fonts
         this.load.bitmapFont("main-font", mainFontUrl, mainFontXmlUrl);

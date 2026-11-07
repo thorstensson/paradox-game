@@ -17,8 +17,13 @@ import { paintedBox } from "./FirecometTrack";
 // The ship's pixel size, as everything in the game.
 const SCALE = 3;
 
-// Screen px per second, the fire cave's speed.
-const SPEED = 337.6;
+// The station moves STEP screen px every TICK ms, an even 5 px per frame on a
+// 60 Hz screen: 300 px/s (was 337.6, the fire cave's speed, which could only
+// step 6, 6, 5... px and jittered; Thomas's pick, 2026-11-07). Timed by the
+// clock, not by frames, so a faster screen does not scroll it faster.
+const STEP = 5;
+const TICK = 1000 / 60;
+const SPEED = STEP * 1000 / TICK;
 
 // The maps in the order they come in, by their keys in preloader.js.
 const MAPS = [ "station-x", "station-x-1", "station-x-2" ];
@@ -29,11 +34,24 @@ const MAPS = [ "station-x", "station-x-1", "station-x-2" ];
 // Repeated here so those waves stay as they are. A null box is the alien's
 // painted extent (paintedBox), as the delta's is.
 //
-// The station is a fast level: delta and neutron both fly at 715.8, 20% over
-// the delta's own 596.5 (the neutron's own wave flies at 477).
+// The station is a fast level: every alien flies at 715.8, 20% over the
+// delta's own 596.5 (the neutron's own wave flies at 477).
+//
+// The station's own aliens (raider, xwing, enforcer, moon) have no wave of
+// their own yet: chain 7, one hit, 100 points, painted box -- placeholders
+// until they are played. An alien with "then" and "hold" (ms) plays two tags
+// in turn (playInTurn); none does now.
+//
+// The enforcer (2026-11-07, first pass): one frame (enforcer-level), a chain
+// of 4, "spacing" 4 sprite widths apart (384 px), and speed 500: 200 px/s
+// along its line over the station's 300, slow next to the others.
 const ALIENS = {
     delta: { anim: "delta-spin", chain: 10, speed: 715.8, points: 100, box: null },
-    neutron: { anim: "spin", chain: 7, speed: 715.8, points: 100, box: { x: -13, y: -4, w: 26, h: 9 } }
+    neutron: { anim: "spin", chain: 7, speed: 715.8, points: 100, box: { x: -13, y: -4, w: 26, h: 9 } },
+    raider: { anim: "raider-loop", chain: 7, speed: 715.8, points: 100, box: null },
+    xwing: { anim: "xwing-loop", chain: 7, speed: 715.8, points: 100, box: null },
+    enforcer: { anim: "enforcer-level", chain: 4, spacing: 4, speed: 500, points: 100, box: null },
+    moon: { anim: "moon-loop", chain: 7, speed: 715.8, points: 100, box: null }
 };
 
 // Half a 32x32 alien at 3x: ships wake and leave fully off-screen.
@@ -42,6 +60,20 @@ const MARGIN = 16 * SCALE;
 // Between two ships of a chain along their line, px: one sprite width, the
 // gap between centres the waves keep.
 const GAP = 32 * SCALE;
+
+// The zaps, the electrifier bolts between two fangs, by texture key (the
+// .aseprite's name), each with its looping tag. A zap can't be shot; only its
+// painted pixels in the frame on show kill, so its empty frame is the gap to
+// fly through.
+const ZAPS = {
+    "zap-46px": { anim: "zap-46-loop" },
+    "zap-118px": { anim: "zap-118-loop" }
+};
+
+// Alien sprites made up front and reused, as the explosions are: making and
+// destroying sprites mid-level can stutter. 40 covers several chains on
+// screen at once; more are made only if ever needed.
+const POOL_SIZE = 40;
 
 // Tiled's flip bits on a tile number (doc.mapeditor.org, Global Tile IDs).
 // The diagonal flip comes first, then the horizontal and vertical ones.
@@ -63,6 +95,15 @@ export class Station {
     routes = [];
     ships = [];
 
+    // Alien sprites not in use, hidden, ready for the next chain.
+    pool = [];
+
+    // Every zap: its sprite and its top-left in native station px.
+    zaps = [];
+
+    // Per zap texture, per frame name: which native pixels are painted.
+    zap_masks = {};
+
     // Hit box per alien, native px from the sprite's centre.
     boxes = {};
 
@@ -73,12 +114,22 @@ export class Station {
 
     // Screen x of the station's left edge.
     x = 0;
+
+    // ms not yet turned into STEPs.
+    clock = 0;
     gone = false;
 
+    // Built once in MainScene.create(), long before level 4, so the work of
+    // reading the maps and the wall happens behind the intro, not as the
+    // station comes in. Hidden until start().
     constructor(scene) {
         this.scene = scene;
         this.x = scene.scale.width;
         this.view_height = scene.cameras.main.height;
+
+        for (let i = 0; i < POOL_SIZE; i++) {
+            this.pool.push(this.newSprite());
+        }
 
         for (const [ key, alien ] of Object.entries(ALIENS)) {
             this.boxes[key] = alien.box ?? paintedBox(scene, key);
@@ -95,7 +146,7 @@ export class Station {
             // it is flown through, never a wall.
             for (const name of [ "background", "station" ]) {
                 const layer = map.createLayer(name, tiles, this.x + offset * SCALE, 0)
-                    .setScale(SCALE).setDepth(-1);
+                    .setScale(SCALE).setDepth(-1).setVisible(false);
 
                 this.layers.push({ layer, offset });
             }
@@ -104,6 +155,7 @@ export class Station {
             this.offsets.push(offset);
 
             this.readRoutes(scene.cache.tilemap.get(key).data, offset);
+            this.readZaps(scene.cache.tilemap.get(key).data, offset);
 
             offset += map.widthInPixels;
         }
@@ -111,6 +163,48 @@ export class Station {
         this.mask_width = offset;
         this.mask_height = this.maps[0].heightInPixels;
         this.mask = paintedStation(scene, this);
+    }
+
+    // Every object on the map's zap layer becomes a zap, hidden until
+    // start(). Either an image object (the zap's PNG in a Collection of
+    // Images tileset, placed like the guns: Tiled gives its bottom-left), or
+    // a point whose Class is the zap's name (zap-46px), at its top-left.
+    readZaps(data, offset) {
+        const layer = data.layers.find((l) => l.name === "zap");
+
+        for (const object of layer?.objects ?? []) {
+            let key = object.type;
+            let top = object.y;
+
+            if (object.gid) {
+                const number = object.gid & TILE_NUMBER;
+                const tileset = data.tilesets.find((t) => t.tiles
+                    && number >= t.firstgid && number < t.firstgid + t.tilecount);
+                const tile = tileset?.tiles.find((t) => t.id === number - tileset.firstgid);
+
+                key = tile?.image.split(/[\\/]/).pop().replace(/\.png$/, "");
+                top = object.y - (ZAPS[key] ? this.scene.textures.getFrame(key, "0").height : 0);
+            }
+
+            if (!ZAPS[key]) {
+                console.warn(`Station: zap object ${object.id} names no known zap: "${key}"`);
+                continue;
+            }
+
+            if (!this.zap_masks[key]) {
+                this.zap_masks[key] = paintedFrames(this.scene, key);
+            }
+
+            const sprite = this.scene.add.sprite(0, 0, key)
+                .setOrigin(0, 0)
+                .setScale(SCALE)
+                .setDepth(-1)
+                .setVisible(false);
+
+            sprite.play({ key: ZAPS[key].anim, repeat: -1 });
+
+            this.zaps.push({ sprite, key, x: offset + object.x, y: top });
+        }
     }
 
     // Every polyline on the map's waves layer, offset to where the map sits
@@ -150,15 +244,25 @@ export class Station {
         }
     }
 
+    // Level 4 begins: the station shows, in from the right edge.
+    start() {
+        this.layers.forEach(({ layer }) => layer.setVisible(true));
+        this.zaps.forEach(({ sprite }) => sprite.setVisible(true));
+    }
+
     // A ship is lost: the ships on screen vanish, as a called-off wave's do.
     // Routes still to come stay, further along the station.
     callOff() {
-        this.ships.forEach((ship) => ship.sprite.destroy());
+        this.ships.forEach((ship) => this.release(ship.sprite));
         this.ships = [];
     }
 
     destroy() {
         this.callOff();
+        this.pool.forEach((sprite) => sprite.destroy());
+        this.pool = [];
+        this.zaps.forEach(({ sprite }) => sprite.destroy());
+        this.zaps = [];
         this.maps.forEach((map) => map.destroy());
         this.maps = [];
         this.layers = [];
@@ -173,13 +277,25 @@ export class Station {
 
         const step = delta / 1000;
 
-        this.x -= SPEED * step;
+        // Whole STEPs only. Rounded, not floored: frame times wobble a little
+        // around TICK, and rounding keeps that from dropping or doubling a
+        // step; what is left over carries on to the next frame.
+        this.clock += delta;
+
+        const ticks = Math.round(this.clock / TICK);
+
+        this.clock -= ticks * TICK;
+        this.x -= STEP * ticks;
 
         const x = Math.round(this.x);
 
         this.layers.forEach(({ layer, offset }) => {
             layer.x = x + offset * SCALE;
         });
+
+        for (const zap of this.zaps) {
+            zap.sprite.setPosition(x + zap.x * SCALE, zap.y * SCALE);
+        }
 
         const edge = this.scene.scale.width + MARGIN;
 
@@ -209,7 +325,7 @@ export class Station {
             const on_line = ship.travelled >= 0;
 
             if (on_line && (sprite.x < -MARGIN || sprite.y < -MARGIN || sprite.y > this.view_height + MARGIN)) {
-                sprite.destroy();
+                this.release(sprite);
                 return false;
             }
 
@@ -222,7 +338,7 @@ export class Station {
             if (hit) {
                 explosions.spawn(sprite.x, sprite.y);
                 this.scene.addPoints(route.alien.points);
-                sprite.destroy();
+                this.release(sprite);
                 return false;
             }
 
@@ -240,15 +356,68 @@ export class Station {
     // fly in one after the other along the same line.
     wake(route, x) {
         for (let i = 0; i < route.alien.chain; i++) {
-            const travelled = -i * GAP;
+            const travelled = -i * GAP * (route.alien.spacing ?? 1);
             const point = this.along(route, travelled);
 
-            const sprite = this.scene.add.sprite(x + point.x, point.y, route.key);
-            sprite.setScale(SCALE);
-            sprite.play({ key: route.alien.anim, repeat: -1 });
+            const sprite = this.pool.pop() ?? this.newSprite();
+            sprite.setTexture(route.key)
+                .setPosition(x + point.x, point.y)
+                .setActive(true)
+                .setVisible(true);
+
+            if (route.alien.then) {
+                this.playInTurn(sprite, route.alien, route.alien.anim);
+            } else {
+                sprite.play({ key: route.alien.anim, repeat: -1 });
+            }
 
             this.ships.push({ route, sprite, travelled });
         }
+    }
+
+    // An alien with two tags plays one once, holds its last frame, then
+    // plays the other once, holds, and so on while it flies. A pooled sprite
+    // may already be flying for another chain when the hold ends, so the
+    // cycle goes on only if the sprite has not been released since.
+    playInTurn(sprite, alien, key) {
+        const flight = sprite.flight;
+
+        sprite.play(key);
+
+        sprite.once("animationcomplete", () => {
+            this.scene.time.delayedCall(alien.hold, () => {
+                if (sprite.flight === flight) {
+                    this.playInTurn(sprite, alien, key === alien.anim ? alien.then : alien.anim);
+                }
+            });
+        });
+    }
+
+    // A hidden alien sprite for the pool, at 3x like everything else.
+    // Its texture is set when a chain takes it.
+    newSprite() {
+        const sprite = this.scene.add.sprite(0, 0, "delta")
+            .setScale(SCALE)
+            .setActive(false)
+            .setVisible(false);
+
+        sprite.flight = 0;
+        return sprite;
+    }
+
+    // Shot or flown off: the sprite stops, hides and goes back to the pool.
+    release(sprite) {
+        // Already destroyed with the scene (GAME OVER back to the intro).
+        if (!sprite.scene) {
+            return;
+        }
+
+        sprite.flight++;
+        sprite.off("animationcomplete");
+        sprite.stop();
+        sprite.setActive(false).setVisible(false);
+
+        this.pool.push(sprite);
     }
 
     // The point the given distance along the route, station screen px.
@@ -272,14 +441,43 @@ export class Station {
             return false;
         }
 
-        return this.hitsWall(player) || this.hitsAlien(player);
+        const columns = player.paintedColumns();
+
+        return this.hitsWall(columns) || this.hitsZap(columns) || this.hitsAlien(player);
+    }
+
+    // As the wall: each painted ship column against the painted pixels of
+    // the frame each zap is showing. The empty frame never hits.
+    hitsZap(columns) {
+        if (!columns) {
+            return false;
+        }
+
+        for (const { sprite, key } of this.zaps) {
+            const { width, height, painted } = this.zap_masks[key][sprite.frame.name];
+
+            for (const ship of columns) {
+                const first_column = Math.max(0, Math.floor((ship.left - sprite.x) / SCALE));
+                const last_column = Math.min(width - 1, Math.ceil((ship.right - sprite.x) / SCALE) - 1);
+                const first_row = Math.max(0, Math.floor((ship.top - sprite.y) / SCALE));
+                const last_row = Math.min(height - 1, Math.ceil((ship.bottom - sprite.y) / SCALE) - 1);
+
+                for (let row = first_row; row <= last_row; row++) {
+                    for (let column = first_column; column <= last_column; column++) {
+                        if (painted[row * width + column]) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     // Checked one ship column at a time, its painted extent there against
     // the painted station under it, as the fire cave checks its flames.
-    hitsWall(player) {
-        const columns = player.paintedColumns();
-
+    hitsWall(columns) {
         if (!columns) {
             return false;
         }
@@ -322,6 +520,39 @@ export class Station {
             return player.touches(box);
         });
     }
+}
+
+// Per frame of an Aseprite texture, by frame name: its size and which native
+// pixels are painted. Read once from the loaded image.
+function paintedFrames(scene, key) {
+    const texture = scene.textures.get(key);
+    const image = texture.getSourceImage();
+
+    const canvas = document.createElement("canvas");
+    canvas.width = image.width;
+    canvas.height = image.height;
+
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    context.drawImage(image, 0, 0);
+
+    const pixels = context.getImageData(0, 0, image.width, image.height).data;
+    const frames = {};
+
+    for (const name of texture.getFrameNames()) {
+        const frame = texture.get(name);
+        const painted = new Uint8Array(frame.cutWidth * frame.cutHeight);
+
+        for (let row = 0; row < frame.cutHeight; row++) {
+            for (let column = 0; column < frame.cutWidth; column++) {
+                const i = ((frame.cutY + row) * image.width + frame.cutX + column) * 4;
+                painted[row * frame.cutWidth + column] = pixels[i + 3] > 0 ? 1 : 0;
+            }
+        }
+
+        frames[name] = { width: frame.cutWidth, height: frame.cutHeight, painted };
+    }
+
+    return frames;
 }
 
 // Reads the loaded tiles image once and lays every map's station layer out in

@@ -74,6 +74,11 @@ const POWERUP_BOX_COLOUR = 0x333941;
 const POWERUP_BLINK_COLOURS = [0xdae0ea, 0xb9bffb, 0x849be4];
 const POWERUP_BLINK_MS = 100;
 
+// Dev only: the FPS readout's gap from the canvas's right edge, px, and how
+// often it is refreshed, ms.
+const FPS_RIGHT = 10;
+const FPS_MS = 500;
+
 // The HUD scene is the scene that shows the points, HI and lives.
 export class HudScene extends Scene {
 
@@ -177,6 +182,20 @@ export class HudScene extends Scene {
 
         this.powerups_on = new Set();
         this.blink_index = 0;
+
+        // Dev server only, never in the released game: frames per second,
+        // right end of the top band, level with HI, every FPS_MS.
+        if (import.meta.env.DEV) {
+            const fps_text = this.add.bitmapText(
+                this.scale.width - FPS_RIGHT, this.hi_text.y, "hud-font", "", HI_FONT_SIZE
+            ).setOrigin(1, 0);
+
+            this.time.addEvent({
+                delay: FPS_MS,
+                loop: true,
+                callback: () => fps_text.setText(`FPS ${Math.round(this.game.loop.actualFps)}`)
+            });
+        }
 
         // Steps every blinking box to the next colour.
         this.time.addEvent({

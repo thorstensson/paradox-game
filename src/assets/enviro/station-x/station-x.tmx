@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="528" height="30" tilewidth="8" tileheight="8" infinite="0" nextlayerid="10" nextobjectid="11">
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="528" height="30" tilewidth="8" tileheight="8" infinite="0" nextlayerid="12" nextobjectid="21">
  <editorsettings>
   <export target="station-x.tmj" format="json"/>
  </editorsettings>
  <tileset firstgid="1" name="station-x-tiles" tilewidth="8" tileheight="8" tilecount="386" columns="386">
   <image source="station-x-tiles.png" width="3088" height="8"/>
  </tileset>
- <tileset firstgid="387" name="guns" tilewidth="96" tileheight="80" tilecount="4" columns="0">
+ <tileset firstgid="387" name="guns" tilewidth="96" tileheight="118" tilecount="6" columns="0">
   <grid orientation="orthogonal" width="1" height="1"/>
   <tile id="0">
    <image source="../guns/gun.png" width="32" height="32"/>
@@ -19,6 +19,12 @@
   </tile>
   <tile id="3">
    <image source="../guns/gun-inverted.png" width="32" height="32"/>
+  </tile>
+  <tile id="4" x="0" y="0" width="24" height="46">
+   <image source="../zap/zap-46px.png" width="216" height="46"/>
+  </tile>
+  <tile id="5" x="0" y="0" width="24" height="118">
+   <image source="../zap/zap-118px.png" width="72" height="118"/>
   </tile>
  </tileset>
  <imagelayer id="4" name="guide" visible="0">
@@ -112,5 +118,9 @@
   <object id="10" name="w1-neutron" type="neutron" x="935" y="124">
    <polyline points="0,0 -39,0 -119,-16 -199,0 -439,0"/>
   </object>
+ </objectgroup>
+ <objectgroup id="11" name="zap">
+  <object id="17" gid="391" x="734" y="143" width="24" height="46"/>
+  <object id="18" gid="392" x="1300" y="179" width="24" height="118"/>
  </objectgroup>
 </map>
