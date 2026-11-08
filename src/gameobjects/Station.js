@@ -11,8 +11,11 @@ import { paintedBox } from "./FirecometTrack";
 // Each polyline on a map's waves layer is one ship's route. Its Class is the
 // alien (its folder and texture key), its Name wave-alien-place, as
 // w1-delta-top. Its first point is where the ship comes in: the ship wakes as
-// that point passes just outside the right edge, then flies the line, curved
-// smoothly through its points, riding along with the station.
+// that point passes just outside the right edge. At that moment the line is
+// pinned to the screen where it is (2026-11-08, Thomas's pick): the walls
+// scroll on under it, and every ship of the chain flies the whole line as
+// drawn, at 3x, curved smoothly through its points -- as the waves of levels
+// 1 and 2 fly their shapes against the screen.
 
 // The ship's pixel size, as everything in the game.
 const SCALE = 3;
@@ -42,16 +45,21 @@ const MAPS = [ "station-x", "station-x-1", "station-x-2" ];
 // until they are played. An alien with "then" and "hold" (ms) plays two tags
 // in turn (playInTurn); none does now.
 //
+// The speed is screen px/s along the pinned line.
+//
 // The enforcer (2026-11-07, first pass): one frame (enforcer-level), a chain
-// of 4, "spacing" 4 sprite widths apart (384 px), and speed 500: 200 px/s
-// along its line over the station's 300, slow next to the others.
+// of 4, "spacing" 4 sprite widths apart (384 px), and speed 500, slow next to
+// the others.
+//
+// The moon (2026-11-08, first pass): a slow object, speed 400. A chain of 7,
+// spacing 3 sprite widths apart (288 px).
 const ALIENS = {
     delta: { anim: "delta-spin", chain: 10, speed: 715.8, points: 100, box: null },
     neutron: { anim: "spin", chain: 7, speed: 715.8, points: 100, box: { x: -13, y: -4, w: 26, h: 9 } },
     raider: { anim: "raider-loop", chain: 7, speed: 715.8, points: 100, box: null },
     xwing: { anim: "xwing-loop", chain: 7, speed: 715.8, points: 100, box: null },
     enforcer: { anim: "enforcer-level", chain: 4, spacing: 4, speed: 500, points: 100, box: null },
-    moon: { anim: "moon-loop", chain: 7, speed: 715.8, points: 100, box: null }
+    moon: { anim: "moon-loop", chain: 7, spacing: 3, speed: 400, points: 100, box: null }
 };
 
 // Half a 32x32 alien at 3x: ships wake and leave fully off-screen.
@@ -297,6 +305,9 @@ export class Station {
             zap.sprite.setPosition(x + zap.x * SCALE, zap.y * SCALE);
         }
 
+        // Before the aliens are tested, so no alien is shot through a wall.
+        this.stopBullets(bullets, x);
+
         const edge = this.scene.scale.width + MARGIN;
 
         this.routes = this.routes.filter((route) => {
@@ -311,14 +322,12 @@ export class Station {
         this.ships = this.ships.filter((ship) => {
             const { route, sprite } = ship;
 
-            // Along the line, relative to the station, at what is left of
-            // the alien's speed once the station's is taken off: a line
-            // drawn right to left crosses the screen at the alien's own
-            // speed, as its wave does.
-            ship.travelled += (route.alien.speed - SPEED) * step;
+            // Along the line at the alien's own speed, on the line where it
+            // was pinned when the chain woke.
+            ship.travelled += route.alien.speed * step;
 
             const point = this.along(route, ship.travelled);
-            sprite.setPosition(x + point.x, point.y);
+            sprite.setPosition(route.pinned_x + point.x, point.y);
 
             // Ships still behind the start, off the right edge, are on
             // their way in, wherever the line leads.
@@ -354,7 +363,12 @@ export class Station {
     // The route's whole chain comes in at once: the first ship on the start
     // point, each one after it GAP further back, off the right edge, so they
     // fly in one after the other along the same line.
+    //
+    // The line is pinned here: where the station is now is where the line
+    // stays on screen, while the station scrolls on.
     wake(route, x) {
+        route.pinned_x = x;
+
         for (let i = 0; i < route.alien.chain; i++) {
             const travelled = -i * GAP * (route.alien.spacing ?? 1);
             const point = this.along(route, travelled);
@@ -500,6 +514,40 @@ export class Station {
         }
 
         return false;
+    }
+
+    // The player's bullets stop at the walls: a bullet whose box touches a
+    // painted pixel of the station is spent, with no effect. Zaps let them
+    // through, as they can't be shot. x is the station's left edge on screen.
+    stopBullets(bullets, x) {
+        for (const bullet of bullets.bullets) {
+            if (!bullet.active) {
+                continue;
+            }
+
+            const left = bullet.x - bullets.width / 2 - x;
+            const top = bullet.y - bullets.height / 2;
+
+            const first_column = Math.max(0, Math.floor(left / SCALE));
+            const last_column = Math.min(this.mask_width - 1, Math.ceil((left + bullets.width) / SCALE) - 1);
+            const first_row = Math.max(0, Math.floor(top / SCALE));
+            const last_row = Math.min(this.mask_height - 1, Math.ceil((top + bullets.height) / SCALE) - 1);
+
+            let wall = false;
+
+            for (let row = first_row; row <= last_row && !wall; row++) {
+                for (let column = first_column; column <= last_column; column++) {
+                    if (this.mask[row * this.mask_width + column]) {
+                        wall = true;
+                        break;
+                    }
+                }
+            }
+
+            if (wall) {
+                bullets.deactivate(bullet);
+            }
+        }
     }
 
     // As the waves do: the alien's hit box against the ship's painted pixels.

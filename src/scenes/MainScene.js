@@ -46,7 +46,10 @@ const LEVEL_2_DELAY = 3000;
 // cave slides out to the left, the ship flies on into open space, and after
 // LEVEL_3_DELAY ms of it the title comes up, then the asteroid belt.
 const LEVEL_3_TITLE = "ENTERING\nBELT OF OSIRIS";
-const LEVEL_3_DELAY = 3000;
+const LEVEL_3_DELAY = 1500;
+
+// Pause between the level 3 title fading out and the belt coming in, ms.
+const LEVEL_3_BELT_DELAY = 500;
 
 // Level 4 follows level 3 the same way: once the belt's last rock is gone,
 // the ship flies on into open space, and after LEVEL_4_DELAY ms of it the
@@ -96,8 +99,9 @@ const LEVEL_2_WAVES = [
     // Level 1's neutrons, mirrored: in from the centre, spreading out.
     (scene) => new NeutronWave(scene, [-1, 1], null, true),
     (scene) => new NeutronDiveWave(scene, 1, null, true),
-    // The top chain drops the shield power-up when shot in full.
-    (scene) => new NeutronDiveWave(scene, -1, null, true, "shield"),
+    // The top chain drops the shield power-up when shot in full. Its last
+    // neutron is the odd-coloured one, as in level 1's wave 7.
+    (scene) => new NeutronDiveWave(scene, -1, 7, true, "shield"),
     (scene) => new EmberRingWave(scene)
 ];
 
@@ -227,6 +231,7 @@ export class MainScene extends Scene {
         this.anims.createFromAseprite("xwing");
         this.anims.createFromAseprite("enforcer");
         this.anims.createFromAseprite("moon");
+        this.anims.createFromAseprite("ember-ring");
         this.anims.createFromAseprite("zap-46px");
         this.anims.createFromAseprite("zap-118px");
         this.anims.createFromAseprite("bullet-enemy");
@@ -489,12 +494,15 @@ export class MainScene extends Scene {
         }
 
         this.showLevelTitle(LEVEL_3_TITLE, () => {
-            // Skipped on to level 4 (dev only) while the title was up.
-            if (this.level !== 3) {
-                return;
-            }
+            this.time.delayedCall(LEVEL_3_BELT_DELAY, () => {
+                // Skipped on to level 4 (dev only), or the last ship lost,
+                // while the title was up or since.
+                if (!this.playing || this.level !== 3) {
+                    return;
+                }
 
-            this.asteroid_belt = new AsteroidBelt(this);
+                this.asteroid_belt = new AsteroidBelt(this);
+            });
         });
     }
 

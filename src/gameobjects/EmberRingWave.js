@@ -7,7 +7,8 @@ import { paintedBox } from "./FirecometTrack";
 // One big ring of fire comes in from the right and moves slowly across the
 // screen on a sine between the flames, spinning. As it spins it sprays a
 // ring of bullets from its rim, the ring turning with it like a sprinkler.
-// Phaser turns the single painted frame, so there are no spin frames.
+// The painted frames play the ember-ring-loop tag while Phaser turns the
+// sprite.
 //
 // It soaks up 50 hits, silently, then blows.
 //
@@ -76,8 +77,9 @@ export class EmberRingWave {
         this.end_x = -this.radius;
         this.width = width;
 
-        this.ring = scene.add.image(this.start_x, this.middle, "ember-ring");
+        this.ring = scene.add.sprite(this.start_x, this.middle, "ember-ring");
         this.ring.setScale(RING_SCALE);
+        this.ring.play({ key: "ember-ring-loop", repeat: -1 });
         this.ring.hits = HITS;
     }
 

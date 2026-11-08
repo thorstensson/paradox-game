@@ -68,7 +68,7 @@ const BANK_DECAY = 0.0001;
 // Autofire. Holding the button sends a shot every FIRE_INTERVAL ms rather
 // than one per click -- clicking repeatedly through a wave is a wrist injury,
 // not a mechanic.
-const FIRE_INTERVAL = 120;
+const FIRE_INTERVAL = 180;
 
 // Where a shot is born, in native ship pixels from its centre (scaled with
 // the ship, so it stays on the prongs at any SHIP_SCALE). The point the

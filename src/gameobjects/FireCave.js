@@ -15,9 +15,9 @@ const SCALE = 5;
 // Screen px per second -- fast, a rush through the cave.
 const SPEED = 337.6;
 
-// ms per flicker frame -- 100 ms, the same as firecave.json, so the 32 frames
-// play as painted in Aseprite.
-const FRAME_TIME = 100;
+// ms per flicker frame -- 70 ms. The game uses this one value for every
+// frame; the durations in firecave.json are not read.
+const FRAME_TIME = 70;
 
 export class FireCave {
     strips = [];
@@ -29,6 +29,15 @@ export class FireCave {
     heights = [];
     frame_width = 0;
     view_height = 0;
+
+    // Native columns in the middle of each gap between flames: where the
+    // strips' trailing edge is set to end, so no flame is cut off as they
+    // slide out.
+    gap_middles = [];
+
+    // The strips' width, screen px: the screen's width, lengthened by
+    // leave() to end in a gap.
+    length = 0;
 
     // Screen px still to cover while sliding in, then screen px scrolled.
     x = 0;
@@ -55,8 +64,10 @@ export class FireCave {
         this.frames = scene.textures.get("firecave").getFrameNames();
         this.heights = flameHeights(scene, this.frames);
         this.frame_width = this.heights[0].length;
+        this.gap_middles = gapMiddles(this.heights);
         this.view_height = height;
         this.width = width;
+        this.length = width;
         this.x = width;
 
         const bottom = scene.add.tileSprite(
@@ -89,9 +100,31 @@ export class FireCave {
 
     // The level is over: the cave slides out to the left. onLeft runs once
     // it is off the screen and gone.
+    //
+    // The strips' right edge sits at the screen's right edge, at whatever
+    // column of the frame the scroll has reached, often mid-flame. So both
+    // strips are first lengthened, off-screen to the right, to the middle of
+    // the next gap between flames.
     leave(onLeft) {
         this.leaving = true;
         this.onLeft = onLeft;
+
+        const period = this.frame_width * SCALE;
+        const edge = (this.width + Math.round(this.scroll)) % period;
+
+        let extra = 0;
+
+        if (this.gap_middles.length) {
+            extra = Math.min(...this.gap_middles.map(
+                (column) => (column * SCALE - edge + period) % period
+            ));
+        }
+
+        this.length = this.width + extra;
+
+        for (const strip of this.strips) {
+            strip.setSize(this.length, strip.height);
+        }
     }
 
     // Removes the cave at once.
@@ -117,7 +150,7 @@ export class FireCave {
                 strip.x = Math.round(this.x);
             }
 
-            if (this.x <= -this.width) {
+            if (this.x <= -this.length) {
                 this.destroy();
                 this.onLeft?.();
             }
@@ -175,7 +208,7 @@ export class FireCave {
             for (let x = Math.floor(ship.left); x < ship.right; x++) {
                 // Still sliding in: no fire left of the strips' edge yet.
                 // Sliding out: none right of their trailing edge.
-                if (x < strip_x || x >= strip_x + this.width) {
+                if (x < strip_x || x >= strip_x + this.length) {
                     continue;
                 }
 
@@ -192,6 +225,49 @@ export class FireCave {
 
         return false;
     }
+}
+
+// The middle column of each gap between flames, native px. A gap is a run
+// of columns where the flame, at its tallest over all frames, is lowest --
+// empty in every frame, if the painting has such columns, since the flicker
+// runs on while the cave slides out. The frame repeats, so a run may wrap
+// round from the last column to the first.
+function gapMiddles(heights) {
+    const width = heights[0].length;
+    const tallest = [];
+
+    for (let column = 0; column < width; column++) {
+        tallest.push(Math.max(...heights.map((frame) => frame[column])));
+    }
+
+    const lowest = Math.min(...tallest);
+    const in_gap = tallest.map((reach) => reach === lowest);
+
+    // Every column the same: no gap to aim for.
+    if (in_gap.every(Boolean)) {
+        return [];
+    }
+
+    // Start just after a flame column, so no run is split by the wrap.
+    const start = (in_gap.lastIndexOf(false) + 1) % width;
+    const middles = [];
+    let run = 0;
+
+    for (let i = 0; i < width; i++) {
+        const column = (start + i) % width;
+
+        if (in_gap[column]) {
+            run++;
+        }
+
+        if (run > 0 && (!in_gap[column] || i === width - 1)) {
+            const last = in_gap[column] ? i : i - 1;
+            middles.push((start + last - Math.floor((run - 1) / 2)) % width);
+            run = 0;
+        }
+    }
+
+    return middles;
 }
 
 // Reads the loaded firecave image once and, for each frame, finds the

@@ -251,7 +251,12 @@ Built 2026-10-29 (`Station.js`), first waves on `station-x`.
   neutrons, one sprite width apart, coming in from the right edge along the
   line's first piece -- so the space right of the start, that way, must be
   open.
-- The ships ride with the station and curve smoothly through the points.
+- When the line's first point reaches the right edge, the line is pinned to
+  the screen where it is (2026-11-08): the walls scroll on under it, and
+  every ship flies the whole line as drawn, at 3x, at its own speed, curved
+  smoothly through the points. Lines are drawn right to left, so the rest of
+  the line already lies across the screen; anything wider than the screen
+  (about 460 native px) runs off the left edge.
 - A lost ship clears the station's ships on screen; they are not replayed.
 
 ### Later

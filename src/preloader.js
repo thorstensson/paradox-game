@@ -86,9 +86,10 @@ import enforcerJsonUrl from "./assets/enemies/enforcer/enforcer.json?url";
 import moonUrl from "./assets/enemies/moon/moon.png?url";
 import moonJsonUrl from "./assets/enemies/moon/moon.json?url";
 
-// Ember ring, level 2's last wave. 64x64 indexed, one frame -- Phaser spins
-// it, so a plain image, not an atlas.
+// Ember ring, level 2's last wave. 64x64 indexed, 5 frames under one looping
+// tag, ember-ring-loop; Phaser also spins it.
 import emberRingUrl from "./assets/enemies/ember-ring/ember-ring.png?url";
+import emberRingJsonUrl from "./assets/enemies/ember-ring/ember-ring.json?url";
 
 // Enemy bullet, fired by aliens from level 2's A2 on. 6x6 indexed, two
 // frames under one looping tag, bullet-enemy-blink. Same export settings as
@@ -192,7 +193,7 @@ export class Preloader extends Phaser.Scene {
         this.load.aseprite("xwing", xwingUrl, xwingJsonUrl);
         this.load.aseprite("enforcer", enforcerUrl, enforcerJsonUrl);
         this.load.aseprite("moon", moonUrl, moonJsonUrl);
-        this.load.image("ember-ring", emberRingUrl);
+        this.load.aseprite("ember-ring", emberRingUrl, emberRingJsonUrl);
         this.load.aseprite("bullet-enemy", bulletEnemyUrl, bulletEnemyJsonUrl);
         this.load.aseprite("powerup-bullets", powerupBulletsUrl, powerupBulletsJsonUrl);
         this.load.aseprite("powerup-shield", powerupShieldUrl, powerupShieldJsonUrl);
