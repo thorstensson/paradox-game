@@ -107,13 +107,13 @@
  </objectgroup>
  <objectgroup id="7" name="waves">
   <object id="7" name="w1-delta-top" type="delta" x="496" y="80">
-   <polyline points="0,0 -192,17 -439,-8 -496,-8"/>
+   <polyline points="0,0 -192,17 -440,8 -496,8"/>
   </object>
   <object id="8" name="w1-delta-bottom" type="delta" x="496" y="163">
    <properties>
     <property name="missile" value=""/>
    </properties>
-   <polyline points="0,0 -192,-17 -439,8 -496,8"/>
+   <polyline points="0,0 -192,-17 -440,-10 -496,-10"/>
   </object>
   <object id="10" name="w1-neutron" type="neutron" x="935" y="124">
    <polyline points="0,0 -39,0 -119,-16 -199,0 -439,0"/>

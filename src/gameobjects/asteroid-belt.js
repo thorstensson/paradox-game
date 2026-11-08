@@ -11,7 +11,7 @@
 export const ASTEROID_BELT = [
     { x: 0, y: 26, rock: 2, spin: 30 },
     { x: 225, y: 458, rock: 1, spin: 19 },
-    { x: 452, y: 372, rock: 2, spin: -18 },
+    { x: 452, y: 372, rock: 2, spin: -18, drop: "bullets" },
     { x: 580, y: 372, rock: 1, spin: -18 },
     { x: 774, y: 165, rock: 1, spin: -19 },
     { x: 944, y: 241, rock: 3, spin: -23 },

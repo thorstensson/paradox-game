@@ -165,6 +165,9 @@ export class EmberRingWave {
         if (ring.hits <= 0) {
             explosions.spawn(ring.x, ring.y);
             this.scene.addPoints(POINTS);
+
+            // Out of its explosion, the bullet power-up (RAILGUN).
+            this.scene.powerups.spawn(ring.x, ring.y, "bullets");
             ring.destroy();
             this.ring = null;
         }
