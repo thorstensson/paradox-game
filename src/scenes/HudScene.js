@@ -48,7 +48,6 @@ const HI_FONT_SIZE = 16;
 export const BOTTOM_BAND = 40;
 
 // In order, left to right. Each name is the key update_powerups() takes.
-// MISSILE has no power-up yet, so it never lights.
 const POWERUP_LABELS = [
     { name: "railgun", text: "RAILGUN" },
     { name: "shield", text: "SHIELD" },

@@ -1,5 +1,6 @@
 import { Curves, Geom, Math as PhaserMath } from "phaser";
 import { paintedBox } from "./FirecometTrack";
+import { EnemyBullets } from "./EnemyBullets";
 
 // Level 4, Station X (NOTES.md -> Level 4 Concepts): the three maps traced in
 // Tiled, side by side, in from the right edge and off to the left.
@@ -47,20 +48,50 @@ const MAPS = [ "station-x", "station-x-1", "station-x-2" ];
 //
 // The speed is screen px/s along the pinned line.
 //
-// The enforcer (2026-11-07, first pass): one frame (enforcer-level), a chain
+// The enforcer (2026-11-07, first pass; new sleek art 2026-11-09 with its
+// engines on one looping tag, enforcer-loop, never rotated): a chain
 // of 4, "spacing" 4 sprite widths apart (384 px), and speed 500, slow next to
 // the others.
 //
-// The moon (2026-11-08, first pass): a slow object, speed 400. A chain of 7,
+// An alien with "fire_at" fires one shot, once it has flown that many screen
+// px of its line: the red dash, straight ahead out of its nose (its leftmost
+// painted pixel), not aimed -- one more thing to fly round (2026-11-09,
+// Thomas). The enforcer fires at 300, a placeholder to tune by playing.
+//
+// The electroball (2026-11-09, first pass): a chain of 5 at the moon's
+// speed, 400 (Thomas, after a first try at chain 7, speed 500).
+// One hit: a placeholder.
+//
+// "hits": bullets it takes to die, 1 if left out. The enforcer and the moon
+// take 3 (Thomas, 2026-11-09): a bullet that does not kill is used up and
+// the alien flies on, as the firering does. Points and the drop count come
+// only with the kill. A missile kills any alien outright.
+//
+// The moon (2026-11-08, first pass): a slow object, speed 400. A chain of 5
+// (7 until 2026-11-09),
 // spacing 3 sprite widths apart (288 px).
 const ALIENS = {
-    delta: { anim: "delta-spin", chain: 10, speed: 715.8, points: 100, box: null },
+    // Chain 5 since 2026-11-09 (Thomas): the first delta wave, top and bottom.
+    delta: { anim: "delta-spin", chain: 5, speed: 715.8, points: 100, box: null },
     neutron: { anim: "spin", chain: 7, speed: 715.8, points: 100, box: { x: -13, y: -4, w: 26, h: 9 } },
     raider: { anim: "raider-loop", chain: 7, speed: 715.8, points: 100, box: null },
     xwing: { anim: "xwing-loop", chain: 7, speed: 715.8, points: 100, box: null },
-    enforcer: { anim: "enforcer-level", chain: 4, spacing: 4, speed: 500, points: 100, box: null },
-    moon: { anim: "moon-loop", chain: 7, spacing: 3, speed: 400, points: 100, box: null }
+    enforcer: { anim: "enforcer-loop", chain: 4, spacing: 4, speed: 500, points: 100, box: null, fire_at: 300, hits: 3 },
+    moon: { anim: "moon-loop", chain: 5, spacing: 3, speed: 400, points: 100, box: null, hits: 3 },
+    electroball: { anim: "electro-loop", chain: 5, speed: 400, points: 100, box: null }
 };
+
+// The lines that drop a power-up, by their Name in Tiled, with the kind they
+// drop (PowerUps.js). Every ship of the line shot: the drop comes out of the
+// last explosion. A ship that gets away off the screen: no drop.
+const DROPS = {
+    "w1-delta-top": "missile"
+};
+
+// The red dash's speed, screen px/s: faster than any alien that fires it, or
+// the alien would fly into its own shot. The ship's own bullet speed
+// (PlayerBullets.js), a placeholder to tune by playing.
+const RED_BULLET_SPEED = 900;
 
 // Half a 32x32 alien at 3x: ships wake and leave fully off-screen.
 const MARGIN = 16 * SCALE;
@@ -103,6 +134,15 @@ export class Station {
     routes = [];
     ships = [];
 
+    // Every route on every map, kept so a restart can put them back.
+    all_routes = [];
+
+    // The restart markers: X of every object on each map's markers layer
+    // (spawn-1, spawn-2...), native px from the station's left edge, in
+    // order. After a lost ship the station goes back so the last one passed
+    // sits at the right edge (Thomas's pick B, 2026-11-09).
+    markers = [];
+
     // Alien sprites not in use, hidden, ready for the next chain.
     pool = [];
 
@@ -114,6 +154,13 @@ export class Station {
 
     // Hit box per alien, native px from the sprite's centre.
     boxes = {};
+
+    // Nose per alien that fires: its leftmost painted pixel, native px from
+    // the sprite's centre.
+    noses = {};
+
+    // The red dashes the station's aliens have fired.
+    bullets = null;
 
     // The painted station, one byte per native pixel, 1 for wall.
     mask = null;
@@ -141,7 +188,17 @@ export class Station {
 
         for (const [ key, alien ] of Object.entries(ALIENS)) {
             this.boxes[key] = alien.box ?? paintedBox(scene, key);
+
+            if (alien.fire_at !== undefined) {
+                this.noses[key] = nose(scene, key);
+            }
         }
+
+        this.bullets = new EnemyBullets(scene, {
+            key: "bullet-red-enemy",
+            anim: null,
+            speed: RED_BULLET_SPEED
+        });
 
         let offset = 0;
 
@@ -164,9 +221,13 @@ export class Station {
 
             this.readRoutes(scene.cache.tilemap.get(key).data, offset);
             this.readZaps(scene.cache.tilemap.get(key).data, offset);
+            this.readMarkers(scene.cache.tilemap.get(key).data, offset);
 
             offset += map.widthInPixels;
         }
+
+        this.all_routes = [ ...this.routes ];
+        this.markers.sort((a, b) => a - b);
 
         this.mask_width = offset;
         this.mask_height = this.maps[0].heightInPixels;
@@ -212,6 +273,16 @@ export class Station {
             sprite.play({ key: ZAPS[key].anim, repeat: -1 });
 
             this.zaps.push({ sprite, key, x: offset + object.x, y: top });
+        }
+    }
+
+    // Every object on the map's markers layer: only its X is read, so a
+    // point is enough. A map without the layer has no markers.
+    readMarkers(data, offset) {
+        const layer = data.layers.find((l) => l.name === "markers");
+
+        for (const object of layer?.objects ?? []) {
+            this.markers.push(offset + object.x);
         }
     }
 
@@ -263,6 +334,30 @@ export class Station {
     callOff() {
         this.ships.forEach((ship) => this.release(ship.sprite));
         this.ships = [];
+        this.bullets.clear();
+    }
+
+    // After a lost ship, while the screen is black: the station goes back so
+    // the last marker passed (on screen or gone by) sits at the right edge,
+    // or to its own start if none was passed. Every wave whose first point
+    // lies right of that marker is put back and comes in again as the
+    // station scrolls, at its own first point; the walls and zaps follow the
+    // station, so they come back with it.
+    restart() {
+        const width = this.scene.scale.width;
+        const passed = this.markers.filter((marker) => this.x + marker * SCALE <= width);
+        const marker = passed.length ? passed[passed.length - 1] : null;
+
+        this.callOff();
+        this.clock = 0;
+
+        if (marker === null) {
+            this.x = width;
+            this.routes = [ ...this.all_routes ];
+        } else {
+            this.x = width - marker * SCALE;
+            this.routes = this.all_routes.filter((route) => route.start.x > marker * SCALE);
+        }
     }
 
     destroy() {
@@ -275,6 +370,7 @@ export class Station {
         this.maps = [];
         this.layers = [];
         this.routes = [];
+        this.all_routes = [];
         this.gone = true;
     }
 
@@ -319,6 +415,11 @@ export class Station {
             return false;
         });
 
+        // The red dashes already in flight fly on, off the screen or into the
+        // ship's shield. Before the aliens fire, so a new dash shows touching
+        // the nose on the frame it is fired, and flies from the next.
+        this.bullets.update(delta);
+
         this.ships = this.ships.filter((ship) => {
             const { route, sprite } = ship;
 
@@ -329,15 +430,28 @@ export class Station {
             const point = this.along(route, ship.travelled);
             sprite.setPosition(route.pinned_x + point.x, point.y);
 
+            // Its one shot, out of its nose.
+            if (!ship.fired && route.alien.fire_at !== undefined && ship.travelled >= route.alien.fire_at) {
+                const tip = this.noses[route.key];
+
+                ship.fired = true;
+                this.bullets.fireLeft(sprite.x + tip.x * SCALE, sprite.y + tip.y * SCALE);
+            }
+
             // Ships still behind the start, off the right edge, are on
             // their way in, wherever the line leads.
             const on_line = ship.travelled >= 0;
 
             if (on_line && (sprite.x < -MARGIN || sprite.y < -MARGIN || sprite.y > this.view_height + MARGIN)) {
+                route.missed = true;
                 this.release(sprite);
                 return false;
             }
 
+            // One hit a frame at most: the railgun's two bullets landing
+            // together count as one (Thomas's pick A, 2026-11-09), so it is
+            // no quicker than one bullet on an alien that takes 3. Both
+            // bullets are used up.
             let hit = false;
 
             bullets.collide(sprite, () => {
@@ -345,14 +459,24 @@ export class Station {
             });
 
             if (hit) {
+                ship.taken++;
+            }
+
+            // Short of its hits, the bullets are used up and the alien flies
+            // on; at its hits, it blows up.
+            if (ship.taken >= (route.alien.hits ?? 1)) {
                 explosions.spawn(sprite.x, sprite.y);
                 this.scene.addPoints(route.alien.points);
+                this.dropIfShotInFull(route, sprite);
                 this.release(sprite);
                 return false;
             }
 
             return true;
         });
+
+        // The red dashes stop at the walls as the ship's bullets do.
+        this.stopEnemyBullets(x);
 
         // The last map is off the left edge and its last ship gone.
         if (x + this.mask_width * SCALE <= 0 && this.ships.length === 0) {
@@ -368,6 +492,11 @@ export class Station {
     // stays on screen, while the station scrolls on.
     wake(route, x) {
         route.pinned_x = x;
+
+        // Counted again from nothing each time the line comes in, after a
+        // restart too.
+        route.shot = 0;
+        route.missed = false;
 
         for (let i = 0; i < route.alien.chain; i++) {
             const travelled = -i * GAP * (route.alien.spacing ?? 1);
@@ -385,7 +514,21 @@ export class Station {
                 sprite.play({ key: route.alien.anim, repeat: -1 });
             }
 
-            this.ships.push({ route, sprite, travelled });
+            // taken: bullets it has taken so far.
+            this.ships.push({ route, sprite, travelled, taken: 0 });
+        }
+    }
+
+    // One more ship of the route shot. If the route drops a power-up (DROPS)
+    // and this was its last ship, none having got away, the drop comes out
+    // where this one blew up.
+    dropIfShotInFull(route, sprite) {
+        route.shot++;
+
+        const kind = DROPS[route.name];
+
+        if (kind && !route.missed && route.shot === route.alien.chain) {
+            this.scene.powerups.spawn(sprite.x, sprite.y, kind);
         }
     }
 
@@ -449,6 +592,81 @@ export class Station {
         return route.end_direction.clone().scale(distance - route.length).add(route.end);
     }
 
+    // The aliens a missile can go for: on their line and inside the screen.
+    targets() {
+        if (this.gone) {
+            return [];
+        }
+
+        const width = this.scene.scale.width;
+
+        return this.ships.filter(({ sprite, travelled }) => travelled >= 0
+            && sprite.x >= 0 && sprite.x <= width
+            && sprite.y >= 0 && sprite.y <= this.view_height);
+    }
+
+    // True while the ship is still flying: not shot, not flown off.
+    isFlying(ship) {
+        return this.ships.includes(ship);
+    }
+
+    // The first alien whose hit box overlaps the rectangle (screen px), or
+    // null.
+    alienIn(rect) {
+        const box = new Geom.Rectangle();
+
+        return this.ships.find(({ route, sprite }) => {
+            const hit_box = this.boxes[route.key];
+
+            box.setTo(
+                sprite.x + hit_box.x * SCALE,
+                sprite.y + hit_box.y * SCALE,
+                hit_box.w * SCALE,
+                hit_box.h * SCALE
+            );
+
+            return Geom.Intersects.RectangleToRectangle(box, rect);
+        }) ?? null;
+    }
+
+    // Shot by a missile: as by a bullet -- explosion, points, the count
+    // toward the line's drop -- and gone.
+    destroyShip(ship, explosions) {
+        const { route, sprite } = ship;
+
+        explosions.spawn(sprite.x, sprite.y);
+        this.scene.addPoints(route.alien.points);
+        this.dropIfShotInFull(route, sprite);
+        this.release(sprite);
+
+        this.ships = this.ships.filter((other) => other !== ship);
+    }
+
+    // True if the rectangle (screen px) touches a painted pixel of the
+    // station.
+    wallIn(rect) {
+        if (this.gone) {
+            return false;
+        }
+
+        const left = rect.x - Math.round(this.x);
+
+        const first_column = Math.max(0, Math.floor(left / SCALE));
+        const last_column = Math.min(this.mask_width - 1, Math.ceil((left + rect.width) / SCALE) - 1);
+        const first_row = Math.max(0, Math.floor(rect.y / SCALE));
+        const last_row = Math.min(this.mask_height - 1, Math.ceil((rect.y + rect.height) / SCALE) - 1);
+
+        for (let row = first_row; row <= last_row; row++) {
+            for (let column = first_column; column <= last_column; column++) {
+                if (this.mask[row * this.mask_width + column]) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     // True if the ship touches a wall or one of the station's aliens.
     hits(player) {
         if (this.gone) {
@@ -457,7 +675,34 @@ export class Station {
 
         const columns = player.paintedColumns();
 
-        return this.hitsWall(columns) || this.hitsZap(columns) || this.hitsAlien(player);
+        return this.hitsWall(columns) || this.hitsZap(columns) || this.hitsAlien(player)
+            || this.bullets.hits(player);
+    }
+
+    // A red dash whose painted box touches a painted pixel of the station is
+    // gone. x is the station's left edge on screen.
+    stopEnemyBullets(x) {
+        const box = this.bullets.hit_box;
+
+        this.bullets.removeWhere((bullet) => {
+            const left = bullet.x + box.x * SCALE - x;
+            const top = bullet.y + box.y * SCALE;
+
+            const first_column = Math.max(0, Math.floor(left / SCALE));
+            const last_column = Math.min(this.mask_width - 1, Math.ceil((left + box.w * SCALE) / SCALE) - 1);
+            const first_row = Math.max(0, Math.floor(top / SCALE));
+            const last_row = Math.min(this.mask_height - 1, Math.ceil((top + box.h * SCALE) / SCALE) - 1);
+
+            for (let row = first_row; row <= last_row; row++) {
+                for (let column = first_column; column <= last_column; column++) {
+                    if (this.mask[row * this.mask_width + column]) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        });
     }
 
     // As the wall: each painted ship column against the painted pixels of
@@ -568,6 +813,34 @@ export class Station {
             return player.touches(box);
         });
     }
+}
+
+// The tip of an alien's nose in its first frame: the left edge of the
+// leftmost painted column, and the bottom edge of its lowest painted pixel
+// there -- the shot's bottom row lines up with that pixel (Thomas's pick B,
+// 2026-11-09). Native px from the sprite's centre. Read once from the loaded
+// image, so a repainted nose, or another alien's, needs no change here.
+function nose(scene, key) {
+    const { width, height, painted } = paintedFrames(scene, key)["0"];
+
+    for (let column = 0; column < width; column++) {
+        const rows = [];
+
+        for (let row = 0; row < height; row++) {
+            if (painted[row * width + column]) {
+                rows.push(row);
+            }
+        }
+
+        if (rows.length) {
+            return {
+                x: column - width / 2,
+                y: rows[rows.length - 1] + 1 - height / 2
+            };
+        }
+    }
+
+    return { x: -width / 2, y: 0 };
 }
 
 // Per frame of an Aseprite texture, by frame name: its size and which native

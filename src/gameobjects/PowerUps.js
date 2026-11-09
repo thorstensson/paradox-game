@@ -7,14 +7,15 @@ import { paintedBox } from "./FirecometTrack";
 // to it; missed, it drifts off the left edge. The player's shots pass
 // through it.
 //
-// Three kinds, alike in every way but the icon and what catching one does:
+// Four kinds, alike in every way but the icon and what catching one does:
 // "bullets" switches on double bullets (Player.startDouble), "shield" the
 // spinning shield (Player.startShield), "speed" a faster mouse
-// (Player.startSpeed).
+// (Player.startSpeed), "missile" the seeking missile (Player.startMissile).
 const KINDS = {
     bullets: { key: "powerup-bullets", tag: "powerup-bullet-spin", start: "startDouble" },
     shield: { key: "powerup-shield", tag: "powerup-shield-spin", start: "startShield" },
-    speed: { key: "powerup-speed", tag: "powerup-speed-spin", start: "startSpeed" }
+    speed: { key: "powerup-speed", tag: "powerup-speed-spin", start: "startSpeed" },
+    missile: { key: "powerup-missile", tag: "powerup-missile-spin", start: "startMissile" }
 };
 
 // 24x24 native, drawn at 3x like everything else: 72px on screen.

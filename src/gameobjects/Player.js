@@ -76,8 +76,9 @@ const FIRE_INTERVAL = 180;
 // from the middle of the hull. Deliberately the same for all three bank
 // states: a muzzle that moves with the bank looks better but makes aiming
 // less predictable, and precision is the whole game.
-const MUZZLE_X = 14 * SHIP_SCALE;
-const MUZZLE_Y = 0 * SHIP_SCALE;
+// The missile leaves from here too (Missiles.js).
+export const MUZZLE_X = 14 * SHIP_SCALE;
+export const MUZZLE_Y = 0 * SHIP_SCALE;
 
 // Bullet power-ups, two levels, as the shield. One on: no centre shot, one
 // from each arm instead, both together. Two on: both arms and the centre.
@@ -112,6 +113,16 @@ const SPEED_TIME = 60000;
 // quarter ring opposite the first, spinning with it. Each has its own
 // SHIELD_TIME; when the first runs out, the second carries on alone.
 const SHIELD_TIME = 60000;
+
+// Missile power-ups on at once, at most: one keeps one missile in the air,
+// two keep two (Missiles.js; Thomas, 2026-11-09).
+export const MISSILE_LEVELS = 2;
+
+// How long each missile power-up lasts once caught, ms, each on its own
+// timer, as the bullet power-up: when the first runs out, the second carries
+// on alone. Losing the ship ends them all at once. A placeholder to tune by
+// playing.
+const MISSILE_TIME = 60000;
 
 // Spin, degrees per second, clockwise.
 const SHIELD_SPIN = 720;
@@ -173,6 +184,10 @@ export class Player extends Physics.Arcade.Sprite {
     // The speed power-ups that are on, at most two, oldest first: each the
     // timer that turns it off. Its length picks the MOUSE_SPEEDS entry.
     speed_powerups = [];
+
+    // The missile power-ups that are on, at most MISSILE_LEVELS, oldest
+    // first: each the timer that turns it off.
+    missile_powerups = [];
 
     // The shields that are on, at most two, oldest first: each its sprite,
     // its slot (SHIELD_SLOTS) and the timer that turns it off. They turn
@@ -298,6 +313,39 @@ export class Player extends Physics.Arcade.Sprite {
         this.endDouble();
         this.endSpeed();
         this.endShield();
+        this.endMissile();
+    }
+
+    // The missile power-up is caught: one more level for MISSILE_TIME, on its
+    // own timer. With two on, a catch restarts the time of the one that
+    // would run out first, as the bullet power-up does.
+    startMissile() {
+        if (this.missile_powerups.length === MISSILE_LEVELS) {
+            this.missile_powerups.shift().remove();
+        }
+
+        const timer = this.scene.time.delayedCall(MISSILE_TIME, () => {
+            this.missile_powerups = this.missile_powerups.filter((t) => t !== timer);
+            this.showPowerups();
+        });
+
+        this.missile_powerups.push(timer);
+        this.showPowerups();
+
+        // Dev only: finding why the missile does not fire.
+        if (import.meta.env.DEV) {
+            console.log(`[missile] power-up caught, levels on: ${this.missile_powerups.length}`);
+        }
+    }
+
+    // Every missile power-up off at once.
+    endMissile() {
+        for (const timer of this.missile_powerups) {
+            timer.remove();
+        }
+
+        this.missile_powerups = [];
+        this.showPowerups();
     }
 
     // The speed power-up is caught: one more level for SPEED_TIME, on its
@@ -364,7 +412,8 @@ export class Player extends Physics.Arcade.Sprite {
         this.scene.scene.get("HudScene").update_powerups({
             railgun: this.bullet_powerups.length > 0,
             shield: this.shields.length > 0,
-            speed: this.speed_powerups.length > 0
+            speed: this.speed_powerups.length > 0,
+            missile: this.missile_powerups.length > 0
         });
     }
 

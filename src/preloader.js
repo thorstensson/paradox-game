@@ -75,8 +75,8 @@ import deltaUrl from "./assets/enemies/delta/delta.png?url";
 import deltaJsonUrl from "./assets/enemies/delta/delta.json?url";
 
 // Station X's own aliens, each 32x32 indexed, same export settings as the
-// ship: raider (raider-loop), xwing (xwing-loop), enforcer (enforcer-roll and
-// enforcer-level) and moon (moon-loop).
+// ship: raider (raider-loop), xwing (xwing-loop), enforcer (enforcer-loop),
+// moon (moon-loop) and electroball (electro-loop, 16 frames).
 import raiderUrl from "./assets/enemies/raider/raider.png?url";
 import raiderJsonUrl from "./assets/enemies/raider/raider.json?url";
 import xwingUrl from "./assets/enemies/xwing/xwing.png?url";
@@ -85,6 +85,8 @@ import enforcerUrl from "./assets/enemies/enforcer/enforcer.png?url";
 import enforcerJsonUrl from "./assets/enemies/enforcer/enforcer.json?url";
 import moonUrl from "./assets/enemies/moon/moon.png?url";
 import moonJsonUrl from "./assets/enemies/moon/moon.json?url";
+import electroballUrl from "./assets/enemies/electroball/electroball.png?url";
+import electroballJsonUrl from "./assets/enemies/electroball/electroball.json?url";
 
 // Ember ring, level 2's last wave. 64x64 indexed, 5 frames under one looping
 // tag, ember-ring-loop; Phaser also spins it.
@@ -96,6 +98,10 @@ import emberRingJsonUrl from "./assets/enemies/ember-ring/ember-ring.json?url";
 // the ship.
 import bulletEnemyUrl from "./assets/enemies/bullet/bullet-enemy.png?url";
 import bulletEnemyJsonUrl from "./assets/enemies/bullet/bullet-enemy.json?url";
+
+// The red enemy bullet, fired straight ahead by the enforcer in Station X.
+// 8x2 native, one frame, no tags -- a plain image, as the ship's bullet.
+import bulletRedEnemyUrl from "./assets/enemies/bullet/bullet-red-enemy.png?url";
 
 // Power-up, the bullet power drop. 24x24 indexed, six frames under one
 // looping tag, powerup-bullet-spin (the slanted bar inside turns). Same
@@ -112,6 +118,17 @@ import powerupShieldJsonUrl from "./assets/powerups/powerup-shield.json?url";
 // powerup-speed-spin.
 import powerupSpeedUrl from "./assets/powerups/powerup-speed.png?url";
 import powerupSpeedJsonUrl from "./assets/powerups/powerup-speed.json?url";
+
+// The ship's seeking missile. 13x13 indexed, five one-frame tags, one per
+// heading: fwd, fwd-up-45, fwd-up-90, fwd-down-45, fwd-down-90; mirrored in
+// the game for flying left.
+import missileUrl from "./assets/player/missile/missile.png?url";
+import missileJsonUrl from "./assets/player/missile/missile.json?url";
+
+// Power-up, the missile drop. Same as the bullet drop, its own colour, tag
+// powerup-missile-spin.
+import powerupMissileUrl from "./assets/powerups/powerup-missile.png?url";
+import powerupMissileJsonUrl from "./assets/powerups/powerup-missile.json?url";
 
 // The shield round the ship. 32x32 indexed, a quarter ring, two frames under
 // shield-spin (a dark blue blink); Phaser turns it.
@@ -193,11 +210,15 @@ export class Preloader extends Phaser.Scene {
         this.load.aseprite("xwing", xwingUrl, xwingJsonUrl);
         this.load.aseprite("enforcer", enforcerUrl, enforcerJsonUrl);
         this.load.aseprite("moon", moonUrl, moonJsonUrl);
+        this.load.aseprite("electroball", electroballUrl, electroballJsonUrl);
         this.load.aseprite("ember-ring", emberRingUrl, emberRingJsonUrl);
         this.load.aseprite("bullet-enemy", bulletEnemyUrl, bulletEnemyJsonUrl);
+        this.load.image("bullet-red-enemy", bulletRedEnemyUrl);
         this.load.aseprite("powerup-bullets", powerupBulletsUrl, powerupBulletsJsonUrl);
         this.load.aseprite("powerup-shield", powerupShieldUrl, powerupShieldJsonUrl);
         this.load.aseprite("powerup-speed", powerupSpeedUrl, powerupSpeedJsonUrl);
+        this.load.aseprite("powerup-missile", powerupMissileUrl, powerupMissileJsonUrl);
+        this.load.aseprite("missile", missileUrl, missileJsonUrl);
         this.load.aseprite("shield", shieldUrl, shieldJsonUrl);
         this.load.image("asteroid-1", asteroid1Url);
         this.load.image("asteroid-2", asteroid2Url);

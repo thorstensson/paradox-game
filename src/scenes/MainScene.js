@@ -14,6 +14,7 @@ import { GreywingWave } from "../gameobjects/GreywingWave";
 import { NeutronDiveWave, NeutronWave } from "../gameobjects/NeutronWave";
 import { Player } from "../gameobjects/Player";
 import { PowerUps } from "../gameobjects/PowerUps";
+import { Missiles } from "../gameobjects/Missiles";
 import { StarField } from "../gameobjects/StarField";
 import { Station } from "../gameobjects/Station";
 import { BOTTOM_BAND } from "./HudScene";
@@ -63,6 +64,12 @@ const LIVES = 3;
 // Pause between losing a ship and the next one flying in, ms. The waves
 // carry on meanwhile, as in Delta.
 const RESPAWN_DELAY = 1500;
+
+// Station X, after a lost ship: the playfield fades to black, the station
+// goes back to the last marker passed (Station.restart), and fades in again,
+// ms each way. Inside RESPAWN_DELAY, so the next ship flies in after it.
+// A placeholder to tune by playing.
+const STATION_RESTART_FADE = 500;
 
 // Pause between one wave being gone and the next arriving, ms.
 const WAVE_GAP = 1000;
@@ -136,6 +143,9 @@ export class MainScene extends Scene {
 
     // Power drops in flight. They outlive the wave that dropped them.
     powerups = null;
+
+    // The ship's seeking missiles in flight, from the missile power-up.
+    missiles = null;
     fire_cave = null;
 
     // Level 2's firecomets: out of the fire walls for the whole cave,
@@ -231,6 +241,7 @@ export class MainScene extends Scene {
         this.anims.createFromAseprite("xwing");
         this.anims.createFromAseprite("enforcer");
         this.anims.createFromAseprite("moon");
+        this.anims.createFromAseprite("electroball");
         this.anims.createFromAseprite("ember-ring");
         this.anims.createFromAseprite("zap-46px");
         this.anims.createFromAseprite("zap-118px");
@@ -238,6 +249,8 @@ export class MainScene extends Scene {
         this.anims.createFromAseprite("powerup-bullets");
         this.anims.createFromAseprite("powerup-shield");
         this.anims.createFromAseprite("powerup-speed");
+        this.anims.createFromAseprite("powerup-missile");
+        this.anims.createFromAseprite("missile");
         this.anims.createFromAseprite("shield");
 
         // The Belt of Osiris's turned rocks, baked now rather than as the
@@ -251,6 +264,7 @@ export class MainScene extends Scene {
         // A drop is added after the explosion pool, so it shows over the
         // blast it comes out of.
         this.powerups = new PowerUps(this);
+        this.missiles = new Missiles(this);
 
         // Player
         this.player = new Player({ scene: this });
@@ -545,9 +559,13 @@ export class MainScene extends Scene {
                 this.wave = null;
             }
 
-            // The station's ships on screen vanish too. Its place has gone by,
-            // so they are not replayed.
-            this.station?.callOff();
+            // The station's ships on screen vanish too, and the station goes
+            // back to its last marker passed while the screen is black, so
+            // its waves can't be skipped by dying.
+            if (this.station) {
+                this.station.callOff();
+                this.restartStation();
+            }
 
             this.time.delayedCall(RESPAWN_DELAY, () => this.player.respawn(() => {
                 if (replay) {
@@ -557,6 +575,18 @@ export class MainScene extends Scene {
         } else {
             this.gameOver();
         }
+    }
+
+    // Fade out, Station.restart() while black, fade in. The HUD bands are
+    // their own scene, so only the playfield fades.
+    restartStation() {
+        const camera = this.cameras.main;
+
+        camera.fadeOut(STATION_RESTART_FADE, 0, 0, 0);
+        camera.once("camerafadeoutcomplete", () => {
+            this.station?.restart();
+            camera.fadeIn(STATION_RESTART_FADE, 0, 0, 0);
+        });
     }
 
     // One ship more, and one more icon in the HUD. Not called yet: it will
@@ -673,7 +703,13 @@ export class MainScene extends Scene {
 
         // The mouse steers the ship, so a click cannot also aim -- the ship is
         // already at the cursor. Bullets always travel right.
-        if (this.input.activePointer.isDown || this.cursors.space.isDown) {
+        const firing = this.input.activePointer.isDown || this.cursors.space.isDown;
+
+        // After the station, so a missile goes for where its alien is now.
+        // Missiles go with the fire button, as on Nemesis.
+        this.missiles.update(time, delta, this.player, this.station, this.explosions, firing);
+
+        if (firing) {
             this.player.fire(time);
         }
 

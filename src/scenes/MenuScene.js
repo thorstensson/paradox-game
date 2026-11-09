@@ -54,11 +54,12 @@ export class MenuScene extends Scene {
             24
         ).setOrigin(0.5, 1);
 
-        // Byline, centred along the bottom of the screen.
+        // Byline, centred along the bottom of the screen, in the HI score's
+        // lilac (hud-font; Thomas, 2026-11-09).
         this.add.bitmapText(
             this.scale.width / 2,
             this.scale.height - 40,
-            "main-font",
+            "hud-font",
             "BY THOMAS THORSTENSSON",
             24
         ).setOrigin(0.5, 1);
