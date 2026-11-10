@@ -109,6 +109,49 @@ const ZAPS = {
     "zap-118px": { anim: "zap-118-loop" }
 };
 
+// The pods, by texture key (the .aseprite's name), placed on each map's gun
+// layer as image objects (Tiled gives their bottom-left). Only the objects
+// whose picture is a pod here are read; the other guns on that layer are not
+// in the game yet.
+//
+// The vulcan (Thomas, 2026-11-10, after Katakis): sits on a block, opens and
+// closes all the time (vulcan-loop). While it is fully on screen it releases
+// RELEASE_SHOTS bullets, like pollen from a flower: all from one point in its
+// opening (the top of its painted pixels, in the middle), each flying
+// straight, never turning, not aimed. The first goes nearly straight up; each
+// next one leaves a little more angled, on the other side, so the release
+// opens from narrow to a V, FIRST_ANGLE to LAST_ANGLE either side of straight
+// up. A random gap between bullets, SHOT_GAP_MIN to SHOT_GAP_MAX; after the
+// last, RELEASE_PAUSE_MS, then the next release. Takes 10 hits, one a frame
+// at most as the station's aliens; a missile counts MISSILE_HITS, so two
+// missiles kill it. Points: a placeholder. Only upright vulcans for now
+// (Thomas tries these before the flipped set).
+const PODS = {
+    vulcan: {
+        anim: "vulcan-loop",
+        hits: 10,
+        points: 100,
+        bullet: "bullet-vulcan",
+        bullet_anim: "bullet-vulcan-blink",
+        // Slow, a pod not a gun (Thomas): screen px/s along its angle, on
+        // top of riding with the station. A placeholder.
+        bullet_speed: 120
+    }
+};
+
+// Thomas's release: 10 bullets. The angles (degrees from straight up), the
+// random gap (ms) and the pause after a release are placeholders to tune by
+// playing.
+const RELEASE_SHOTS = 10;
+const FIRST_ANGLE = 4;
+const LAST_ANGLE = 35;
+const SHOT_GAP_MIN = 300;
+const SHOT_GAP_MAX = 800;
+const RELEASE_PAUSE_MS = 2000;
+
+// Hits a missile counts on a pod: two missiles kill a vulcan (Thomas).
+const MISSILE_HITS = 5;
+
 // Alien sprites made up front and reused, as the explosions are: making and
 // destroying sprites mid-level can stutter. 40 covers several chains on
 // screen at once; more are made only if ever needed.
@@ -151,6 +194,20 @@ export class Station {
 
     // Per zap texture, per frame name: which native pixels are painted.
     zap_masks = {};
+
+    // Every pod: its sprite, its centre in native station px, the hits it
+    // has taken, and where it is in its release.
+    pods = [];
+
+    // Per pod texture, per frame name: which native pixels are painted.
+    pod_masks = {};
+
+    // Per pod texture: its painted box over all frames, native px from the
+    // centre (what the ship's bullets and missiles hit).
+    pod_boxes = {};
+
+    // Per pod texture: its bullets in flight.
+    pod_bullets = {};
 
     // Hit box per alien, native px from the sprite's centre.
     boxes = {};
@@ -200,6 +257,16 @@ export class Station {
             speed: RED_BULLET_SPEED
         });
 
+        for (const [ key, pod ] of Object.entries(PODS)) {
+            this.pod_bullets[key] = new EnemyBullets(scene, {
+                key: pod.bullet,
+                anim: pod.bullet_anim,
+                speed: pod.bullet_speed
+            });
+            this.pod_boxes[key] = paintedBox(scene, key);
+            this.pod_masks[key] = paintedFrames(scene, key);
+        }
+
         let offset = 0;
 
         for (const key of MAPS) {
@@ -222,6 +289,7 @@ export class Station {
             this.readRoutes(scene.cache.tilemap.get(key).data, offset);
             this.readZaps(scene.cache.tilemap.get(key).data, offset);
             this.readMarkers(scene.cache.tilemap.get(key).data, offset);
+            this.readPods(scene.cache.tilemap.get(key).data, offset);
 
             offset += map.widthInPixels;
         }
@@ -286,6 +354,48 @@ export class Station {
         }
     }
 
+    // Every object on the map's gun layer whose picture is a pod (PODS)
+    // becomes one, hidden until start(). Tiled gives its bottom-left; the
+    // sprite is placed by its centre.
+    readPods(data, offset) {
+        const layer = data.layers.find((l) => l.name === "gun");
+
+        for (const object of layer?.objects ?? []) {
+            const key = tileImage(data, object.gid);
+
+            if (!PODS[key]) {
+                continue;
+            }
+
+            // Flipped vertically in Tiled (Y): it hangs under its block and
+            // releases downward. Tiled keeps the same box, bottom-left at
+            // X/Y, and flips the picture inside it.
+            const flipped = (object.gid & FLIPPED_V) !== 0;
+
+            const frame = this.scene.textures.getFrame(key, "0");
+            const sprite = this.scene.add.sprite(0, 0, key)
+                .setScale(SCALE)
+                .setFlipY(flipped)
+                .setDepth(-1)
+                .setVisible(false);
+
+            sprite.play({ key: PODS[key].anim, repeat: -1 });
+
+            this.pods.push({
+                sprite,
+                key,
+                pod: PODS[key],
+                flipped,
+                x: offset + object.x + frame.width / 2,
+                y: object.y - frame.height / 2,
+                taken: 0,
+                dead: false,
+                wait: null,
+                shots: 0
+            });
+        }
+    }
+
     // Every polyline on the map's waves layer, offset to where the map sits
     // in the station, in station screen px.
     readRoutes(data, offset) {
@@ -327,14 +437,17 @@ export class Station {
     start() {
         this.layers.forEach(({ layer }) => layer.setVisible(true));
         this.zaps.forEach(({ sprite }) => sprite.setVisible(true));
+        this.pods.forEach(({ sprite, dead }) => sprite.setVisible(!dead));
     }
 
     // A ship is lost: the ships on screen vanish, as a called-off wave's do.
-    // Routes still to come stay, further along the station.
+    // Routes still to come stay, further along the station. The pods'
+    // bullets in flight go too.
     callOff() {
         this.ships.forEach((ship) => this.release(ship.sprite));
         this.ships = [];
         this.bullets.clear();
+        Object.values(this.pod_bullets).forEach((pool) => pool.clear());
     }
 
     // After a lost ship, while the screen is black: the station goes back so
@@ -358,6 +471,20 @@ export class Station {
             this.x = width - marker * SCALE;
             this.routes = this.all_routes.filter((route) => route.start.x > marker * SCALE);
         }
+
+        // Every pod right of that marker is back, whole, and starts its
+        // releases afresh as it comes on screen again. The pods left of it
+        // stay as they were.
+        for (const pod of this.pods) {
+            pod.wait = null;
+            pod.shots = 0;
+
+            if (marker === null || pod.x > marker) {
+                pod.dead = false;
+                pod.taken = 0;
+                pod.sprite.setVisible(true);
+            }
+        }
     }
 
     destroy() {
@@ -366,6 +493,8 @@ export class Station {
         this.pool = [];
         this.zaps.forEach(({ sprite }) => sprite.destroy());
         this.zaps = [];
+        this.pods.forEach(({ sprite }) => sprite.destroy());
+        this.pods = [];
         this.maps.forEach((map) => map.destroy());
         this.maps = [];
         this.layers = [];
@@ -399,6 +528,10 @@ export class Station {
 
         for (const zap of this.zaps) {
             zap.sprite.setPosition(x + zap.x * SCALE, zap.y * SCALE);
+        }
+
+        for (const pod of this.pods) {
+            pod.sprite.setPosition(x + pod.x * SCALE, pod.y * SCALE);
         }
 
         // Before the aliens are tested, so no alien is shot through a wall.
@@ -475,8 +608,22 @@ export class Station {
             return true;
         });
 
-        // The red dashes stop at the walls as the ship's bullets do.
-        this.stopEnemyBullets(x);
+        // The pods: shot at, and their releases. Their bullets in flight
+        // fly on first, as the red dashes do. They ride with the station
+        // (Thomas, 2026-11-10): moved left the same whole px the walls moved
+        // this frame, so a release keeps its V round the pod as it scrolls.
+        Object.values(this.pod_bullets).forEach((pool) => {
+            pool.bullets.forEach((bullet) => {
+                bullet.x -= STEP * ticks;
+            });
+            pool.update(delta);
+        });
+        this.updatePods(delta, bullets, explosions);
+
+        // The red dashes stop at the walls as the ship's bullets do, and so
+        // do the pods' bullets.
+        this.stopEnemyBullets(this.bullets, x);
+        Object.values(this.pod_bullets).forEach((pool) => this.stopEnemyBullets(pool, x));
 
         // The last map is off the left edge and its last ship gone.
         if (x + this.mask_width * SCALE <= 0 && this.ships.length === 0) {
@@ -517,6 +664,128 @@ export class Station {
             // taken: bullets it has taken so far.
             this.ships.push({ route, sprite, travelled, taken: 0 });
         }
+    }
+
+    // Each pod still standing: the ship's bullets on it, then, while it is
+    // fully on screen and the ship is in play, its release.
+    updatePods(delta, bullets, explosions) {
+        const width = this.scene.scale.width;
+        const player = this.scene.player;
+
+        for (const pod of this.pods) {
+            if (pod.dead) {
+                continue;
+            }
+
+            const { sprite } = pod;
+
+            // One hit a frame at most, as the station's aliens.
+            let hit = false;
+
+            bullets.collide(this.podTarget(pod), () => {
+                hit = true;
+            });
+
+            if (hit) {
+                this.hitPod(pod, 1, explosions);
+
+                if (pod.dead) {
+                    continue;
+                }
+            }
+
+            const half = sprite.displayWidth / 2;
+            const on_screen = sprite.x - half >= 0 && sprite.x + half <= width;
+
+            if (!on_screen || player.state !== "can_move") {
+                continue;
+            }
+
+            // The first release starts as it is fully on screen.
+            pod.wait = pod.wait === null ? 0 : pod.wait - delta;
+
+            while (pod.wait <= 0) {
+                this.releaseBullet(pod);
+                pod.shots++;
+
+                if (pod.shots === RELEASE_SHOTS) {
+                    pod.shots = 0;
+                    pod.wait += RELEASE_PAUSE_MS;
+                } else {
+                    pod.wait += PhaserMath.Between(SHOT_GAP_MIN, SHOT_GAP_MAX);
+                }
+            }
+        }
+    }
+
+    // The pod's next bullet of its release, from the middle of its open end
+    // (the top of its painted pixels; the bottom on a flipped pod): straight
+    // out for the first, each next one more angled, sides taking turns, up
+    // to LAST_ANGLE. A flipped pod releases downward.
+    releaseBullet(pod) {
+        const { sprite } = pod;
+        const box = this.pod_boxes[pod.key];
+        const out = pod.flipped ? 1 : -1;
+        const x = sprite.x;
+        // box.y is the top of the painted pixels, above the centre; a
+        // flipped pod has it mirrored below.
+        const y = sprite.y - out * box.y * SCALE;
+
+        const spread = pod.shots / (RELEASE_SHOTS - 1);
+        const side = pod.shots % 2 === 0 ? 1 : -1;
+        const angle = PhaserMath.DegToRad(side * (FIRST_ANGLE + (LAST_ANGLE - FIRST_ANGLE) * spread));
+
+        // EnemyBullets fires toward a point: one along that angle.
+        this.pod_bullets[pod.key].fire(x, y, x + Math.sin(angle) * 100, y + out * Math.cos(angle) * 100);
+    }
+
+    // The pod's painted box on screen, as something the ship's bullets can
+    // test against (PlayerBullets.collide reads its bounds).
+    podTarget(pod) {
+        const rect = this.podRect(pod);
+
+        return { active: true, visible: true, getBounds: () => rect };
+    }
+
+    // The pod's painted box over all its frames, screen px; mirrored top to
+    // bottom on a flipped pod.
+    podRect(pod) {
+        const box = this.pod_boxes[pod.key];
+        const top = pod.flipped ? -(box.y + box.h) : box.y;
+
+        return new Geom.Rectangle(
+            pod.sprite.x + box.x * SCALE,
+            pod.sprite.y + top * SCALE,
+            box.w * SCALE,
+            box.h * SCALE
+        );
+    }
+
+    // hits more taken; at its pod's hits it blows up, for its points, and
+    // is gone until a restart puts it back.
+    hitPod(pod, hits, explosions) {
+        pod.taken += hits;
+
+        if (pod.taken < pod.pod.hits) {
+            return;
+        }
+
+        explosions.spawn(pod.sprite.x, pod.sprite.y);
+        this.scene.addPoints(pod.pod.points);
+        pod.dead = true;
+        pod.sprite.setVisible(false);
+    }
+
+    // The first pod still standing whose painted box overlaps the rectangle
+    // (screen px), or null.
+    podIn(rect) {
+        return this.pods.find((pod) => !pod.dead
+            && Geom.Intersects.RectangleToRectangle(this.podRect(pod), rect)) ?? null;
+    }
+
+    // Hit by a missile: MISSILE_HITS at once.
+    missilePod(pod, explosions) {
+        this.hitPod(pod, MISSILE_HITS, explosions);
     }
 
     // One more ship of the route shot. If the route drops a power-up (DROPS)
@@ -592,22 +861,27 @@ export class Station {
         return route.end_direction.clone().scale(distance - route.length).add(route.end);
     }
 
-    // The aliens a missile can go for: on their line and inside the screen.
+    // The aliens a missile can go for: on their line and inside the screen;
+    // and the pods still standing whose middle is on screen.
     targets() {
         if (this.gone) {
             return [];
         }
 
         const width = this.scene.scale.width;
+        const on_screen = ({ sprite }) => sprite.x >= 0 && sprite.x <= width
+            && sprite.y >= 0 && sprite.y <= this.view_height;
 
-        return this.ships.filter(({ sprite, travelled }) => travelled >= 0
-            && sprite.x >= 0 && sprite.x <= width
-            && sprite.y >= 0 && sprite.y <= this.view_height);
+        return [
+            ...this.ships.filter((ship) => ship.travelled >= 0 && on_screen(ship)),
+            ...this.pods.filter((pod) => !pod.dead && on_screen(pod))
+        ];
     }
 
-    // True while the ship is still flying: not shot, not flown off.
-    isFlying(ship) {
-        return this.ships.includes(ship);
+    // True while the ship is still flying (not shot, not flown off), or the
+    // pod still standing.
+    isFlying(target) {
+        return this.ships.includes(target) || (this.pods.includes(target) && !target.dead);
     }
 
     // The first alien whose hit box overlaps the rectangle (screen px), or
@@ -675,16 +949,56 @@ export class Station {
 
         const columns = player.paintedColumns();
 
-        return this.hitsWall(columns) || this.hitsZap(columns) || this.hitsAlien(player)
-            || this.bullets.hits(player);
+        return this.hitsWall(columns) || this.hitsZap(columns) || this.hitsPod(columns)
+            || this.hitsAlien(player) || this.bullets.hits(player)
+            || Object.values(this.pod_bullets).some((pool) => pool.hits(player));
     }
 
-    // A red dash whose painted box touches a painted pixel of the station is
-    // gone. x is the station's left edge on screen.
-    stopEnemyBullets(x) {
-        const box = this.bullets.hit_box;
+    // As the zaps: each painted ship column against the painted pixels of
+    // the frame each pod still standing is showing.
+    hitsPod(columns) {
+        if (!columns) {
+            return false;
+        }
 
-        this.bullets.removeWhere((bullet) => {
+        for (const { sprite, key, dead, flipped } of this.pods) {
+            if (dead) {
+                continue;
+            }
+
+            const { width, height, painted } = this.pod_masks[key][sprite.frame.name];
+            const left = sprite.x - width * SCALE / 2;
+            const top = sprite.y - height * SCALE / 2;
+
+            for (const ship of columns) {
+                const first_column = Math.max(0, Math.floor((ship.left - left) / SCALE));
+                const last_column = Math.min(width - 1, Math.ceil((ship.right - left) / SCALE) - 1);
+                const first_row = Math.max(0, Math.floor((ship.top - top) / SCALE));
+                const last_row = Math.min(height - 1, Math.ceil((ship.bottom - top) / SCALE) - 1);
+
+                for (let row = first_row; row <= last_row; row++) {
+                    // A flipped pod shows its rows bottom up.
+                    const source_row = flipped ? height - 1 - row : row;
+
+                    for (let column = first_column; column <= last_column; column++) {
+                        if (painted[source_row * width + column]) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    // An enemy bullet of the pool (the red dashes, a pod's bullets) whose
+    // painted box touches a painted pixel of the station is gone. x is the
+    // station's left edge on screen.
+    stopEnemyBullets(pool, x) {
+        const box = pool.hit_box;
+
+        pool.removeWhere((bullet) => {
             const left = bullet.x + box.x * SCALE - x;
             const top = bullet.y + box.y * SCALE;
 
@@ -841,6 +1155,24 @@ function nose(scene, key) {
     }
 
     return { x: -width / 2, y: 0 };
+}
+
+// The picture of an image object, by its file name without .png (its texture
+// key), or null. Tiled numbers a Collection of Images tileset's tiles by
+// their id, and ids can have gaps (vulcan is id 8 of 7 tiles), so the
+// tileset is the one with the highest firstgid not past the tile number.
+function tileImage(data, gid) {
+    if (!gid) {
+        return null;
+    }
+
+    const number = gid & TILE_NUMBER;
+    const tileset = data.tilesets
+        .filter((t) => t.tiles && t.firstgid <= number)
+        .sort((a, b) => b.firstgid - a.firstgid)[0];
+    const tile = tileset?.tiles.find((t) => t.id === number - tileset.firstgid);
+
+    return tile?.image.split(/[\\/]/).pop().replace(/\.png$/, "") ?? null;
 }
 
 // Per frame of an Aseprite texture, by frame name: its size and which native

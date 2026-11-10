@@ -257,7 +257,34 @@ Built 2026-10-29 (`Station.js`), first waves on `station-x`.
   smoothly through the points. Lines are drawn right to left, so the rest of
   the line already lies across the screen; anything wider than the screen
   (about 460 native px) runs off the left edge.
-- A lost ship clears the station's ships on screen; they are not replayed.
+- A lost ship clears the station's ships on screen; after a 500 ms fade the
+  station goes back to the last restart marker passed (`markers` layer,
+  points spawn-1, spawn-2... counting up across the maps) and every wave
+  right of it comes in again (2026-11-09).
+
+### Pods
+
+Placed in Tiled like the guns, on each map's `gun` layer, from the `guns`
+tileset: the whole sprite sheet with a one-frame Rectangle. Only pod
+pictures are read from that layer; the guns are not in the game yet.
+Flipped with Y in Tiled, a pod hangs upside down and works downward.
+
+- **Vulcan** (`enviro/pods/vulcan`, 32x32, `vulcan-loop`, 2026-11-10, after
+  Katakis): on top of and under the vulcan-room blocks. It releases 10
+  `bullet-vulcan` bullets like pollen from a flower: all from the middle of
+  its open end, straight, not aimed, each one wider than the last, sides
+  taking turns (4 to 35 degrees), a random 300-800 ms apart, then 2 s rest.
+  The bullets ride with the station plus 120 px/s. 10 hits; a missile counts
+  5. Placeholders to tune by playing: angles, gaps, rest, speed, points.
+
+The guns will fire `bullet-vulcan` too. All enemy bullets live in
+`enemies/bullet/`.
+
+### Length
+
+Two maps, not three (Thomas, 2026-11-10): the fire cave takes 70 s played
+through; the station scrolls 42.2 s per map. To be stopwatched once
+`station-x-1` has its enemies.
 
 ### Later
 
@@ -374,8 +401,10 @@ Instead of Delta's block pick-ups, a Nemesis-style power drop.
 - **Shield** (built): drops from level 2's last neutron wave, top chain. A
   quarter ring spins round the ship for 60s and stops enemy bullets, not
   aliens.
-- **Seeking missile** (to build): fired from the top of the ship every 3s,
-  steers to the nearest alien, hits harder than a bullet.
+- **Seeking missile** (built 2026-11-09): from the `w1-delta-top` drop, two
+  levels, 60 s each. Fires with the fire button, Nemesis-style, one in the
+  air per level, from the nose tip at a random alien or pod on screen; kills
+  an alien outright, counts 5 hits on a vulcan, stops at walls.
 
 Where each power-up drops:
 

@@ -12,6 +12,8 @@ import { MUZZLE_X, MUZZLE_Y } from "./Player";
 // screen it flies straight on. It kills what it hits, as a bullet does, and
 // stops at the station's walls, as bullets do.
 //
+// The station's pods (the vulcan) are picked as the aliens are (2026-11-10).
+//
 // Later: a gun near the ship is picked before any alien.
 
 // The ship's pixel size, as everything in the game.
@@ -155,6 +157,17 @@ export class Missiles {
                 return false;
             }
 
+            // A pod (the vulcan) takes it as several hits (Station.js,
+            // MISSILE_HITS): two missiles kill a vulcan.
+            const pod = station.podIn(box);
+
+            if (pod) {
+                debug(`ended: hit ${pod.key}`, sprite);
+                station.missilePod(pod, explosions);
+                sprite.destroy();
+                return false;
+            }
+
             return true;
         });
     }
@@ -165,7 +178,7 @@ export class Missiles {
 
         this.show(missile);
         this.missiles.push(missile);
-        debug(`launched at ${target.route.key}`, sprite);
+        debug(`launched at ${target.route?.key ?? target.key}`, sprite);
     }
 
     // The frame nearest its heading.

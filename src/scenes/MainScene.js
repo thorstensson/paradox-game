@@ -246,6 +246,8 @@ export class MainScene extends Scene {
         this.anims.createFromAseprite("zap-46px");
         this.anims.createFromAseprite("zap-118px");
         this.anims.createFromAseprite("bullet-enemy");
+        this.anims.createFromAseprite("vulcan");
+        this.anims.createFromAseprite("bullet-vulcan");
         this.anims.createFromAseprite("powerup-bullets");
         this.anims.createFromAseprite("powerup-shield");
         this.anims.createFromAseprite("powerup-speed");

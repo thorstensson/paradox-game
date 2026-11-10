@@ -103,6 +103,11 @@ import bulletEnemyJsonUrl from "./assets/enemies/bullet/bullet-enemy.json?url";
 // 8x2 native, one frame, no tags -- a plain image, as the ship's bullet.
 import bulletRedEnemyUrl from "./assets/enemies/bullet/bullet-red-enemy.png?url";
 
+// The vulcan's bullet, Station X: 6x6 indexed like the grey one, the blue
+// round 1 px smaller each side, two frames under bullet-vulcan-blink.
+import bulletVulcanUrl from "./assets/enemies/bullet/bullet-vulcan.png?url";
+import bulletVulcanJsonUrl from "./assets/enemies/bullet/bullet-vulcan.json?url";
+
 // Power-up, the bullet power drop. 24x24 indexed, six frames under one
 // looping tag, powerup-bullet-spin (the slanted bar inside turns). Same
 // export settings as the ship.
@@ -166,6 +171,12 @@ import zap46JsonUrl from "./assets/enviro/zap/zap-46px.json?url";
 import zap118Url from "./assets/enviro/zap/zap-118px.png?url";
 import zap118JsonUrl from "./assets/enviro/zap/zap-118px.json?url";
 
+// Vulcan, Station X's pod on the blocks: 32x32, four frames under
+// vulcan-loop (it opens and closes). Placed from the gun object layer in each
+// map (Station.js).
+import vulcanUrl from "./assets/enviro/pods/vulcan.png?url";
+import vulcanJsonUrl from "./assets/enviro/pods/vulcan.json?url";
+
 // Main font: Katakis (C64) (FontStruct, Patrick H. Lauke), a bitmap font
 // exported from BMFont at 24px -- its 8-brick grid at 3px per brick. Drawn
 // at 24 (1:1) so every brick stays an even square.
@@ -214,6 +225,7 @@ export class Preloader extends Phaser.Scene {
         this.load.aseprite("ember-ring", emberRingUrl, emberRingJsonUrl);
         this.load.aseprite("bullet-enemy", bulletEnemyUrl, bulletEnemyJsonUrl);
         this.load.image("bullet-red-enemy", bulletRedEnemyUrl);
+        this.load.aseprite("bullet-vulcan", bulletVulcanUrl, bulletVulcanJsonUrl);
         this.load.aseprite("powerup-bullets", powerupBulletsUrl, powerupBulletsJsonUrl);
         this.load.aseprite("powerup-shield", powerupShieldUrl, powerupShieldJsonUrl);
         this.load.aseprite("powerup-speed", powerupSpeedUrl, powerupSpeedJsonUrl);
@@ -229,6 +241,7 @@ export class Preloader extends Phaser.Scene {
         this.load.tilemapTiledJSON("station-x-2", stationX2MapUrl);
         this.load.aseprite("zap-46px", zap46Url, zap46JsonUrl);
         this.load.aseprite("zap-118px", zap118Url, zap118JsonUrl);
+        this.load.aseprite("vulcan", vulcanUrl, vulcanJsonUrl);
 
         // Fonts
         this.load.bitmapFont("main-font", mainFontUrl, mainFontXmlUrl);
