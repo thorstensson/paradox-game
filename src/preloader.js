@@ -88,6 +88,11 @@ import moonJsonUrl from "./assets/enemies/moon/moon.json?url";
 import electroballUrl from "./assets/enemies/electroball/electroball.png?url";
 import electroballJsonUrl from "./assets/enemies/electroball/electroball.json?url";
 
+// Rocket, Station X: 16x16 indexed (48 on screen), ten frames at 50 ms under
+// one looping tag, rocket-loop (it spins). Same export settings as the ship.
+import rocketUrl from "./assets/enemies/rocket/rocket.png?url";
+import rocketJsonUrl from "./assets/enemies/rocket/rocket.json?url";
+
 // Ember ring, level 2's last wave. 64x64 indexed, 5 frames under one looping
 // tag, ember-ring-loop; Phaser also spins it.
 import emberRingUrl from "./assets/enemies/ember-ring/ember-ring.png?url";
@@ -177,6 +182,17 @@ import zap118JsonUrl from "./assets/enviro/zap/zap-118px.json?url";
 import vulcanUrl from "./assets/enviro/pods/vulcan.png?url";
 import vulcanJsonUrl from "./assets/enviro/pods/vulcan.json?url";
 
+// The station's gun: 32x32, two one-frame tags, gun-level (barrel level,
+// pointing left) and gun-track (barrel 45 degrees up). Tiled shows the plain
+// gun.png and gun-inverted.png on the gun layer; the game draws both from
+// this sheet, the roof one upside down (Station.js).
+import gunSheetUrl from "./assets/enviro/guns/gun-sheet.png?url";
+import gunSheetJsonUrl from "./assets/enviro/guns/gun-sheet.json?url";
+
+// The diamond gun: one 96x80 picture, no frames, the same file Tiled shows.
+// Six barrels, each ending in two yellow pixels (Station.js finds them).
+import gunDiamondUrl from "./assets/enviro/guns/gun-diamond.png?url";
+
 // Main font: Katakis (C64) (FontStruct, Patrick H. Lauke), a bitmap font
 // exported from BMFont at 24px -- its 8-brick grid at 3px per brick. Drawn
 // at 24 (1:1) so every brick stays an even square.
@@ -222,6 +238,7 @@ export class Preloader extends Phaser.Scene {
         this.load.aseprite("enforcer", enforcerUrl, enforcerJsonUrl);
         this.load.aseprite("moon", moonUrl, moonJsonUrl);
         this.load.aseprite("electroball", electroballUrl, electroballJsonUrl);
+        this.load.aseprite("rocket", rocketUrl, rocketJsonUrl);
         this.load.aseprite("ember-ring", emberRingUrl, emberRingJsonUrl);
         this.load.aseprite("bullet-enemy", bulletEnemyUrl, bulletEnemyJsonUrl);
         this.load.image("bullet-red-enemy", bulletRedEnemyUrl);
@@ -242,6 +259,8 @@ export class Preloader extends Phaser.Scene {
         this.load.aseprite("zap-46px", zap46Url, zap46JsonUrl);
         this.load.aseprite("zap-118px", zap118Url, zap118JsonUrl);
         this.load.aseprite("vulcan", vulcanUrl, vulcanJsonUrl);
+        this.load.aseprite("gun-sheet", gunSheetUrl, gunSheetJsonUrl);
+        this.load.image("gun-diamond", gunDiamondUrl);
 
         // Fonts
         this.load.bitmapFont("main-font", mainFontUrl, mainFontXmlUrl);

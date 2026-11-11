@@ -140,7 +140,7 @@
                  "type":"",
                  "visible":true,
                  "width":96,
-                 "x":3568,
+                 "x":3712,
                  "y":160
                 }, 
                 {
@@ -256,7 +256,6 @@
         {
          "draworder":"topdown",
          "id":7,
-         "locked":true,
          "name":"waves",
          "objects":[
                 {
@@ -425,6 +424,182 @@
                  "width":0,
                  "x":1716,
                  "y":100
+                }, 
+                {
+                 "height":0,
+                 "id":45,
+                 "name":"w1-rocket",
+                 "opacity":1,
+                 "polyline":[
+                        {
+                         "x":-244,
+                         "y":0
+                        }, 
+                        {
+                         "x":-312,
+                         "y":0
+                        }],
+                 "rotation":0,
+                 "type":"rocket",
+                 "visible":true,
+                 "width":0,
+                 "x":2858,
+                 "y":96
+                }, 
+                {
+                 "height":0,
+                 "id":49,
+                 "name":"w4-rocket",
+                 "opacity":1,
+                 "polyline":[
+                        {
+                         "x":-244,
+                         "y":0
+                        }, 
+                        {
+                         "x":-312,
+                         "y":0
+                        }],
+                 "rotation":0,
+                 "type":"rocket",
+                 "visible":true,
+                 "width":0,
+                 "x":3107,
+                 "y":97
+                }, 
+                {
+                 "height":0,
+                 "id":51,
+                 "name":"w5-rocket",
+                 "opacity":1,
+                 "polyline":[
+                        {
+                         "x":-244,
+                         "y":0
+                        }, 
+                        {
+                         "x":-312,
+                         "y":0
+                        }],
+                 "rotation":0,
+                 "type":"rocket",
+                 "visible":true,
+                 "width":0,
+                 "x":3106,
+                 "y":143
+                }, 
+                {
+                 "height":0,
+                 "id":52,
+                 "name":"w6-rocket",
+                 "opacity":1,
+                 "polyline":[
+                        {
+                         "x":-244,
+                         "y":0
+                        }, 
+                        {
+                         "x":-312,
+                         "y":0
+                        }],
+                 "rotation":0,
+                 "type":"rocket",
+                 "visible":true,
+                 "width":0,
+                 "x":3212,
+                 "y":119
+                }, 
+                {
+                 "height":0,
+                 "id":53,
+                 "name":"w7-rocket",
+                 "opacity":1,
+                 "polyline":[
+                        {
+                         "x":-244,
+                         "y":0
+                        }, 
+                        {
+                         "x":-312,
+                         "y":0
+                        }],
+                 "rotation":0,
+                 "type":"rocket",
+                 "visible":true,
+                 "width":0,
+                 "x":3225,
+                 "y":96
+                }, 
+                {
+                 "height":0,
+                 "id":47,
+                 "name":"w2-rocket",
+                 "opacity":1,
+                 "polyline":[
+                        {
+                         "x":-244,
+                         "y":0
+                        }, 
+                        {
+                         "x":-312,
+                         "y":0
+                        }],
+                 "rotation":0,
+                 "type":"rocket",
+                 "visible":true,
+                 "width":0,
+                 "x":2931,
+                 "y":119
+                }, 
+                {
+                 "height":0,
+                 "id":48,
+                 "name":"w3-rocket",
+                 "opacity":1,
+                 "polyline":[
+                        {
+                         "x":-244,
+                         "y":0
+                        }, 
+                        {
+                         "x":-312,
+                         "y":0
+                        }],
+                 "rotation":0,
+                 "type":"rocket",
+                 "visible":true,
+                 "width":0,
+                 "x":3010,
+                 "y":140
+                }, 
+                {
+                 "height":0,
+                 "id":56,
+                 "name":"w2-enforcer",
+                 "opacity":1,
+                 "polyline":[
+                        {
+                         "x":0,
+                         "y":0
+                        }, 
+                        {
+                         "x":-166,
+                         "y":-15
+                        }, 
+                        {
+                         "x":-332,
+                         "y":19
+                        }, 
+                        {
+                         "x":-421,
+                         "y":18
+                        }],
+                 "rotation":0,
+                 "type":"enforcer",
+                 "visible":true,
+                 "width":0,
+                 "x":3188,
+                 "y":118
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -473,7 +648,6 @@
         {
          "draworder":"topdown",
          "id":12,
-         "locked":true,
          "name":"markers",
          "objects":[
                 {
@@ -527,6 +701,19 @@
                  "width":0,
                  "x":1358,
                  "y":120
+                }, 
+                {
+                 "height":0,
+                 "id":54,
+                 "name":"dev-start",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":1793,
+                 "y":121
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -535,7 +722,7 @@
          "y":0
         }],
  "nextlayerid":13,
- "nextobjectid":43,
+ "nextobjectid":57,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2",

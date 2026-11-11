@@ -61,6 +61,11 @@ const LEVEL_4_DELAY = 3000;
 // Ships per game. Losing the last one is GAME OVER.
 const LIVES = 3;
 
+// One extra ship, once per game, as the score reaches this (Thomas,
+// 2026-11-11: mid comet swarm on a good run, a fair place for an average
+// player). Score based, not a power-up.
+const EXTRA_LIFE_AT = 25000;
+
 // Pause between losing a ship and the next one flying in, ms. The waves
 // carry on meanwhile, as in Delta.
 const RESPAWN_DELAY = 1500;
@@ -178,6 +183,11 @@ export class MainScene extends Scene {
     points = 0;
     lives = LIVES;
 
+    // The extra ship at EXTRA_LIFE_AT has been given this game. Kept apart
+    // from the score, which can drop (the odd neutron's -100) and pass
+    // EXTRA_LIFE_AT again.
+    extra_life_given = false;
+
     // True from the start click to game over. Losing the mouse lock only
     // pauses the game while this is set.
     playing = false;
@@ -212,6 +222,7 @@ export class MainScene extends Scene {
         // Reset points and lives
         this.points = 0;
         this.lives = LIVES;
+        this.extra_life_given = false;
     }
 
     create() {
@@ -242,6 +253,7 @@ export class MainScene extends Scene {
         this.anims.createFromAseprite("enforcer");
         this.anims.createFromAseprite("moon");
         this.anims.createFromAseprite("electroball");
+        this.anims.createFromAseprite("rocket");
         this.anims.createFromAseprite("ember-ring");
         this.anims.createFromAseprite("zap-46px");
         this.anims.createFromAseprite("zap-118px");
@@ -286,6 +298,7 @@ export class MainScene extends Scene {
         if (import.meta.env.DEV) {
             this.input.keyboard.on("keydown-N", () => this.skipLevel());
             this.input.keyboard.on("keydown-FOUR", () => this.skipToStation());
+            this.input.keyboard.on("keydown-FIVE", () => this.skipToDevStart());
         }
 
         // The ship is steered by a locked mouse, so losing the lock mid-game
@@ -467,6 +480,23 @@ export class MainScene extends Scene {
         this.enterLevel4();
     }
 
+    // Dev only (the 5 key): as the 4 key, but the station starts at the
+    // dev-start point on a map's markers layer, and a lost ship goes back
+    // there (Station.jumpToDevStart). The station is moved while still
+    // hidden, before the title.
+    skipToDevStart() {
+        if (!this.playing || this.level > 3 || this.player.state === "waiting") {
+            return;
+        }
+
+        if (!this.station_ready?.jumpToDevStart()) {
+            console.warn("No dev-start point on any map's markers layer: 5 does nothing");
+            return;
+        }
+
+        this.skipToStation();
+    }
+
     // Level 1 is cleared; the ship flies straight on into level 2. Skipped if
     // the last ship was lost in the meantime.
     enterLevel2() {
@@ -591,8 +621,8 @@ export class MainScene extends Scene {
         });
     }
 
-    // One ship more, and one more icon in the HUD. Not called yet: it will
-    // run when the player reaches a score still to be decided.
+    // One ship more, and one more icon in the HUD. Called once per game, as
+    // the score reaches EXTRA_LIFE_AT (addPoints).
     addLife() {
         if (!this.playing) {
             return;
@@ -611,6 +641,12 @@ export class MainScene extends Scene {
 
         this.points += points;
         this.scene.get("HudScene").update_points(this.points);
+
+        // The score has reached EXTRA_LIFE_AT: one extra ship, once per game.
+        if (!this.extra_life_given && this.points >= EXTRA_LIFE_AT) {
+            this.extra_life_given = true;
+            this.addLife();
+        }
     }
 
     gameOver() {

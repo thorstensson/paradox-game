@@ -78,14 +78,22 @@ const ALIENS = {
     xwing: { anim: "xwing-loop", chain: 7, speed: 715.8, points: 100, box: null },
     enforcer: { anim: "enforcer-loop", chain: 4, spacing: 4, speed: 500, points: 100, box: null, fire_at: 300, hits: 3 },
     moon: { anim: "moon-loop", chain: 5, spacing: 3, speed: 400, points: 100, box: null, hits: 3 },
-    electroball: { anim: "electro-loop", chain: 5, speed: 400, points: 100, box: null }
+    electroball: { anim: "electro-loop", chain: 5, speed: 400, points: 100, box: null },
+    // The rocket (2026-11-11, first pass, after Zynaps): 16x16, the station
+    // delta's speed (Thomas), spacing 2 (192 px between centres, Thomas).
+    // Chain 1: one rocket per line, launched one by one from small
+    // horizontal lines, as in Katakis (Thomas). Hits and points: placeholders.
+    rocket: { anim: "rocket-loop", chain: 1, spacing: 2, speed: 715.8, points: 100, box: null }
 };
 
 // The lines that drop a power-up, by their Name in Tiled, with the kind they
 // drop (PowerUps.js). Every ship of the line shot: the drop comes out of the
 // last explosion. A ship that gets away off the screen: no drop.
 const DROPS = {
-    "w1-delta-top": "missile"
+    "w1-delta-top": "missile",
+    // Thomas, 2026-11-11: the shield and the railgun (the bullets drop).
+    "w1-enforcer": "shield",
+    "w1-moon": "bullets"
 };
 
 // The red dash's speed, screen px/s: faster than any alien that fires it, or
@@ -111,8 +119,8 @@ const ZAPS = {
 
 // The pods, by texture key (the .aseprite's name), placed on each map's gun
 // layer as image objects (Tiled gives their bottom-left). Only the objects
-// whose picture is a pod here are read; the other guns on that layer are not
-// in the game yet.
+// whose picture is a pod here, or a gun in GUNS, are read; gun-diagonal is
+// not in the game yet.
 //
 // The vulcan (Thomas, 2026-11-10, after Katakis): sits on a block, opens and
 // closes all the time (vulcan-loop). While it is fully on screen it releases
@@ -136,8 +144,62 @@ const PODS = {
         // Slow, a pod not a gun (Thomas): screen px/s along its angle, on
         // top of riding with the station. A placeholder.
         bullet_speed: 120
+    },
+
+    // The gun (Thomas, 2026-11-11), drawn from gun-sheet. It turns toward
+    // the ship: of its two frames, gun-level (barrel level, left) and
+    // gun-track (barrel 45 degrees up-left), it shows the one pointing
+    // closer to the ship; with the ship to its right, gun-level. While fully
+    // on screen it fires one bullet every GUN_FIRE_MS, from the end of its
+    // barrel, the way the barrel points, never aimed. Hits, points and the
+    // bullet's speed (the usual enemy bullet's, EnemyBullets.js) are
+    // placeholders to tune by playing.
+    "gun-sheet": {
+        gun: true,
+        hits: 10,
+        points: 100,
+        bullet: "bullet-vulcan",
+        bullet_anim: "bullet-vulcan-blink",
+        bullet_speed: 240
+    },
+
+    // The diamond gun (Thomas, 2026-11-11): one picture, never turns. Its
+    // six barrels (diamondBarrels) fire in turn, round the diamond, each
+    // once every GUN_FIRE_MS, straight out the way it points: the left ones
+    // at bullet_speed, the right ones at bullet_speed_right -- twice the
+    // station's speed, so they fly off to the right (Thomas) -- both on top
+    // of riding with the station. Hits and points are placeholders.
+    "gun-diamond": {
+        diamond: true,
+        frame: "__BASE",
+        // Twice the vulcan's (Thomas): four missiles kill it.
+        hits: 20,
+        points: 100,
+        bullet: "bullet-vulcan",
+        bullet_anim: "bullet-vulcan-blink",
+        bullet_speed: 240,
+        bullet_speed_right: 2 * SPEED
     }
 };
+
+// The guns' pictures in Tiled (gun.png, gun-inverted.png on the gun layer),
+// each drawn in the game from gun-sheet; the roof one upside down
+// (Thomas, 2026-11-10: no inverted art in the game).
+const GUNS = {
+    gun: { flipped: false },
+    "gun-inverted": { flipped: true }
+};
+
+// gun-sheet's frames: gun-level and gun-track.
+const GUN_LEVEL = "0";
+const GUN_TRACK = "1";
+
+// Halfway between the gun's two directions, level and 45 degrees: a ship
+// more than this far above level (below, for a roof gun) gets gun-track.
+const GUN_TURN = PhaserMath.DegToRad(22.5);
+
+// One bullet a second (Thomas, a placeholder).
+const GUN_FIRE_MS = 1000;
 
 // Thomas's release: 10 bullets. The angles (degrees from straight up), the
 // random gap (ms) and the pause after a release are placeholders to tune by
@@ -186,6 +248,14 @@ export class Station {
     // sits at the right edge (Thomas's pick B, 2026-11-09).
     markers = [];
 
+    // Dev only: X of the point named dev-start on a map's markers layer,
+    // native px from the station's left edge, or null if there is none; not
+    // a restart marker. The 5 key starts the station there, and in that run
+    // a lost ship always goes back to it (dev_run). Thomas, 2026-11-11; goes
+    // with the dev keys before release.
+    dev_start = null;
+    dev_run = false;
+
     // Alien sprites not in use, hidden, ready for the next chain.
     pool = [];
 
@@ -208,6 +278,14 @@ export class Station {
 
     // Per pod texture: its bullets in flight.
     pod_bullets = {};
+
+    // Per gun-sheet frame: the end of the barrel, native px from the
+    // sprite's centre, upright (gunTips).
+    gun_tips = {};
+
+    // The diamond gun's six barrels, in the order they fire
+    // (diamondBarrels).
+    diamond_barrels = [];
 
     // Hit box per alien, native px from the sprite's centre.
     boxes = {};
@@ -266,6 +344,9 @@ export class Station {
             this.pod_boxes[key] = paintedBox(scene, key);
             this.pod_masks[key] = paintedFrames(scene, key);
         }
+
+        this.gun_tips = gunTips(this.pod_masks["gun-sheet"]);
+        this.diamond_barrels = diamondBarrels(scene, "gun-diamond");
 
         let offset = 0;
 
@@ -345,11 +426,17 @@ export class Station {
     }
 
     // Every object on the map's markers layer: only its X is read, so a
-    // point is enough. A map without the layer has no markers.
+    // point is enough. A map without the layer has no markers. The dev-start
+    // point is kept apart, never a restart marker.
     readMarkers(data, offset) {
         const layer = data.layers.find((l) => l.name === "markers");
 
         for (const object of layer?.objects ?? []) {
+            if (object.name === "dev-start") {
+                this.dev_start = offset + object.x;
+                continue;
+            }
+
             this.markers.push(offset + object.x);
         }
     }
@@ -361,7 +448,11 @@ export class Station {
         const layer = data.layers.find((l) => l.name === "gun");
 
         for (const object of layer?.objects ?? []) {
-            const key = tileImage(data, object.gid);
+            // A gun's picture in Tiled (gun, gun-inverted) is drawn from
+            // gun-sheet.
+            const image = tileImage(data, object.gid);
+            const gun = GUNS[image];
+            const key = gun ? "gun-sheet" : image;
 
             if (!PODS[key]) {
                 continue;
@@ -369,17 +460,23 @@ export class Station {
 
             // Flipped vertically in Tiled (Y): it hangs under its block and
             // releases downward. Tiled keeps the same box, bottom-left at
-            // X/Y, and flips the picture inside it.
-            const flipped = (object.gid & FLIPPED_V) !== 0;
+            // X/Y, and flips the picture inside it. gun-inverted is a roof
+            // gun already, so a Y on it would stand it up again.
+            const flipped = ((object.gid & FLIPPED_V) !== 0) !== (gun?.flipped ?? false);
 
-            const frame = this.scene.textures.getFrame(key, "0");
+            // A plain picture (the diamond gun) has only its base frame.
+            const frame = this.scene.textures.getFrame(key, PODS[key].frame ?? "0");
             const sprite = this.scene.add.sprite(0, 0, key)
                 .setScale(SCALE)
                 .setFlipY(flipped)
                 .setDepth(-1)
                 .setVisible(false);
 
-            sprite.play({ key: PODS[key].anim, repeat: -1 });
+            if (PODS[key].gun) {
+                sprite.setFrame(GUN_LEVEL);
+            } else if (PODS[key].anim) {
+                sprite.play({ key: PODS[key].anim, repeat: -1 });
+            }
 
             this.pods.push({
                 sprite,
@@ -459,7 +556,12 @@ export class Station {
     restart() {
         const width = this.scene.scale.width;
         const passed = this.markers.filter((marker) => this.x + marker * SCALE <= width);
-        const marker = passed.length ? passed[passed.length - 1] : null;
+
+        // Dev only: a run started with the 5 key always goes back to
+        // dev-start.
+        const marker = this.dev_run
+            ? this.dev_start
+            : (passed.length ? passed[passed.length - 1] : null);
 
         this.callOff();
         this.clock = 0;
@@ -485,6 +587,22 @@ export class Station {
                 pod.sprite.setVisible(true);
             }
         }
+    }
+
+    // Dev only (the 5 key), before the station starts: it is moved on so the
+    // dev-start point sits at the right edge, as a restart marker would, and
+    // every wave whose first point lies left of it is dropped. From then on
+    // a lost ship goes back to dev-start (restart). False if no map has a
+    // dev-start point.
+    jumpToDevStart() {
+        if (this.dev_start === null) {
+            return false;
+        }
+
+        this.x = this.scene.scale.width - this.dev_start * SCALE;
+        this.routes = this.all_routes.filter((route) => route.start.x > this.dev_start * SCALE);
+        this.dev_run = true;
+        return true;
     }
 
     destroy() {
@@ -694,10 +812,51 @@ export class Station {
                 }
             }
 
-            const half = sprite.displayWidth / 2;
+            // A gun turns toward the ship.
+            if (pod.pod.gun) {
+                sprite.setFrame(this.gunFrame(pod, player));
+            }
+
+            // Fully on screen; the diamond gun only its middle, so it starts
+            // firing sooner (Thomas).
+            const half = pod.pod.diamond ? 0 : sprite.displayWidth / 2;
             const on_screen = sprite.x - half >= 0 && sprite.x + half <= width;
 
             if (!on_screen || player.state !== "can_move") {
+                continue;
+            }
+
+            // A gun: its first bullet as it is fully on screen, then one
+            // every GUN_FIRE_MS.
+            if (pod.pod.gun) {
+                pod.wait = pod.wait === null ? 0 : pod.wait - delta;
+
+                while (pod.wait <= 0) {
+                    this.fireGun(pod);
+                    pod.wait += GUN_FIRE_MS;
+                }
+
+                continue;
+            }
+
+            // The diamond gun: its barrels in turn, the first as its middle
+            // comes on screen, so each fires once every GUN_FIRE_MS. shots is the
+            // barrel next in turn.
+            if (pod.pod.diamond) {
+                const barrels = this.diamond_barrels.length;
+
+                if (!barrels) {
+                    continue;
+                }
+
+                pod.wait = pod.wait === null ? 0 : pod.wait - delta;
+
+                while (pod.wait <= 0) {
+                    this.fireDiamond(pod);
+                    pod.shots = (pod.shots + 1) % barrels;
+                    pod.wait += GUN_FIRE_MS / barrels;
+                }
+
                 continue;
             }
 
@@ -737,6 +896,54 @@ export class Station {
 
         // EnemyBullets fires toward a point: one along that angle.
         this.pod_bullets[pod.key].fire(x, y, x + Math.sin(angle) * 100, y + out * Math.cos(angle) * 100);
+    }
+
+    // The gun's frame, toward the ship: gun-track with the ship ahead (to
+    // its left) and more than GUN_TURN above level (below, on the roof);
+    // otherwise, and with no ship in play, gun-level.
+    gunFrame(pod, player) {
+        if (player.state !== "can_move") {
+            return GUN_LEVEL;
+        }
+
+        const ahead = pod.sprite.x - player.x;
+        const above = pod.flipped ? player.y - pod.sprite.y : pod.sprite.y - player.y;
+
+        return ahead > 0 && Math.atan2(above, ahead) > GUN_TURN ? GUN_TRACK : GUN_LEVEL;
+    }
+
+    // One bullet from the end of the gun's barrel, the way the frame on show
+    // points: level left, or 45 degrees up-left (down-left on the roof).
+    fireGun(pod) {
+        const { sprite } = pod;
+        const name = sprite.frame.name;
+        const tip = this.gun_tips[name];
+        // A roof gun shows its rows bottom up.
+        const out = pod.flipped ? -1 : 1;
+        const x = sprite.x + tip.x * SCALE;
+        const y = sprite.y + out * tip.y * SCALE;
+        const rise = name === GUN_TRACK ? -out : 0;
+
+        // EnemyBullets fires toward a point: one along the barrel.
+        this.pod_bullets[pod.key].fire(x, y, x - 100, y + rise * 100);
+    }
+
+    // One bullet from the diamond gun's barrel next in turn, from the end of
+    // its yellow tips, straight out level: left at bullet_speed, right at
+    // bullet_speed_right (riding with the station comes on top, in update).
+    fireDiamond(pod) {
+        const { sprite } = pod;
+        const barrel = this.diamond_barrels[pod.shots];
+        // Flipped in Tiled, its rows show bottom up.
+        const out = pod.flipped ? -1 : 1;
+        const speed = barrel.out < 0 ? pod.pod.bullet_speed : pod.pod.bullet_speed_right;
+
+        this.pod_bullets[pod.key].add(
+            sprite.x + barrel.x * SCALE,
+            sprite.y + out * barrel.y * SCALE,
+            barrel.out * speed,
+            0
+        );
     }
 
     // The pod's painted box on screen, as something the ship's bullets can
@@ -1157,6 +1364,111 @@ function nose(scene, key) {
     return { x: -width / 2, y: 0 };
 }
 
+// The end of the gun's barrel in each gun-sheet frame: the painted pixels
+// furthest along the way the barrel points (left for gun-level, up-left for
+// gun-track), their middle. Native px from the sprite's centre, upright.
+// Read once from the loaded image, so a repainted barrel needs no change
+// here.
+function gunTips(masks) {
+    const tips = {};
+
+    for (const [ name, along ] of [ [ GUN_LEVEL, (column) => -column ], [ GUN_TRACK, (column, row) => -column - row ] ]) {
+        const { width, height, painted } = masks[name];
+        let best = -Infinity;
+        let found = [];
+
+        for (let row = 0; row < height; row++) {
+            for (let column = 0; column < width; column++) {
+                if (!painted[row * width + column]) {
+                    continue;
+                }
+
+                const value = along(column, row);
+
+                if (value > best) {
+                    best = value;
+                    found = [];
+                }
+
+                if (value === best) {
+                    found.push({ column, row });
+                }
+            }
+        }
+
+        const middle = (pick) => found.reduce((sum, pixel) => sum + pick(pixel), 0) / found.length;
+
+        tips[name] = {
+            x: middle((pixel) => pixel.column) + 0.5 - width / 2,
+            y: middle((pixel) => pixel.row) + 0.5 - height / 2
+        };
+    }
+
+    return tips;
+}
+
+// The diamond gun's barrels, read once from its picture: each barrel ends in
+// yellow pixels (#FFFC40, two lines 3 px apart), one above the other in the
+// same column. Each barrel: the outer edge of its yellow end and the middle
+// of its rows, native px from the centre, upright; which way it points (-1
+// left, 1 right, by which half it is in). In turn round the diamond,
+// clockwise from straight up, so the top barrel comes first.
+function diamondBarrels(scene, key) {
+    const image = scene.textures.get(key).getSourceImage();
+
+    const canvas = document.createElement("canvas");
+    canvas.width = image.width;
+    canvas.height = image.height;
+
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    context.drawImage(image, 0, 0);
+
+    const pixels = context.getImageData(0, 0, image.width, image.height).data;
+    const yellow = [];
+
+    for (let column = 0; column < image.width; column++) {
+        for (let row = 0; row < image.height; row++) {
+            const i = (row * image.width + column) * 4;
+
+            if (pixels[i + 3] > 0 && pixels[i] > 180 && pixels[i + 1] > 180 && pixels[i + 2] < 120) {
+                yellow.push({ column, row });
+            }
+        }
+    }
+
+    // Column by column, top to bottom: a yellow pixel within 4 rows of the
+    // last one in the same column belongs to the same barrel.
+    const groups = [];
+
+    for (const pixel of yellow) {
+        const last = groups[groups.length - 1];
+        const end = last?.[last.length - 1];
+
+        if (end && end.column === pixel.column && pixel.row - end.row <= 4) {
+            last.push(pixel);
+        } else {
+            groups.push([ pixel ]);
+        }
+    }
+
+    const barrels = groups.map((group) => {
+        const column = group[0].column;
+        const out = column < image.width / 2 ? -1 : 1;
+        const middle = group.reduce((sum, pixel) => sum + pixel.row + 0.5, 0) / group.length;
+
+        return {
+            x: (out < 0 ? column : column + 1) - image.width / 2,
+            y: middle - image.height / 2,
+            out
+        };
+    });
+
+    // Clockwise from straight up.
+    const turn = ({ x, y }) => (Math.atan2(x, -y) + 2 * Math.PI) % (2 * Math.PI);
+
+    return barrels.sort((a, b) => turn(a) - turn(b));
+}
+
 // The picture of an image object, by its file name without .png (its texture
 // key), or null. Tiled numbers a Collection of Images tileset's tiles by
 // their id, and ids can have gaps (vulcan is id 8 of 7 tiles), so the
@@ -1191,7 +1503,10 @@ function paintedFrames(scene, key) {
     const pixels = context.getImageData(0, 0, image.width, image.height).data;
     const frames = {};
 
-    for (const name of texture.getFrameNames()) {
+    // A plain image (no atlas, as the diamond gun) has only its base frame.
+    const names = texture.getFrameNames();
+
+    for (const name of names.length ? names : [ "__BASE" ]) {
         const frame = texture.get(name);
         const painted = new Uint8Array(frame.cutWidth * frame.cutHeight);
 
