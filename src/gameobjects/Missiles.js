@@ -168,6 +168,17 @@ export class Missiles {
                 return false;
             }
 
+            // A boss part takes it as several hits too (Boss.js); the centre
+            // soaks it while top or bottom is still there.
+            const part = station.bossIn(box);
+
+            if (part) {
+                debug(`ended: hit ${part.key}`, sprite);
+                station.missileBoss(part, explosions);
+                sprite.destroy();
+                return false;
+            }
+
             return true;
         });
     }

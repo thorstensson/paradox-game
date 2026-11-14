@@ -1,8 +1,9 @@
 import { Curves, Geom, Math as PhaserMath } from "phaser";
 import { paintedBox } from "./FirecometTrack";
 import { EnemyBullets } from "./EnemyBullets";
+import { Boss, BOSS_KEY } from "./Boss";
 
-// Level 4, Station X (NOTES.md -> Level 4 Concepts): the three maps traced in
+// Level 4, Station X (NOTES.md -> Level 4 Concepts): the two maps traced in
 // Tiled, side by side, in from the right edge and off to the left.
 //
 // Each map's station layer is drawn as a tilemap layer at 3x and is the wall:
@@ -29,8 +30,15 @@ const STEP = 5;
 const TICK = 1000 / 60;
 const SPEED = STEP * 1000 / TICK;
 
+// The station eases to a stop with its last map's right edge on the
+// screen's right edge (Thomas, 2026-11-11: the boss comes in there). Over its
+// last SLOW_DISTANCE screen px each step shrinks smoothly from STEP to 0, an
+// even slowdown: about 2 s from 300 px/s. A placeholder to tune by playing.
+const SLOW_DISTANCE = 300;
+
 // The maps in the order they come in, by their keys in preloader.js.
-const MAPS = [ "station-x", "station-x-1", "station-x-2" ];
+// Two maps, not three (Thomas, 2026-11-10; station-x-2 out 2026-11-11).
+const MAPS = [ "station-x", "station-x-1" ];
 
 // The aliens a route's Class can name, by texture key, each with its own
 // animation, chain length, speed (screen px/s), points and hit box, as its
@@ -93,7 +101,10 @@ const DROPS = {
     "w1-delta-top": "missile",
     // Thomas, 2026-11-11: the shield and the railgun (the bullets drop).
     "w1-enforcer": "shield",
-    "w1-moon": "bullets"
+    "w1-moon": "bullets",
+    // station-x-1 (names end in -x1, Thomas): the same two, mirrored.
+    "w1-enforcer-x1": "shield",
+    "w1-moon-x1": "bullets"
 };
 
 // The red dash's speed, screen px/s: faster than any alien that fires it, or
@@ -179,8 +190,27 @@ const PODS = {
         bullet_anim: "bullet-vulcan-blink",
         bullet_speed: 240,
         bullet_speed_right: 2 * SPEED
+    },
+
+    // The electroball as a floater (Thomas, 2026-11-11): a point on the gun
+    // layer with Class electroball is its middle. It rides with the station
+    // and floats round that point (FLOAT_*), never fires. Hits and points as
+    // the electroball in the waves: placeholders.
+    electroball: {
+        floater: true,
+        anim: "electro-loop",
+        hits: 1,
+        points: 100
     }
 };
+
+// A floater's float round its point: up to FLOAT_RANGE native px each way,
+// left-right once every FLOAT_X_MS, up-down once every FLOAT_Y_MS, so it
+// wanders in a loop; each floater starts at a different place in it, so
+// they are out of step. Placeholders to tune by playing.
+const FLOAT_RANGE = 10;
+const FLOAT_X_MS = 2000;
+const FLOAT_Y_MS = 1500;
 
 // The guns' pictures in Tiled (gun.png, gun-inverted.png on the gun layer),
 // each drawn in the game from gun-sheet; the roof one upside down
@@ -309,6 +339,16 @@ export class Station {
     clock = 0;
     gone = false;
 
+    // Screen x of the station's left edge where it stops: its last map's
+    // right edge on the screen's right edge.
+    stop_x = 0;
+
+    // The boss (Boss.js), in once the station has stopped.
+    boss = null;
+
+    // ms the station has run: the floaters' float.
+    float_clock = 0;
+
     // Built once in MainScene.create(), long before level 4, so the work of
     // reading the maps and the wall happens behind the intro, not as the
     // station comes in. Hidden until start().
@@ -336,11 +376,15 @@ export class Station {
         });
 
         for (const [ key, pod ] of Object.entries(PODS)) {
-            this.pod_bullets[key] = new EnemyBullets(scene, {
-                key: pod.bullet,
-                anim: pod.bullet_anim,
-                speed: pod.bullet_speed
-            });
+            // A bullet pool only for the pods that fire (not the floaters).
+            if (pod.bullet) {
+                this.pod_bullets[key] = new EnemyBullets(scene, {
+                    key: pod.bullet,
+                    anim: pod.bullet_anim,
+                    speed: pod.bullet_speed
+                });
+            }
+
             this.pod_boxes[key] = paintedBox(scene, key);
             this.pod_masks[key] = paintedFrames(scene, key);
         }
@@ -380,6 +424,11 @@ export class Station {
 
         this.mask_width = offset;
         this.mask_height = this.maps[0].heightInPixels;
+        this.stop_x = scene.scale.width - this.mask_width * SCALE;
+
+        // Made now, hidden, as the station is: it comes in once the station
+        // stops.
+        this.boss = new Boss(scene, BOSS_KEY, paintedFrames(scene, BOSS_KEY));
         this.mask = paintedStation(scene, this);
     }
 
@@ -449,12 +498,13 @@ export class Station {
 
         for (const object of layer?.objects ?? []) {
             // A gun's picture in Tiled (gun, gun-inverted) is drawn from
-            // gun-sheet.
-            const image = tileImage(data, object.gid);
+            // gun-sheet. A point names its pod by its Class, and only a
+            // floater is placed by a point.
+            const image = object.point ? object.type : tileImage(data, object.gid);
             const gun = GUNS[image];
             const key = gun ? "gun-sheet" : image;
 
-            if (!PODS[key]) {
+            if (!PODS[key] || (object.point && !PODS[key].floater)) {
                 continue;
             }
 
@@ -478,13 +528,18 @@ export class Station {
                 sprite.play({ key: PODS[key].anim, repeat: -1 });
             }
 
+            // A point is the floater's middle; a picture's X/Y is its
+            // bottom-left.
             this.pods.push({
                 sprite,
                 key,
                 pod: PODS[key],
                 flipped,
-                x: offset + object.x + frame.width / 2,
-                y: object.y - frame.height / 2,
+                x: object.point ? offset + object.x : offset + object.x + frame.width / 2,
+                y: object.point ? object.y : object.y - frame.height / 2,
+                // Where in its float a floater starts, 0 to 1: each one
+                // further on than the last, so they float out of step.
+                float_start: (this.pods.length * 0.37) % 1,
                 taken: 0,
                 dead: false,
                 wait: null,
@@ -563,6 +618,10 @@ export class Station {
             ? this.dev_start
             : (passed.length ? passed[passed.length - 1] : null);
 
+        // The boss is whole again, and comes in again once the station has
+        // stopped again (Thomas).
+        this.boss.reset();
+
         this.callOff();
         this.clock = 0;
 
@@ -607,6 +666,7 @@ export class Station {
 
     destroy() {
         this.callOff();
+        this.boss?.destroy();
         this.pool.forEach((sprite) => sprite.destroy());
         this.pool = [];
         this.zaps.forEach(({ sprite }) => sprite.destroy());
@@ -636,9 +696,24 @@ export class Station {
         const ticks = Math.round(this.clock / TICK);
 
         this.clock -= ticks * TICK;
-        this.x -= STEP * ticks;
+
+        const before = Math.round(this.x);
+
+        // An even STEP each tick; within SLOW_DISTANCE of the stop, a step in
+        // proportion to the square root of the distance left (an even
+        // slowdown), down to the stop and no further.
+        for (let i = 0; i < ticks; i++) {
+            const left = this.x - this.stop_x;
+            const move = left < SLOW_DISTANCE ? STEP * Math.sqrt(Math.max(left, 0) / SLOW_DISTANCE) : STEP;
+
+            this.x = Math.max(this.stop_x, this.x - move);
+        }
 
         const x = Math.round(this.x);
+
+        // The whole px the walls moved this frame: the pods' bullets ride by
+        // the same.
+        const moved = before - x;
 
         this.layers.forEach(({ layer, offset }) => {
             layer.x = x + offset * SCALE;
@@ -648,8 +723,23 @@ export class Station {
             zap.sprite.setPosition(x + zap.x * SCALE, zap.y * SCALE);
         }
 
+        this.float_clock += delta;
+
         for (const pod of this.pods) {
-            pod.sprite.setPosition(x + pod.x * SCALE, pod.y * SCALE);
+            let float_x = 0;
+            let float_y = 0;
+
+            // A floater floats round its point, in whole screen px.
+            if (pod.pod.floater) {
+                const turn = 2 * Math.PI;
+
+                float_x = Math.round(FLOAT_RANGE * SCALE
+                    * Math.sin(turn * (this.float_clock / FLOAT_X_MS + pod.float_start)));
+                float_y = Math.round(FLOAT_RANGE * SCALE
+                    * Math.sin(turn * (this.float_clock / FLOAT_Y_MS + pod.float_start)));
+            }
+
+            pod.sprite.setPosition(x + pod.x * SCALE + float_x, pod.y * SCALE + float_y);
         }
 
         // Before the aliens are tested, so no alien is shot through a wall.
@@ -732,11 +822,19 @@ export class Station {
         // this frame, so a release keeps its V round the pod as it scrolls.
         Object.values(this.pod_bullets).forEach((pool) => {
             pool.bullets.forEach((bullet) => {
-                bullet.x -= STEP * ticks;
+                bullet.x -= moved;
             });
             pool.update(delta);
         });
         this.updatePods(delta, bullets, explosions);
+
+        // The station has stopped: in comes the boss, sweeping in the free
+        // space between the hall's walls.
+        if (this.x === this.stop_x && this.boss.state === "idle") {
+            this.boss.enter(this.bossRoom(this.boss.span()));
+        }
+
+        this.boss.update(delta, bullets, explosions);
 
         // The red dashes stop at the walls as the ship's bullets do, and so
         // do the pods' bullets.
@@ -810,6 +908,11 @@ export class Station {
                 if (pod.dead) {
                     continue;
                 }
+            }
+
+            // A floater never fires.
+            if (pod.pod.floater) {
+                continue;
             }
 
             // A gun turns toward the ship.
@@ -1081,14 +1184,57 @@ export class Station {
 
         return [
             ...this.ships.filter((ship) => ship.travelled >= 0 && on_screen(ship)),
-            ...this.pods.filter((pod) => !pod.dead && on_screen(pod))
+            ...this.pods.filter((pod) => !pod.dead && on_screen(pod)),
+            ...this.boss.targets()
         ];
     }
 
     // True while the ship is still flying (not shot, not flown off), or the
     // pod still standing.
     isFlying(target) {
-        return this.ships.includes(target) || (this.pods.includes(target) && !target.dead);
+        return this.ships.includes(target) || (this.pods.includes(target) && !target.dead)
+            || this.boss.isFlying(target);
+    }
+
+    // The first boss part still there whose painted box overlaps the
+    // rectangle (screen px), or null.
+    bossIn(rect) {
+        return this.boss.partIn(rect);
+    }
+
+    // Hit by a missile: MISSILE_HITS on that part, unless it soaks them.
+    missileBoss(part, explosions) {
+        this.boss.missile(part, explosions);
+    }
+
+    // The free screen y between the hall's painted walls across a screen x
+    // span, with the station where it is now: from the middle row up to the
+    // lowest wall pixel above, and down to the highest wall pixel below.
+    bossRoom({ left, right }) {
+        const x = Math.round(this.x);
+        const middle = Math.floor(this.mask_height / 2);
+        const first = Math.max(0, Math.floor((left - x) / SCALE));
+        const last = Math.min(this.mask_width - 1, Math.ceil((right - x) / SCALE) - 1);
+        let top = 0;
+        let bottom = this.mask_height;
+
+        for (let column = first; column <= last; column++) {
+            for (let row = middle; row >= 0; row--) {
+                if (this.mask[row * this.mask_width + column]) {
+                    top = Math.max(top, row + 1);
+                    break;
+                }
+            }
+
+            for (let row = middle; row < this.mask_height; row++) {
+                if (this.mask[row * this.mask_width + column]) {
+                    bottom = Math.min(bottom, row);
+                    break;
+                }
+            }
+        }
+
+        return { top: top * SCALE, bottom: bottom * SCALE };
     }
 
     // The first alien whose hit box overlaps the rectangle (screen px), or
@@ -1157,6 +1303,7 @@ export class Station {
         const columns = player.paintedColumns();
 
         return this.hitsWall(columns) || this.hitsZap(columns) || this.hitsPod(columns)
+            || this.boss.touches(columns)
             || this.hitsAlien(player) || this.bullets.hits(player)
             || Object.values(this.pod_bullets).some((pool) => pool.hits(player));
     }

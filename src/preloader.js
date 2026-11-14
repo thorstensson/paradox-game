@@ -88,6 +88,12 @@ import moonJsonUrl from "./assets/enemies/moon/moon.json?url";
 import electroballUrl from "./assets/enemies/electroball/electroball.png?url";
 import electroballJsonUrl from "./assets/enemies/electroball/electroball.json?url";
 
+// The Station X boss, scarab: Thomas's 120x180 canvas, drawn at 3x like the
+// ship, 360x540 on screen. Five frames, one per tag: scarab-full,
+// scarab-hull, scarab-hit, scarab-top-wing, scarab-bottom-wing (Boss.js).
+import scarabUrl from "./assets/enemies/scarab/scarab.png?url";
+import scarabJsonUrl from "./assets/enemies/scarab/scarab.json?url";
+
 // Rocket, Station X: 16x16 indexed (48 on screen), ten frames at 50 ms under
 // one looping tag, rocket-loop (it spins). Same export settings as the ship.
 import rocketUrl from "./assets/enemies/rocket/rocket.png?url";
@@ -156,13 +162,12 @@ import asteroid1Url from "./assets/enviro/asteroid/asteroid-1.png?url";
 import asteroid2Url from "./assets/enviro/asteroid/asteroid-2.png?url";
 import asteroid3Url from "./assets/enviro/asteroid/asteroid-3.png?url";
 
-// Station, level 4: Station X traced in Tiled, three maps of the same 8x8
+// Station, level 4: Station X traced in Tiled, two maps of the same 8x8
 // tiles (station-x-tiles.png, 3088x8), drawn at 3x (Station.js). Each .tmj is
 // its .tmx exported as JSON.
 import stationXTilesUrl from "./assets/enviro/station-x/station-x-tiles.png?url";
 import stationXMapUrl from "./assets/enviro/station-x/station-x.tmj?url";
 import stationX1MapUrl from "./assets/enviro/station-x/station-x-1.tmj?url";
-import stationX2MapUrl from "./assets/enviro/station-x/station-x-2.tmj?url";
 
 // Zap, Station X's electrifier bolt between two fangs: 24x46 (the short
 // fangs' gap), nine frames under zap-46-loop -- eight of crackle, then an
@@ -239,6 +244,7 @@ export class Preloader extends Phaser.Scene {
         this.load.aseprite("moon", moonUrl, moonJsonUrl);
         this.load.aseprite("electroball", electroballUrl, electroballJsonUrl);
         this.load.aseprite("rocket", rocketUrl, rocketJsonUrl);
+        this.load.aseprite("scarab", scarabUrl, scarabJsonUrl);
         this.load.aseprite("ember-ring", emberRingUrl, emberRingJsonUrl);
         this.load.aseprite("bullet-enemy", bulletEnemyUrl, bulletEnemyJsonUrl);
         this.load.image("bullet-red-enemy", bulletRedEnemyUrl);
@@ -254,9 +260,7 @@ export class Preloader extends Phaser.Scene {
         this.load.image("asteroid-3", asteroid3Url);
         this.load.image("station-x-tiles", stationXTilesUrl);
         this.load.tilemapTiledJSON("station-x", stationXMapUrl);
-        this.load.tilemapTiledJSON("station-x-1", stationX1MapUrl);
-        this.load.tilemapTiledJSON("station-x-2", stationX2MapUrl);
-        this.load.aseprite("zap-46px", zap46Url, zap46JsonUrl);
+        this.load.tilemapTiledJSON("station-x-1", stationX1MapUrl);        this.load.aseprite("zap-46px", zap46Url, zap46JsonUrl);
         this.load.aseprite("zap-118px", zap118Url, zap118JsonUrl);
         this.load.aseprite("vulcan", vulcanUrl, vulcanJsonUrl);
         this.load.aseprite("gun-sheet", gunSheetUrl, gunSheetJsonUrl);

@@ -288,7 +288,7 @@ export class MainScene extends Scene {
         this.cursors = this.input.keyboard.createCursorKeys();
 
         // Station X, built now behind the intro and kept hidden until level
-        // 4: reading its three maps and its wall in one go would otherwise
+        // 4: reading its two maps and its wall in one go would otherwise
         // stall the frame the station comes in on. After the Player, so its
         // aliens draw over the ship, as they did when made on the fly.
         this.station_ready = new Station(this);
