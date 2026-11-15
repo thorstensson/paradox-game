@@ -30,6 +30,11 @@ const STEP = 5;
 const TICK = 1000 / 60;
 const SPEED = STEP * 1000 / TICK;
 
+// The outro (leave): the station moves out at LEAVE_STEP px a tick, 180 px/s,
+// slower than in the level (Thomas, 2026-11-15: "moving away too fast"). A
+// placeholder to tune by playing.
+const LEAVE_STEP = 3;
+
 // The station eases to a stop with its last map's right edge on the
 // screen's right edge (Thomas, 2026-11-11: the boss comes in there). Over its
 // last SLOW_DISTANCE screen px each step shrinks smoothly from STEP to 0, an
@@ -72,7 +77,7 @@ const MAPS = [ "station-x", "station-x-1" ];
 //
 // "hits": bullets it takes to die, 1 if left out. The enforcer and the moon
 // take 3 (Thomas, 2026-11-09): a bullet that does not kill is used up and
-// the alien flies on, as the firering does. Points and the drop count come
+// the alien flies on, as the firering does. Points and the drop come
 // only with the kill. A missile kills any alien outright.
 //
 // The moon (2026-11-08, first pass): a slow object, speed 400. A chain of 5
@@ -94,17 +99,23 @@ const ALIENS = {
     rocket: { anim: "rocket-loop", chain: 1, spacing: 2, speed: 715.8, points: 100, box: null }
 };
 
-// The lines that drop a power-up, by their Name in Tiled, with the kind they
-// drop (PowerUps.js). Every ship of the line shot: the drop comes out of the
-// last explosion. A ship that gets away off the screen: no drop.
+// The lines that drop a power-up, by their Name in Tiled: the kind they drop
+// (PowerUps.js) and "at", the ship of the line that drops it when shot, by
+// its position in the chain, from 1, the first to come in (Thomas,
+// 2026-11-15). The drop comes out of that ship's explosion.
 const DROPS = {
-    "w1-delta-top": "missile",
+    "w1-delta-top": { kind: "missile", at: 2 },
     // Thomas, 2026-11-11: the shield and the railgun (the bullets drop).
-    "w1-enforcer": "shield",
-    "w1-moon": "bullets",
-    // station-x-1 (names end in -x1, Thomas): the same two, mirrored.
-    "w1-enforcer-x1": "shield",
-    "w1-moon-x1": "bullets"
+    "w1-enforcer": { kind: "shield", at: 1 },
+    "w1-moon": { kind: "bullets", at: 2 },
+    // station-x-1 (names end in -x1, Thomas): the same three, mirrored.
+    "w1-enforcer-x1": { kind: "shield", at: 1 },
+    "w1-moon-x1": { kind: "bullets", at: 2 },
+    "w1-delta-top-x1": { kind: "missile", at: 2 },
+    // Electroball floaters, by their Name on the gun layer: the drop comes
+    // out of its explosion when it is killed (Thomas, 2026-11-15).
+    "e1-electroball-x1": { kind: "missile" },
+    "e2-electroball-x2": { kind: "bullets" }
 };
 
 // The red dash's speed, screen px/s: faster than any alien that fires it, or
@@ -343,6 +354,9 @@ export class Station {
     // right edge on the screen's right edge.
     stop_x = 0;
 
+    // True from the outro on (leave): moving out at LEAVE_STEP.
+    leaving = false;
+
     // The boss (Boss.js), in once the station has stopped.
     boss = null;
 
@@ -533,6 +547,8 @@ export class Station {
             this.pods.push({
                 sprite,
                 key,
+                // Its Name in Tiled: an electroball's drop (DROPS).
+                name: object.name,
                 pod: PODS[key],
                 flipped,
                 x: object.point ? offset + object.x : offset + object.x + frame.width / 2,
@@ -681,6 +697,14 @@ export class Station {
         this.gone = true;
     }
 
+    // The outro (Outro.js): the stop is lifted and the station moves on to
+    // the left at LEAVE_STEP, until its end is off the left edge and it is
+    // gone (update).
+    leave() {
+        this.stop_x = -Infinity;
+        this.leaving = true;
+    }
+
     update(_time, delta, bullets, explosions) {
         if (this.gone) {
             return;
@@ -704,7 +728,8 @@ export class Station {
         // slowdown), down to the stop and no further.
         for (let i = 0; i < ticks; i++) {
             const left = this.x - this.stop_x;
-            const move = left < SLOW_DISTANCE ? STEP * Math.sqrt(Math.max(left, 0) / SLOW_DISTANCE) : STEP;
+            const move = this.leaving ? LEAVE_STEP
+                : left < SLOW_DISTANCE ? STEP * Math.sqrt(Math.max(left, 0) / SLOW_DISTANCE) : STEP;
 
             this.x = Math.max(this.stop_x, this.x - move);
         }
@@ -784,7 +809,6 @@ export class Station {
             const on_line = ship.travelled >= 0;
 
             if (on_line && (sprite.x < -MARGIN || sprite.y < -MARGIN || sprite.y > this.view_height + MARGIN)) {
-                route.missed = true;
                 this.release(sprite);
                 return false;
             }
@@ -808,7 +832,7 @@ export class Station {
             if (ship.taken >= (route.alien.hits ?? 1)) {
                 explosions.spawn(sprite.x, sprite.y);
                 this.scene.addPoints(route.alien.points);
-                this.dropIfShotInFull(route, sprite);
+                this.dropIfNumbered(ship);
                 this.release(sprite);
                 return false;
             }
@@ -840,6 +864,7 @@ export class Station {
         // do the pods' bullets.
         this.stopEnemyBullets(this.bullets, x);
         Object.values(this.pod_bullets).forEach((pool) => this.stopEnemyBullets(pool, x));
+        this.stopEnemyBullets(this.boss.bullets, x);
 
         // The last map is off the left edge and its last ship gone.
         if (x + this.mask_width * SCALE <= 0 && this.ships.length === 0) {
@@ -855,11 +880,6 @@ export class Station {
     // stays on screen, while the station scrolls on.
     wake(route, x) {
         route.pinned_x = x;
-
-        // Counted again from nothing each time the line comes in, after a
-        // restart too.
-        route.shot = 0;
-        route.missed = false;
 
         for (let i = 0; i < route.alien.chain; i++) {
             const travelled = -i * GAP * (route.alien.spacing ?? 1);
@@ -877,8 +897,9 @@ export class Station {
                 sprite.play({ key: route.alien.anim, repeat: -1 });
             }
 
-            // taken: bullets it has taken so far.
-            this.ships.push({ route, sprite, travelled, taken: 0 });
+            // taken: bullets it has taken so far. number: its position in
+            // the chain, from 1, the first to come in.
+            this.ships.push({ route, sprite, travelled, taken: 0, number: i + 1 });
         }
     }
 
@@ -1082,6 +1103,13 @@ export class Station {
 
         explosions.spawn(pod.sprite.x, pod.sprite.y);
         this.scene.addPoints(pod.pod.points);
+
+        const drop = DROPS[pod.name];
+
+        if (drop) {
+            this.scene.powerups.spawn(pod.sprite.x, pod.sprite.y, drop.kind);
+        }
+
         pod.dead = true;
         pod.sprite.setVisible(false);
     }
@@ -1098,16 +1126,13 @@ export class Station {
         this.hitPod(pod, MISSILE_HITS, explosions);
     }
 
-    // One more ship of the route shot. If the route drops a power-up (DROPS)
-    // and this was its last ship, none having got away, the drop comes out
-    // where this one blew up.
-    dropIfShotInFull(route, sprite) {
-        route.shot++;
+    // A ship shot. If its line drops a power-up (DROPS) and this is the
+    // numbered ship, the drop comes out where it blew up.
+    dropIfNumbered(ship) {
+        const drop = DROPS[ship.route.name];
 
-        const kind = DROPS[route.name];
-
-        if (kind && !route.missed && route.shot === route.alien.chain) {
-            this.scene.powerups.spawn(sprite.x, sprite.y, kind);
+        if (drop && ship.number === drop.at) {
+            this.scene.powerups.spawn(ship.sprite.x, ship.sprite.y, drop.kind);
         }
     }
 
@@ -1172,7 +1197,8 @@ export class Station {
     }
 
     // The aliens a missile can go for: on their line and inside the screen;
-    // and the pods still standing whose middle is on screen.
+    // the pods still standing whose middle is on screen; and the boss parts
+    // that are not soaking (Boss.js targets()).
     targets() {
         if (this.gone) {
             return [];
@@ -1196,7 +1222,7 @@ export class Station {
             || this.boss.isFlying(target);
     }
 
-    // The first boss part still there whose painted box overlaps the
+    // The first boss part still there with a painted pixel under the
     // rectangle (screen px), or null.
     bossIn(rect) {
         return this.boss.partIn(rect);
@@ -1256,14 +1282,14 @@ export class Station {
         }) ?? null;
     }
 
-    // Shot by a missile: as by a bullet -- explosion, points, the count
-    // toward the line's drop -- and gone.
+    // Shot by a missile: as by a bullet -- explosion, points, the line's
+    // drop if it is the numbered ship -- and gone.
     destroyShip(ship, explosions) {
         const { route, sprite } = ship;
 
         explosions.spawn(sprite.x, sprite.y);
         this.scene.addPoints(route.alien.points);
-        this.dropIfShotInFull(route, sprite);
+        this.dropIfNumbered(ship);
         this.release(sprite);
 
         this.ships = this.ships.filter((other) => other !== ship);
@@ -1305,7 +1331,8 @@ export class Station {
         return this.hitsWall(columns) || this.hitsZap(columns) || this.hitsPod(columns)
             || this.boss.touches(columns)
             || this.hitsAlien(player) || this.bullets.hits(player)
-            || Object.values(this.pod_bullets).some((pool) => pool.hits(player));
+            || Object.values(this.pod_bullets).some((pool) => pool.hits(player))
+            || this.boss.bullets.hits(player);
     }
 
     // As the zaps: each painted ship column against the painted pixels of

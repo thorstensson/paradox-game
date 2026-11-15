@@ -127,6 +127,10 @@ const MISSILE_TIME = 60000;
 // Spin, degrees per second, clockwise.
 const SHIELD_SPIN = 720;
 
+// The outro (takeOver): how long the ship takes to glide to the middle
+// height once the game has it, ms. A placeholder to tune by playing.
+const TAKE_OVER_MS = 1000;
+
 // The ring's outer edge, native px from its centre.
 const SHIELD_OUTER = 15;
 
@@ -155,8 +159,8 @@ const TOP_GAP = 5;
 
 export class Player extends Physics.Arcade.Sprite {
 
-    // Player states: waiting, start, can_move, removed. Only can_move can be
-    // hit, so the ship is safe while it flies in.
+    // Player states: waiting, start, can_move, removed, outro. Only can_move
+    // can be hit, so the ship is safe while it flies in and in the outro.
     state = "waiting";
     scene = null;
     bullets = null;
@@ -314,6 +318,22 @@ export class Player extends Physics.Arcade.Sprite {
         this.endSpeed();
         this.endShield();
         this.endMissile();
+    }
+
+    // The outro (MainScene, after the boss): the game takes the ship. Out of
+    // can_move, the mouse no longer steers it, it no longer fires or sends
+    // missiles, and nothing can hit it. It shows its level frame and glides
+    // from where it is to height y, staying where it is across.
+    takeOver(y) {
+        this.state = "outro";
+        this.setBank("level", 0, true);
+
+        this.scene.tweens.add({
+            targets: this,
+            y,
+            duration: TAKE_OVER_MS,
+            ease: "Sine.easeInOut"
+        });
     }
 
     // The missile power-up is caught: one more level for MISSILE_TIME, on its
@@ -657,11 +677,17 @@ export class Player extends Physics.Arcade.Sprite {
     }
 
     update(time, delta) {
-        if (this.state !== "can_move") {
+        const step = delta / 1000;
+
+        // In the outro the game moves the ship; its shields still ride on it.
+        if (this.state === "outro") {
+            this.rideShields(step);
             return;
         }
 
-        const step = delta / 1000;
+        if (this.state !== "can_move") {
+            return;
+        }
 
         const previous_y = this.y;
 
@@ -745,7 +771,11 @@ export class Player extends Physics.Arcade.Sprite {
             this.play("level");
         }
 
-        // The shields ride on the ship's centre, turning together.
+        this.rideShields(step);
+    }
+
+    // The shields ride on the ship's centre, turning together.
+    rideShields(step) {
         this.shield_angle += SHIELD_SPIN * step;
 
         for (const { sprite, slot } of this.shields) {

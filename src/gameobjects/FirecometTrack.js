@@ -132,6 +132,21 @@ export class FirecometTrack {
         });
     }
 
+    // What a missile can go for (Missiles.js LevelTargets): every comet,
+    // hit where the bullets hit it. A missile counts as several bullet hits;
+    // update() blows it once its hits run out.
+    missileTargets() {
+        return this.comets.map((comet) => ({
+            key: "firecomet",
+            sprite: comet,
+            alive: () => this.comets.includes(comet) && comet.hits > 0,
+            touches: (box) => Geom.Intersects.RectangleToRectangle(box, comet.getBounds()),
+            hit: (count) => {
+                comet.hits -= count;
+            }
+        }));
+    }
+
     update(_time, delta, bullets, explosions) {
         const step = delta / 1000;
 

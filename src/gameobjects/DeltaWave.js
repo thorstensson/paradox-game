@@ -7,8 +7,8 @@ import { paintedBox } from "./FirecometTrack";
 // the right just clear of the bottom flames, dips up to touch the centre
 // line at mid-screen and heads back out to the bottom, then races off. The
 // second comes almost on its tail and does the same from the top: -_-.
-// Between the neutron's pace and the clover's. The top chain shot in full
-// drops the bullet power-up, as the clover's does.
+// Between the neutron's pace and the clover's. The top chain's DROP_AT-th
+// delta drops the bullet power-up when shot.
 //
 // The numbers are a first pass, to be tuned by eye.
 
@@ -45,6 +45,10 @@ const DIP_END = 0.75;
 // Worked out from SPEED so the distance holds at any speed.
 const TOP_DELAY = 358 / SPEED * 1000;
 
+// The top chain's delta that drops the bullet power-up when shot, by its
+// position in the chain, from 1 (Thomas, 2026-11-15).
+const DROP_AT = 5;
+
 export class DeltaWave {
 
     scene = null;
@@ -53,10 +57,6 @@ export class DeltaWave {
 
     // Deltas still to come, both chains together.
     to_spawn = CHAIN_LENGTH * 2;
-
-    // Top-chain deltas shot down. All of them drops the power-up, out of
-    // the last one's explosion; one flying off means no drop.
-    top_shot = 0;
 
     constructor(scene) {
         this.scene = scene;
@@ -90,7 +90,7 @@ export class DeltaWave {
     sendChain(side) {
         for (let i = 0; i < CHAIN_LENGTH; i++) {
             this.scene.time.delayedCall(i * SPACING, () => {
-                this.spawn(side);
+                this.spawn(side, i + 1);
                 this.to_spawn--;
 
                 // The bottom chain's last delta is in: the top chain follows.
@@ -101,10 +101,12 @@ export class DeltaWave {
         }
     }
 
-    spawn(side) {
+    // number: its position in the chain, from 1.
+    spawn(side, number) {
         const delta = this.scene.add.sprite(this.start_x, 0, "delta");
         delta.setScale(DELTA_SCALE);
         delta.side = side;
+        delta.number = number;
         delta.points = POINTS;
         delta.y = this.pathY(delta.x, side);
         delta.play({ key: "delta-spin", repeat: -1 });
@@ -140,6 +142,21 @@ export class DeltaWave {
         });
     }
 
+    // What a missile can go for (Missiles.js LevelTargets): every delta,
+    // hit where the bullets hit it. One hit kills a delta, so a missile does:
+    // update() blows it as if shot.
+    missileTargets() {
+        return this.deltas.map((ship) => ({
+            key: "delta",
+            sprite: ship,
+            alive: () => this.deltas.includes(ship) && !ship.missile_hit,
+            touches: (box) => Geom.Intersects.RectangleToRectangle(box, ship.getBounds()),
+            hit: () => {
+                ship.missile_hit = true;
+            }
+        }));
+    }
+
     update(time, delta, bullets, explosions) {
         const step = delta / 1000;
 
@@ -159,16 +176,12 @@ export class DeltaWave {
                 hit = true;
             });
 
-            if (hit) {
+            if (hit || ship.missile_hit) {
                 explosions.spawn(ship.x, ship.y);
                 this.scene.addPoints(ship.points);
 
-                if (ship.side === -1) {
-                    this.top_shot++;
-
-                    if (this.top_shot === CHAIN_LENGTH) {
-                        this.scene.powerups.spawn(ship.x, ship.y);
-                    }
+                if (ship.side === -1 && ship.number === DROP_AT) {
+                    this.scene.powerups.spawn(ship.x, ship.y);
                 }
 
                 ship.destroy();

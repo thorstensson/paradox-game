@@ -49,6 +49,13 @@ const CHAIN_DELAY = 80;
 // Toward the ship, px/s, right to left: half the slowest alien's speed.
 const SPEED = 80;
 
+// Once the head is fully off the left edge, where it can no longer be shot,
+// the dragon builds up from SPEED to EXIT_SPEED over EXIT_RAMP ms, so the
+// tail clears the edge sooner instead of lingering (Thomas, 2026-11-15).
+// Placeholders to tune by playing.
+const EXIT_SPEED = 240;
+const EXIT_RAMP = 500;
+
 // The steepest the curve gets, degrees: the head tilts no further than this.
 // With the full flame-to-flame swing, it sets how long each wave is.
 const MAX_TILT = 45;
@@ -79,6 +86,12 @@ export class DragonWave {
     blowing = false;
     blow_in = 0;
 
+    // Game time at the last update, ms.
+    now = 0;
+
+    // ms since the head went fully off the left edge, up to EXIT_RAMP.
+    exit_time = 0;
+
     constructor(scene) {
         this.scene = scene;
 
@@ -91,6 +104,10 @@ export class DragonWave {
         // Head's painted centre to the first circle's, and circle to circle,
         // along the trail, screen px: as painted, so they touch.
         this.head_gap = (centreX(body_box) - centreX(head_box)) * DRAGON_SCALE;
+
+        // Head's painted centre to its painted edge, screen px: once its
+        // centre is this far past the left edge, the head is fully off.
+        this.head_half = (head_box.w * DRAGON_SCALE) / 2;
         this.body_gap = body_box.w * DRAGON_SCALE;
         this.tail_length = this.head_gap + (BODY_LENGTH - 1) * this.body_gap;
 
@@ -231,12 +248,51 @@ export class DragonWave {
         return this.pieces.some((piece) => player.touches(this.bounds(piece, rect)));
     }
 
+    // What a missile can go for (Missiles.js LevelTargets): the head only,
+    // as only the head can be shot down. A missile counts as several bullet
+    // hits, with the same hit flash; update() blows the chain once its hits
+    // run out.
+    missileTargets() {
+        const head = this.head;
+
+        if (this.blowing || !this.pieces.includes(head)) {
+            return [];
+        }
+
+        return [{
+            key: "dragon-head",
+            sprite: head,
+            alive: () => !this.blowing && this.pieces.includes(head) && head.hits > 0,
+            touches: (box) => Geom.Intersects.RectangleToRectangle(box, this.bounds(head)),
+            hit: (count) => {
+                head.hits -= count;
+
+                if (head.hit_until === 0) {
+                    head.play({ key: "dragon-head-hit", repeat: -1 });
+                }
+
+                head.hit_until = this.now + HIT_FLASH;
+            }
+        }];
+    }
+
     update(time, delta, bullets, explosions) {
         if (this.done) {
             return;
         }
 
-        this.x -= SPEED * (delta / 1000);
+        // For a missile hit's flash (missileTargets()), between updates.
+        this.now = time;
+
+        // The head fully off the left edge: build up to EXIT_SPEED.
+        let speed = SPEED;
+
+        if (this.x + this.head_half < 0) {
+            this.exit_time = Math.min(this.exit_time + delta, EXIT_RAMP);
+            speed = SPEED + (EXIT_SPEED - SPEED) * (this.exit_time / EXIT_RAMP);
+        }
+
+        this.x -= speed * (delta / 1000);
         this.y = this.curveY(this.x);
 
         this.trail.unshift({ x: this.x, y: this.y });

@@ -1,8 +1,10 @@
 import { Geom } from "phaser";
 import { paintedBox } from "./FirecometTrack";
 
-// Power drops (NOTES.md -> Enemies & Waves -> Power drops). Only a wave shot
-// down in full drops one, out of the explosion of its last alien. A drop
+// Power drops (NOTES.md -> Enemies & Waves -> Power drops). One numbered
+// alien of a wave drops one when shot, out of its explosion, as in Katakis
+// (Thomas, 2026-11-15); a big one-off (the ember ring, a rock) when it is
+// destroyed. A drop
 // drifts left at a steady pace and never up or down, so the ship has to fly
 // to it; missed, it drifts off the left edge. The player's shots pass
 // through it.
@@ -38,7 +40,7 @@ export class PowerUps {
         this.end_x = -12 * POWERUP_SCALE;
     }
 
-    // A drop appears at (x, y), where the wave's last alien blew up.
+    // A drop appears at (x, y), where the alien that drops it blew up.
     spawn(x, y, kind = "bullets") {
         const { key, tag } = KINDS[kind];
         const drop = this.scene.add.sprite(x, y, key);

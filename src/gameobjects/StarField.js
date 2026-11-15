@@ -37,6 +37,10 @@ const CLUMP_COLOURS = [ 0x849be4, 0xbb7547 ];
 
 export class StarField {
 
+    // Every star's speed is times this: 1, full speed, everywhere but the
+    // outro, which slows the stars as the planet comes in (Outro.js).
+    pace = 1;
+
     blitter = null;
     stars = [];
     clumps = [];
@@ -115,7 +119,8 @@ export class StarField {
     }
 
     update(_time, delta) {
-        const step = delta / 1000;
+        // Every star's speed times pace.
+        const step = (delta / 1000) * this.pace;
 
         for (const star of this.stars) {
             star.x -= star.speed * step;

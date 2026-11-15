@@ -127,6 +127,29 @@ export class EmberRingWave {
         return player.touches(box);
     }
 
+    // What a missile can go for (Missiles.js LevelTargets): the ring, hit
+    // where the bullets hit it. A missile counts as several bullet hits;
+    // update() blows it once its hits run out, bullet power-up and all.
+    missileTargets() {
+        const ring = this.ring;
+
+        if (ring === null) {
+            return [];
+        }
+
+        return [{
+            key: "ember-ring",
+            sprite: ring,
+            alive: () => this.ring === ring && ring.hits > 0,
+            touches: (box) => Geom.Intersects.CircleToRectangle(
+                new Geom.Circle(ring.x, ring.y, this.radius), box
+            ),
+            hit: (count) => {
+                ring.hits -= count;
+            }
+        }];
+    }
+
     update(_time, delta, bullets, explosions) {
         const step = delta / 1000;
 

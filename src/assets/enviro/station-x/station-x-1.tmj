@@ -92,7 +92,7 @@
          "name":"station",
          "opacity":1,
          "type":"tilelayer",
-         "visible":true,
+         "visible":false,
          "width":528,
          "x":0,
          "y":0
@@ -247,6 +247,19 @@
                 }, 
                 {
                  "height":0,
+                 "id":65,
+                 "name":"",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"electroball",
+                 "visible":true,
+                 "width":0,
+                 "x":3778,
+                 "y":39
+                }, 
+                {
+                 "height":0,
                  "id":58,
                  "name":"",
                  "opacity":1,
@@ -255,8 +268,8 @@
                  "type":"electroball",
                  "visible":true,
                  "width":0,
-                 "x":4029,
-                 "y":48
+                 "x":3865,
+                 "y":57
                 }, 
                 {
                  "height":0,
@@ -268,21 +281,21 @@
                  "type":"electroball",
                  "visible":true,
                  "width":0,
-                 "x":4011,
-                 "y":174
+                 "x":3851,
+                 "y":191
                 }, 
                 {
                  "height":0,
                  "id":60,
-                 "name":"",
+                 "name":"e2-electroball-x2",
                  "opacity":1,
                  "point":true,
                  "rotation":0,
                  "type":"electroball",
                  "visible":true,
                  "width":0,
-                 "x":4139,
-                 "y":92
+                 "x":3936,
+                 "y":149
                 }, 
                 {
                  "height":0,
@@ -294,21 +307,21 @@
                  "type":"electroball",
                  "visible":true,
                  "width":0,
-                 "x":4138,
-                 "y":214
+                 "x":3630,
+                 "y":194
                 }, 
                 {
                  "height":0,
                  "id":62,
-                 "name":"",
+                 "name":"e1-electroball-x1",
                  "opacity":1,
                  "point":true,
                  "rotation":0,
                  "type":"electroball",
                  "visible":true,
                  "width":0,
-                 "x":4049,
-                 "y":117
+                 "x":3578,
+                 "y":125
                 }, 
                 {
                  "height":0,
@@ -679,7 +692,7 @@
                 }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":false,
+         "visible":true,
          "x":0,
          "y":0
         }, 
@@ -801,7 +814,7 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":1793,
+                 "x":3368,
                  "y":121
                 }],
          "opacity":1,
@@ -811,7 +824,7 @@
          "y":0
         }],
  "nextlayerid":10,
- "nextobjectid":65,
+ "nextobjectid":66,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2",

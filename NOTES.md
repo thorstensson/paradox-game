@@ -1,17 +1,16 @@
-I am building a 2D horizontal space shooter in Phaser 3 using pure JavaScript. We have established a specific architectural blueprint that I need you to stick to for all code generation. Please review the details below before we proceed:
+# Paradox, a retro shoot 'em up - Philosophy
 
 ### 📐 Canvas & Scaling Blueprint
 
-- **Canvas:** 1280 x 800 -- 4x the C64 playfield (320 x 200).
-- **Window fit:** `Scale.NONE` plus an integer `zoom` (largest whole multiple that fits the window), so the canvas is never stretched by a fractional amount.
-- **Clear colour:** `#000000`, framed by the page's `#7488c8` (`style.css`).
-- **Sprites (ships, enemies, bullets):** 3x. See **Sprite Scale: 3x** below.
-- **Title logo:** 7x.
-- **Main font:** Katakis (C64), drawn 1:1 at 24px (all text). See **Fonts** below.
-- **Stars:** 1/2/3px screen-pixel dots (`StarField.js`), not on any texel grid.
+- **Resolution:** 1280 x 800
+- **Scale:** 3x integer scaling, the ship's pixel, for everything
 
 * **Rendering Rule:** Always apply `pixelArt: true` in the Phaser config. This already forces `NEAREST` filtering globally, so per-object `setFilterMode` calls are not needed.
-* **One pixel size:** everything is drawn at 3x, the ship's pixel, as on the C64's single screen.
+
+### 🌌 Background
+
+- The stars are made in code, not art.
+- Each level has its own backdrop: fire cave, asteroid belt, Station X (built in Tiled).
 
 ### 📦 Asset Pipeline (Vite)
 
@@ -27,513 +26,51 @@ Assets live in **`src/assets/`** and are resolved by Vite at build time, not in 
 
 We are using a modular, ES6-module approach splitting files by their functional roles:
 
+```
 paradox/
 ├── index.html
 ├── vite.config.js
-├── art/ # Aseprite masters (not loaded by the game)
-│ └── fonts/
 ├── public/
 │ └── favicon.png # Only truly static, unprocessed files
 │
 └── src/
-├── main.js # Phaser config, canvas size, clear colour, integer zoom
+├── main.js # Phaser config and main initialization
 ├── preloader.js # All asset imports + load calls
 │
 ├── assets/ # Structured strictly by runtime function
-│ ├── backgrounds/ # Parked: galaxy/, purple-nebula/, planets/, oil6/ -- none loaded
+│ ├── enemies/
+│ ├── enviro/
+│ ├── fx/
 │ ├── player/
-│ │ ├── ship/ # raven.aseprite + raven.png + .json (Aseprite atlas)
-│ │ └── bullet/ # ship-bullet.png, 8x2
+│ ├── powerups/
 │ └── fonts/
-│ ├── scifiadventure.png # Title logo image (PARADOX only, not a full font)
-│ ├── katakis-24.fnt + katakis-24_0.png # main-font (BMFont); the .fnt is shared by both PNGs
-│ └── katakis-lilac-24_0.png # hud-font, top HUD score and HI
 │
-├── gameobjects/
-│ ├── Player.js # Mouse-steered ship, banking, autofire. SHIP_SCALE = 3
-│ ├── PlayerBullets.js # Blitter bullet pool, SCALE = 3
-│ └── StarField.js # Procedural Blitter starfield
+├── gameobjects/ # Custom JS classes inheriting from Phaser GameObjects
+│ ├── Player.js
+│ ├── PlayerBullets.js
+│ ├── StarField.js
+│ ├── one file per alien wave
+│ ├── Station.js
+│ └── Boss.js
 │
-└── scenes/
-├── MainScene.js # Game loop; launches MenuScene over itself as the intro
-├── MenuScene.js # Intro: logo + PLAYER ONE / CLICK TO START
-├── HudScene.js # POINTS + REMAINING
-└── GameOverScene.js # GAME OVER + points, holds 3s, fades back to the intro
-
-Enemies get their own folder under `src/assets/enemies/` when the first one is
-drawn (see Enemies & Waves).
+└── scenes/ # Core Phaser Scene files
+├── MainScene.js # Orchestrates the game loop and collision logic
+├── MenuScene.js
+├── HudScene.js
+├── PauseScene.js
+└── GameOverScene.js
+```
 
 ---
 
-## V1
+### 🎮 Levels
 
-Everything there is for version 1, in order:
+**1. Into the Breach (Deep Space).** Open space and stars. Four neutron waves, each with its own movement; clover chains racing along the top and bottom edges; a ring of firerings; neutrons again with one odd-coloured ship; two staggered greywing walls to finish. The third neutron wave drops the speed power-up, the clover top chain the bullets.
 
-1. **The four levels** -- the bulk of the work, and it will take time.
-2. **Audio effects** -- from good sound resources Thomas knows.
-3. **Hi-score table on Supabase** -- simple, online only, no local table.
+**2. Ember Caves.** Walls of flame along the top and bottom; touching them kills. Firecomets shoot out of the flames all through the cave, always on the same paths. Waves: emberstar blocks swinging and firing, the dragon (only its head can be killed), deltas, neutrons and the ember ring. Drops: bullets from the deltas and the ember ring, the shield from the last neutron chain.
 
-**Domain:** `paradox.io`, registered once all four levels are done.
+**3. Belt of Osiris.** One long asteroid belt, the same every game so it can be learnt. Each rock takes three hits. The third rock drops the bullets; two rocks mid-belt drop the shield.
 
-## Credits
+**4. Station X.** A fast flight through a space station; touching the walls kills. Waves of the new station aliens with some earlier ones, guns that turn toward the ship and fire, vulcan pods, floating electroballs, the diamond gun, rockets in the narrow passages, and zaps that can't be shot, only timed. A lost ship restarts at the last marker passed. Drops: the missile, the shield and the bullets.
 
-- **Intro screen:** `BY THOMAS THORSTENSSON` along the bottom
-  (`MenuScene.js`). The intro is for CV and portfolio, so it carries my name
-  only.
-- **Ending credits:** after all levels are completed, old-skool, scrolling
-  slowly upward. Includes:
-    - Graphics by Thomas Thorstensson
-    - Code by Thomas Thorstensson & Claude
-
-    Not built yet.
-
----
-
-## Level Concepts
-
-Four levels sketched.
-
-1. **Deep Space** — stars only.
-2. **Ember Caves** — walls of flame, top and bottom.
-3. **Osiris Belt** (working title) — an asteroid belt challenge, as in Delta; asteroids drawn in the background, dark lila.
-4. **Final level** — the hardest; to be decided.
-
-Backgrounds are to be hand-drawn in Aseprite, indexed, same C64 palette as
-the ship.
-
-Draw in Aseprite's **tilemap mode on an 8x8 grid**, even when the output is a
-flat image. The 8x8 cell matches the C64's character and bitmap structure,
-which is as much of the C64 look as the palette is, and tile-based art is
-seamless by construction.
-
-Use a real Phaser tilemap only where geometry is solid and needs collision.
-Never for open space — a TileSprite parallax (the approach the removed
-`GalaxyBackground` used) is infinite, seamless and one draw call per layer,
-which a tilemap cannot beat for a backdrop.
-
----
-
-## Level 1 Concepts
-
-**Deep Space.** Nothing but space, in the spirit of Nemesis on the C64.
-
-**Nothing to draw for this level.** The stars are already there and they are
-_code, not art_ — `src/gameobjects/StarField.js` is a Phaser **Blitter**
-(`scene.add.blitter`, batched Bobs), generating its own texture at runtime:
-three 1/2/3px white squares, no loaded image at all.
-
-Depth is carried by size, speed and alpha together across three bands, drawn
-at `depth: -5`.
-
-So no background texture is needed here — the clear colour (`#000000`, set in
-`main.js`) plus the Blitter is the whole level.
-
----
-
-## Level 2 Concepts
-
-**Ember Caves.** Idea from a level in Delta. The stars stay, as in Delta. Walls of flame
-running horizontally along the top and bottom of the screen, looping. All
-flame — no rock, no cave edge.
-
-### Wave sequence per level
-
-```
-Level 1:  neutron4x - clover - firering - neutron - greywing2x
-Level 2:  firecomet (whole level) - emberstar - dragon - delta 2x - neutron4x - New alien2x (b)
-```
-
-### Wave Attack Patterns
-
-Named by the motion, not the alien, so any alien can fly any pattern and
-patterns come back through the levels, as in Delta. For now each class is
-still tied to its alien; they get detached later.
-
-| Pattern          | Motion                                                                                                                                                              | Used in                          | Code              |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ----------------- |
-| **sinus-pinch**  | Two mirrored chains, above and below the middle, dip toward each other and pull apart again                                                                         | Level 1 waves 1, 4 (neutron)     | `NeutronWave`     |
-| **sinus-center** | One chain enters above or below the middle, swings out, curves onto the centre line and flies straight at the ship                                                  | Level 1 waves 2, 3 (neutron)     | `NeutronDiveWave` |
-| **sinus-edges**  | A chain of seven enters just in from the bottom, eases onto the bottom edge and races off; 2s later the same along the top. Fast, a memory test                     | Level 1 wave 5 (clover)          | `CloverWave`      |
-| **flame-v**      | Comes out of the flames at the right edge, top and bottom in turn, and flies a straight line to the left edge's centre (a V on its side). 15 at fixed, uneven times | Level 2, whole level (firecomet) | `FirecometTrack`  |
-| **block-swing**  | Two mirrored 2x2 blocks, top and bottom, swing between their flames and the centre line while drifting slowly left. Four fire one aimed bullet each                 | Level 2 wave 1 (emberstar)       | `EmberstarWave`   |
-| **snake-sine**   | A head and a tail of circles on a slow flame-to-flame sine, each circle following the head's path. Only the head kills it                                           | Level 2 wave 2 (dragon)          | `DragonWave`      |
-
----
-
-## Level 4 Concepts
-
-**Station X.** The last level of V1. You fly inside a space station, in the
-spirit of Katakis's last level -- inspiration, not a blueprint.
-
-### Painted in Aseprite, rebuilt in Tiled
-
-All files are in `src/assets/enviro/station-x/`:
-
-- `station-x.aseprite` -- the painting. 4224x240, indexed, 8x8 tilemap,
-  drawn at 3x (240 x 3 = the 720 playfield).
-- `station-x-tiles.png` -- every tile in one horizontal strip, 3088x8
-  (386 tiles), no padding.
-- `station-x.png` -- the flat painting, 4224x240, the tracing guide in Tiled.
-- `station-x.tmx`, `station-x-1.tmx`, `station-x-2.tmx` -- the station rebuilt
-  in Tiled, 528x30 tiles of 8x8. `-1` and `-2` are copies with a few changes
-  each and a few more guns. Each map gets its own attack waves.
-
-Each map has three layers:
-
-- `guide` -- image layer with `station-x.png`, only to trace from.
-- `station` -- tile layer, the station itself.
-- `gun` -- object layer, the guns.
-
-**Never delete unused tiles in `station-x.aseprite`.** In Auto mode Aseprite
-removes a tile that is no longer used and moves every later tile down one
-place. Tiled stores tiles by their place in the strip, so every map breaks.
-
-### Guns
-
-Aseprite sprites, not tiles, in `src/assets/enviro/guns/` (each `.png` next to
-its `.aseprite`). They don't animate. Placed in Tiled as objects on the `gun`
-layer, from the embedded `guns` tileset (a collection of images).
-
-| Gun            | Size  | What it is                                                                 |
-| -------------- | ----- | -------------------------------------------------------------------------- |
-| `gun`          | 32x32 | The standing gun with its base                                             |
-| `gun-inverted` | 32x32 | `gun` flipped vertically                                                   |
-| `gun-diagonal` | 32x32 | `gun` on its diagonal base. Decoration only: can't be shot, outside the track |
-| `gun-diamond`  | 96x80 | The big floating diamond gun                                               |
-
-In Phaser they come from `createFromObjects` (`Tilemap.js:775`), which can
-pick them out by gid.
-
-### Electrifiers
-
-Fangs painted in the station, top and bottom, so they stay tiles. They don't
-explode. A spark -- its own animated Aseprite sprite, 3x -- flows from the top
-fang to the bottom fang. It can't be shot; you have to time it.
-
-The spark's position comes from a point or line on a Tiled object layer, not
-from the fang's tile number (Aseprite can renumber tiles). Phaser only copies
-Tiled tile animations and never plays them (`ParseTilesets.js:86-89`), so the
-spark is never a tile. Not built yet.
-
-### The X
-
-A dark grey X in the open part: background, fly-through, no collision. How it
-is marked in Tiled is still open.
-
-### Into the game
-
-Phaser reads Tiled JSON only, with the tilesets embedded
-(`ParseTilesets.js:36`), so each map is exported as JSON (`.tmj`, File >
-Export As) next to its `.tmx`. `Station.js` draws the three maps in a row at
-3x after level 3 (or N in level 3): each map's `background` layer (the X,
-flown through) behind its `station` layer (the wall, pixel collision with the
-ship, as the fire cave). Every export reloads the dev server page.
-
-### Speed
-
-Station X is a fast level: every alien flies at **715.8 px/s**, except the
-boss. Settled by playing, 2026-10-29: 20% over the delta's 596.5. In code,
-each station alien's `speed` in the `ALIENS` table, `Station.js`.
-
-**Pacing:** waves are placed edge to edge on the map, the next wave's start
-right behind the last. A gap only where Thomas wants one, such as around the
-electrifiers. Settled by playing, 2026-10-29.
-
-### Attack waves
-
-Drawn in Tiled on each map's `waves` object layer, one polyline per line of
-ships, drawn right to left; the first point is where the ships come in.
-Built 2026-10-29 (`Station.js`), first waves on `station-x`.
-
-- **Name** -- wave, alien, place: `w1-delta-top`, `w1-delta-bottom`,
-  `w1-neutron`. **Class** -- the alien, as its folder is named (`delta`).
-- Each line flies a full chain, as the alien's wave does: 10 deltas, 4
-  neutrons, one sprite width apart, coming in from the right edge along the
-  line's first piece -- so the space right of the start, that way, must be
-  open.
-- When the line's first point reaches the right edge, the line is pinned to
-  the screen where it is (2026-11-08): the walls scroll on under it, and
-  every ship flies the whole line as drawn, at 3x, at its own speed, curved
-  smoothly through the points. Lines are drawn right to left, so the rest of
-  the line already lies across the screen; anything wider than the screen
-  (about 460 native px) runs off the left edge.
-- A lost ship clears the station's ships on screen; after a 500 ms fade the
-  station goes back to the last restart marker passed (`markers` layer,
-  points spawn-1, spawn-2... counting up across the maps) and every wave
-  right of it comes in again (2026-11-09).
-
-### Pods
-
-Placed in Tiled like the guns, on each map's `gun` layer, from the `guns`
-tileset: the whole sprite sheet with a one-frame Rectangle. Only pod
-pictures are read from that layer; the guns are not in the game yet.
-Flipped with Y in Tiled, a pod hangs upside down and works downward.
-
-- **Vulcan** (`enviro/pods/vulcan`, 32x32, `vulcan-loop`, 2026-11-10, after
-  Katakis): on top of and under the vulcan-room blocks. It releases 10
-  `bullet-vulcan` bullets like pollen from a flower: all from the middle of
-  its open end, straight, not aimed, each one wider than the last, sides
-  taking turns (4 to 35 degrees), a random 300-800 ms apart, then 2 s rest.
-  The bullets ride with the station plus 120 px/s. 10 hits; a missile counts
-  5. Placeholders to tune by playing: angles, gaps, rest, speed, points.
-
-The guns will fire `bullet-vulcan` too. All enemy bullets live in
-`enemies/bullet/`.
-
-### Length
-
-Two maps, not three (Thomas, 2026-11-10): the fire cave takes 70 s played
-through; the station scrolls 42.2 s per map. To be stopwatched once
-`station-x-1` has its enemies.
-
-### Later
-
-Thomas's plans, 2026-10-29:
-
-- Guns fire their own bullets; Thomas draws them.
-- New station enemies in steel blue, some of them shooting.
-- The final boss: three parts to its body, each exploding on its own; when
-  the last part is shot, the boss blows up.
-- In the last room of `station-x-2` the scroll stops until the boss is
-  killed: a classic fight. Then the scroll starts again, the ship speeds out
-  to the right by itself, and the end words follow.
-
-## Sprite Scale: 3x
-
-**Decided 2026-09-24.** Ships are drawn at **3x**: the player ship, and every
-enemy after it. A 32x32 canvas is 96x96 on screen; the ~28x20 hull comes out
-around 84x60.
-
-At 4x the ship read a touch too big for the 1280x800 playfield. 3x is still
-an integer scale, so every pixel stays the same size and crisp -- the only
-trade is that ship pixels are 3px while some other things on screen are not.
-
-In code this is `SHIP_SCALE` in `src/gameobjects/Player.js`. Anything
-positioned relative to the ship is written in native ship pixels times the
-scale (the muzzle point is `14 * SHIP_SCALE`), so it follows if the scale ever
-changes again.
-
----
-
-## Fonts
-
-**Main font: Katakis (C64)** (FontStruct, Patrick H. Lauke). Used for all
-text except the logo. Its grid is 8 bricks, exported at 24px = 3px per brick
-and drawn at 24 (1:1), so every brick stays an even square. One
-`katakis-24.fnt` with two painted PNGs of the same glyph layout:
-
-- `katakis-24_0.png` (key `main-font`).
-- `katakis-lilac-24_0.png` (key `hud-font`): dark lilac, the top HUD's score
-  and HI.
-
-Made with **AngelCode BMFont**: font smoothing off, preset _White text with
-alpha_, font descriptor **XML**, textures **png**, **256x256**, one page each
-(Phaser's loader reads one page only). The `.fnt` files record a negative
-size; `preloader.js` flips it back.
-
-**Title logo** is `scifiadventure.png`: the word PARADOX set in Sci Fi
-Adventure, as a 152x16 image, drawn at 7x (1064 x 112 px) with a tint and
-shine. Not a usable font.
-
----
-
-## Player Ship
-
-Working master: `src/assets/player/ship/raven.aseprite`. 32x32, indexed, four
-layers — `race stripes` / `litecyan` / `hud` / `main hull`.
-
-**Done 2026-09-20: banking.** Three frames, three one-frame tags:
-
-```
-timeline:   1        2          3
-          level    bank-up   bank-down
-```
-
-All held states, no transitions — press and hold, the ship sits on the frame.
-In-between steps can be inserted later without touching game code, since
-everything is addressed by tag name.
-
-```js
-sprite.play("bank-up", true); // true = ignoreIfPlaying
-sprite.play("level", true);
-```
-
-The `ignoreIfPlaying` flag is not optional: without it, calling `play()` every
-tick while a key is held restarts the animation continuously.
-
-### Speeds
-
-Settled by playing, fast-paced like Delta:
-
-| Kind    | Speed      | Used by                     |
-| ------- | ---------- | --------------------------- |
-| Fast    | 716 px/s   | Clover, greywing, firecomet |
-| Medium  | 596.5 px/s | Delta                       |
-| Regular | 477 px/s   | Neutron                     |
-| Slow    | 161 px/s   | Firering, emberstar         |
-| Dragon  | 80 px/s    | Dragon                      |
-
-New aliens start from one of these. The gap between aliens in a chain is
-worked out from the speed, so it stays one sprite width either way.
-
-### Enemy roster
-
-This is the main body of art still to draw. Canvas convention as the player
-ship: 32x32, indexed, untrimmed, one folder per entity under
-`src/assets/enemies/`, exported as an Aseprite atlas with Array format,
-Tags on, trim off, and **Item Filename set to `{frame}`** — Phaser's
-`createFromAseprite()` looks the frames up by index, and Aseprite's default
-filename template silently breaks it.
-
-### Power drops
-
-Instead of Delta's block pick-ups, a Nemesis-style power drop.
-
-- Look: gleaming silver rings with a letter inside (Thomas designs them).
-- Four drops: double fire rate, triple laser, extra life (L), speed.
-- Fixed per wave: a given wave always carries the same drop, so players
-  can learn it and plan, as in Delta.
-- Trigger: shoot down the whole wave. Missing any alien means no drop,
-  which keeps the pressure on.
-- A missed drop drifts off slowly and steadily.
-- Power-ups are temporary (lives are not). Durations to try out later.
-- Needs ship collision first.
-- **Shield** (built): drops from level 2's last neutron wave, top chain. A
-  quarter ring spins round the ship for 60s and stops enemy bullets, not
-  aliens.
-- **Seeking missile** (built 2026-11-09): from the `w1-delta-top` drop, two
-  levels, 60 s each. Fires with the fire button, Nemesis-style, one in the
-  air per level, from the nose tip at a random alien or pod on screen; kills
-  an alien outright, counts 5 hits on a vulcan, stops at walls.
-
-Where each power-up drops:
-
-| Power-up | Level | Drops when                                                                                                             | Code                                               |
-| -------- | ----- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| Bullets  | 1     | The clover wave's whole top chain is shot                                                                              | `CloverWave.js:164`                                |
-| Bullets  | 2     | The delta wave's whole top chain (all 10) is shot                                                                      | `DeltaWave.js:170`                                 |
-| Shield   | 2     | The last neutron dive wave (the top chain) is shot in full                                                             | `MainScene.js:90`, `NeutronWave.js:161`            |
-| Shield   | 3     | Either of two fixed rocks mid-belt, near the centre line, is destroyed (shot or by the shield ring); about 5.6 s apart | `asteroid-belt.js:205, 245`, `AsteroidBelt.js:185` |
-
-### Testing a single wave -- later
-
-Not now: playing the full sequence is part of testing for the moment. But
-as the waves and levels grow, reaching the last wave to check one change
-means playing everything before it every time. So later, a way to jump
-straight to a wave, dev server only (`import.meta.env.DEV`), never in the
-released game:
-
-1. **URL parameter** -- `?wave=5` starts at wave B; later
-   `?level=2&wave=3`. Nothing in the code changes between tests, and a
-   bookmark per wave makes it one click. The preferred route.
-2. **A skip key** -- e.g. N ends the current wave and brings on the next.
-   Pairs well with 1.
-3. **A `START_WAVE` constant** in `MainScene.js` -- simplest, but it has to
-   be edited each time and set back.
-
-## Explosions
-
-No particle emitters, no glow, no bloom. The main reason is CPU: the
-template's glow bullets (bloom postFX plus `flares` particles) made the game
-lag from the outset. It isn't retro either.
-
-**No chunks flying outward.** That is modern arcade and clutters the stage.
-Nemesis, Zynaps and Delta all explode in place.
-
-**A hand-painted Aseprite animation, Delta style.** Delta's is 7 frames, greys
-and white only: a small clump pops, swells to a dense mass with white hot
-spots, cracks open, and dissolves into a few dashes inside the same
-footprint. Painted like the neutron, one tag, played once on death.
-
-Explosions are **pooled**, like the bullets: creating and destroying sprites
-mid-wave will stutter.
-
-## Palette
-
-The project palette is **DawnBringer's DB32** -- Aseprite's default, and what
-the player ship was painted in. It is not the literal Commodore 64 palette,
-and that is a deliberate decision: the C64 feel comes from the discipline --
-low resolution, a hard colour ceiling, readable silhouettes, 8x8 structure --
-far more than from sixteen specific hex values. Thirty-two colours used
-sparingly is still real pixel art at C64 level. The ship uses four of them.
-
-Held in code as a single module, so generated textures (debris, bullets,
-stars) and hand-drawn art cannot drift apart.
-
-```
-#000000  #222034  #45283C  #663931  #8F563B  #DF7126  #D9A066  #EEC39A
-#FBF236  #99E550  #6ABE30  #37946E  #4B692F  #524B24  #323C39  #3F3F74
-#306082  #5B6EE1  #639BFF  #5FCDE4  #CBDBFC  #FFFFFF  #9BADB7  #847E87
-#696A6A  #595652  #76428A  #AC3232  #D95763  #D77BBA  #8F974A  #8A6F30
-```
-
-Ramps are defined over these, not ad-hoc colours. Both have six steps:
-
-```
-fire:   #FBF236 -> #DF7126 -> #D95763 -> #AC3232 -> #663931 -> #45283C
-metal:  #FFFFFF -> #CBDBFC -> #9BADB7 -> #847E87 -> #696A6A -> #323C39
-```
-
-A note on how this came about, so it is not relitigated: indexed mode means
-the image stores palette _indices_, not that any particular palette is in
-use. Aseprite supplied DB32 by default. Aseprite has no built-in Commodore 64
-preset -- that was an unverified claim of mine, and it is not there.
-
-## Audio
-
-- **Intro screen only.** A Commodore-inspired track on the title screen.
-- **No music in game.** The gameplay runs silent under the effects.
-- Buying the track, or commissioning a composer, is the plan — both exist.
-  The soundtrack comes **last**, after everything else.
-
-**Effects first, soon:**
-
-- **Laser** — the player's shot.
-- **Explosion** — an enemy dying.
-- **Falling sound** — a top-down falling tone for the wrong-coloured alien
-  that turns up now and then in each wave. Shooting it takes points away
-  instead of adding them. An idea from Delta.
-
-Worth noting the consequence: with no in-game music, the **explosions and
-impacts carry the entire feel of the game**. That is an argument for spending
-real time on the first 100ms of a kill — the hit flash and the debris — over
-anything more elaborate.
-
-### Held state vs played animation
-
-Same mechanism, different use.
-
-| Thing                       | Kind                | Tag                   |
-| --------------------------- | ------------------- | --------------------- |
-| Bank up / level / bank down | state, held         | 1 frame each          |
-| Thruster flicker            | loops forever       | 2–4 frames, ping-pong |
-| Hit flash                   | plays once, returns | 2–3 frames            |
-| Explosion                   | plays once, ends    | 6–10 frames           |
-
-**Why banking is a held state:** if the player is pushing up, the ship should
-_stay_ banked until they stop. There is no duration to it — it is a
-condition, not an event. So it is a one-frame tag you switch to and sit on.
-
-A single ship file therefore mixes tag lengths: some one frame, some eight.
-
-### Address tags, never frame numbers
-
-`play("bank-up")` — if the tag is one frame, playing it simply holds that
-frame. Frame _numbers_ stay entirely inside Aseprite. Insert three frames in
-the middle of the file tomorrow and no game code changes. That insulation is
-the real payoff of tags over raw frame indices.
-
-Tags also carry a **loop direction** (Forward / Reverse / Ping-pong).
-Ping-pong turns 3 drawn frames into a 4-frame cycle for free — useful for an
-engine pulse or idle shimmer.
-
-### Canvas convention
-
-32x32, indexed, transparent, square 1:1 pixel aspect. Hull inside roughly
-28x20 centred. Bosses at 64x64 or 96x96.
-
-Keep 1:1 despite real C64 multicolour being 2:1, because the game scales
-sprites by a square 3x. Get the multicolour feel by drawing in 2px-wide horizontal blocks
-instead.
-
-Palette is DB32 — see the Palette section above.
+**The boss, scarab.** At the end the station slows to a stop and the scarab slides in. It sweeps up and down, lunges forward every few seconds, and fires from its wings and hull in turn. The wings must be shot first; only then does the hull take hits.

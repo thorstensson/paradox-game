@@ -53,6 +53,11 @@ import greywingJsonUrl from "./assets/enemies/greywing/greywing.json?url";
 import explosionUrl from "./assets/fx/explosion/explosion.png?url";
 import explosionJsonUrl from "./assets/fx/explosion/explosion.json?url";
 
+// Missile impact (Thomas, 2026-11-14). 16x16 indexed (48 on screen), ten
+// frames at 40 ms under one tag, impact-loop, played once (Missiles.js).
+import impactUrl from "./assets/fx/impact/impact-simple.png?url";
+import impactJsonUrl from "./assets/fx/impact/impact-simple.json?url";
+
 // Firecomet, level 2 A1. 32x32 indexed, six frames under one looping tag,
 // firecomet-pulse. Same export settings as the ship.
 import firecometUrl from "./assets/enemies/firecomet/firecomet.png?url";
@@ -89,10 +94,17 @@ import electroballUrl from "./assets/enemies/electroball/electroball.png?url";
 import electroballJsonUrl from "./assets/enemies/electroball/electroball.json?url";
 
 // The Station X boss, scarab: Thomas's 120x180 canvas, drawn at 3x like the
-// ship, 360x540 on screen. Five frames, one per tag: scarab-full,
-// scarab-hull, scarab-hit, scarab-top-wing, scarab-bottom-wing (Boss.js).
+// ship, 360x540 on screen. Eight frames, six tags: scarab-full,
+// scarab-hull, scarab-hit, scarab-top-wing, scarab-bottom-wing, scarab-tail
+// (frames 5-7) (Boss.js).
 import scarabUrl from "./assets/enemies/scarab/scarab.png?url";
 import scarabJsonUrl from "./assets/enemies/scarab/scarab.json?url";
+
+// The outro's planet, saturn (Thomas, 2026-11-15, from an Aseprite planet
+// generator): 480x270 frames, drawn at 3x like the ship, 1440x810 on screen.
+// 24 frames at 83 ms under one looping tag, saturn-loop (Outro.js).
+import saturnUrl from "./assets/enviro/planets/saturn.png?url";
+import saturnJsonUrl from "./assets/enviro/planets/saturn.json?url";
 
 // Rocket, Station X: 16x16 indexed (48 on screen), ten frames at 50 ms under
 // one looping tag, rocket-loop (it spins). Same export settings as the ship.
@@ -113,6 +125,10 @@ import bulletEnemyJsonUrl from "./assets/enemies/bullet/bullet-enemy.json?url";
 // The red enemy bullet, fired straight ahead by the enforcer in Station X.
 // 8x2 native, one frame, no tags -- a plain image, as the ship's bullet.
 import bulletRedEnemyUrl from "./assets/enemies/bullet/bullet-red-enemy.png?url";
+
+// The blue enemy bullet, fired straight ahead by the scarab's four guns. One
+// frame, no tags -- a plain image, as the red one.
+import bulletBlueEnemyUrl from "./assets/enemies/bullet/bullet-blue-enemy.png?url";
 
 // The vulcan's bullet, Station X: 6x6 indexed like the grey one, the blue
 // round 1 px smaller each side, two frames under bullet-vulcan-blink.
@@ -233,6 +249,7 @@ export class Preloader extends Phaser.Scene {
         this.load.aseprite("firering", fireringUrl, fireringJsonUrl);
         this.load.aseprite("greywing", greywingUrl, greywingJsonUrl);
         this.load.aseprite("explosion", explosionUrl, explosionJsonUrl);
+        this.load.aseprite("impact", impactUrl, impactJsonUrl);
         this.load.aseprite("firecave", firecaveUrl, firecaveJsonUrl);
         this.load.aseprite("firecomet", firecometUrl, firecometJsonUrl);
         this.load.image("emberstar", emberstarUrl);
@@ -245,9 +262,11 @@ export class Preloader extends Phaser.Scene {
         this.load.aseprite("electroball", electroballUrl, electroballJsonUrl);
         this.load.aseprite("rocket", rocketUrl, rocketJsonUrl);
         this.load.aseprite("scarab", scarabUrl, scarabJsonUrl);
+        this.load.aseprite("saturn", saturnUrl, saturnJsonUrl);
         this.load.aseprite("ember-ring", emberRingUrl, emberRingJsonUrl);
         this.load.aseprite("bullet-enemy", bulletEnemyUrl, bulletEnemyJsonUrl);
         this.load.image("bullet-red-enemy", bulletRedEnemyUrl);
+        this.load.image("bullet-blue-enemy", bulletBlueEnemyUrl);
         this.load.aseprite("bullet-vulcan", bulletVulcanUrl, bulletVulcanJsonUrl);
         this.load.aseprite("powerup-bullets", powerupBulletsUrl, powerupBulletsJsonUrl);
         this.load.aseprite("powerup-shield", powerupShieldUrl, powerupShieldJsonUrl);

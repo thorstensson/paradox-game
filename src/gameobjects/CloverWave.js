@@ -47,6 +47,10 @@ const EDGE_AT = 0.3;
 // so the player has time to get up there.
 const TOP_DELAY = 2000;
 
+// The top chain's clover that drops the bullet power-up when shot, by its
+// position in the chain, from 1 (Thomas, 2026-11-15).
+const DROP_AT = 3;
+
 export class CloverWave {
 
     scene = null;
@@ -56,10 +60,6 @@ export class CloverWave {
     to_spawn = CHAIN_LENGTH * 2;
 
     top_sent = false;
-
-    // Top-chain clovers shot down. All of them drops the power-up, out of
-    // the last one's explosion; one flying off means no drop.
-    top_shot = 0;
 
     constructor(scene) {
         this.scene = scene;
@@ -88,16 +88,18 @@ export class CloverWave {
     sendChain(side) {
         for (let i = 0; i < CHAIN_LENGTH; i++) {
             this.scene.time.delayedCall(i * SPACING, () => {
-                this.spawn(side);
+                this.spawn(side, i + 1);
                 this.to_spawn--;
             });
         }
     }
 
-    spawn(side) {
+    // number: its position in the chain, from 1.
+    spawn(side, number) {
         const clover = this.scene.add.sprite(this.start_x, 0, "clover");
         clover.setScale(CLOVER_SCALE);
         clover.side = side;
+        clover.number = number;
         clover.points = POINTS;
         clover.y = this.pathY(clover.x, side);
         clover.play({ key: "clover-spin", repeat: -1 });
@@ -157,12 +159,8 @@ export class CloverWave {
                 explosions.spawn(clover.x, clover.y);
                 this.scene.addPoints(clover.points);
 
-                if (clover.side === -1) {
-                    this.top_shot++;
-
-                    if (this.top_shot === CHAIN_LENGTH) {
-                        this.scene.powerups.spawn(clover.x, clover.y);
-                    }
+                if (clover.side === -1 && clover.number === DROP_AT) {
+                    this.scene.powerups.spawn(clover.x, clover.y);
                 }
 
                 clover.destroy();

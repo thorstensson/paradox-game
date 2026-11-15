@@ -60,13 +60,14 @@ export class NeutronWave {
     // null for none.
     // inverted: level 1's motion mirrored -- the chains fly in from the
     // centre and spread out, instead of dipping in (level 2).
-    // drop: kind of power-up dropped when every neutron is shot, out of the
-    // last one's explosion, or null for none.
-    constructor(scene, sides = [-1, 1], odd = null, inverted = false, drop = null) {
+    // drop: kind of power-up dropped out of the explosion of neutron number
+    // drop_at (position in the chain, from 1), when that one is shot; or
+    // null for none (Thomas, 2026-11-15).
+    constructor(scene, sides = [-1, 1], odd = null, inverted = false, drop = null, drop_at = null) {
         this.scene = scene;
         this.inverted = inverted;
         this.drop = drop;
-        this.to_shoot = CHAIN_LENGTH * sides.length;
+        this.drop_at = drop_at;
 
         // Neutrons spawn and despawn fully off-screen, half a sprite past
         // each edge.
@@ -78,7 +79,7 @@ export class NeutronWave {
         // of each other.
         for (let i = 0; i < CHAIN_LENGTH; i++) {
             scene.time.delayedCall(i * SPACING, () => {
-                sides.forEach((side) => this.spawn(side, i + 1 === odd));
+                sides.forEach((side) => this.spawn(side, i + 1 === odd, i + 1));
                 this.to_spawn--;
             });
         }
@@ -91,12 +92,14 @@ export class NeutronWave {
 
     // side: -1 for the top chain, 1 for the bottom.
     // odd: true for the odd-coloured neutron.
-    spawn(side, odd = false) {
+    // number: its position in the chain, from 1.
+    spawn(side, odd = false, number = 0) {
         const neutron = this.scene.add.sprite(
             this.start_x, 0, odd ? "neutron-odd" : "neutron"
         );
         neutron.setScale(NEUTRON_SCALE);
         neutron.side = side;
+        neutron.number = number;
         neutron.points = odd ? ODD_POINTS : POINTS;
         neutron.y = this.pathY(neutron.x, side);
         neutron.play({ key: odd ? "neutron-odd-spin" : "spin", repeat: -1 });
@@ -132,6 +135,22 @@ export class NeutronWave {
         });
     }
 
+    // What a missile can go for (Missiles.js LevelTargets; levels 2 and 3
+    // only, MainScene missileField()): every neutron, hit where the bullets
+    // hit it. One hit kills a neutron, so a missile does: update() blows it
+    // as if shot.
+    missileTargets() {
+        return this.neutrons.map((neutron) => ({
+            key: "neutron",
+            sprite: neutron,
+            alive: () => this.neutrons.includes(neutron) && !neutron.missile_hit,
+            touches: (box) => Geom.Intersects.RectangleToRectangle(box, neutron.getBounds()),
+            hit: () => {
+                neutron.missile_hit = true;
+            }
+        }));
+    }
+
     // One bullet kills a neutron: it is removed and an explosion plays where
     // it was. The hit box is the whole 96x96 sprite, not the ring itself --
     // generous, and a first pass.
@@ -156,13 +175,11 @@ export class NeutronWave {
                 hit = true;
             });
 
-            if (hit) {
+            if (hit || neutron.missile_hit) {
                 explosions.spawn(neutron.x, neutron.y);
                 this.scene.addPoints(neutron.points);
 
-                this.to_shoot--;
-
-                if (this.drop && this.to_shoot === 0) {
+                if (this.drop && neutron.number === this.drop_at) {
                     this.scene.powerups.spawn(neutron.x, neutron.y, this.drop);
                 }
                 neutron.destroy();
@@ -191,8 +208,8 @@ const DIVE_LEVEL_AT = 0.45;
 
 export class NeutronDiveWave extends NeutronWave {
 
-    constructor(scene, side, odd = null, inverted = false, drop = null) {
-        super(scene, [side], odd, inverted, drop);
+    constructor(scene, side, odd = null, inverted = false, drop = null, drop_at = null) {
+        super(scene, [side], odd, inverted, drop, drop_at);
     }
 
     // The half-cosine carries the chain from the edge offset in to the

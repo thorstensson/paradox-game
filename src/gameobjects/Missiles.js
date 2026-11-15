@@ -1,4 +1,4 @@
-import { Geom, Math as PhaserMath } from "phaser";
+import { Animations, Geom, Math as PhaserMath } from "phaser";
 import { paintedBox } from "./FirecometTrack";
 import { MUZZLE_X, MUZZLE_Y } from "./Player";
 
@@ -12,7 +12,11 @@ import { MUZZLE_X, MUZZLE_Y } from "./Player";
 // screen it flies straight on. It kills what it hits, as a bullet does, and
 // stops at the station's walls, as bullets do.
 //
-// The station's pods (the vulcan) are picked as the aliens are (2026-11-10).
+// The station's pods (the vulcan) are picked as the aliens are (2026-11-10),
+// and so are the boss's parts, unless they are soaking (Boss.js targets()).
+//
+// Levels 2 and 3 too (Thomas, 2026-11-15), not level 1: there the missile
+// goes for what LevelTargets below gives it.
 //
 // Later: a gun near the ship is picked before any alien.
 
@@ -27,6 +31,23 @@ const TURN = 270;
 // Its heading as it leaves the ship, degrees: 0 is straight ahead (right),
 // -90 straight up. A placeholder to tune by playing.
 const LAUNCH_HEADING = 0;
+
+// Levels 2 and 3: a missile counts as this many bullet hits, as on the
+// station's vulcans and the scarab's parts (Thomas, 2026-11-15). A
+// placeholder to tune by playing.
+const MISSILE_HITS = 5;
+
+// The impact (fx/impact, impact-simple, Thomas): plays once where a missile
+// hits and does not kill -- the target takes the hits, or soaks them, and
+// stays. Never with an explosion, never on a wall (Thomas, 2026-11-15).
+// A small pool, as the explosions: at most two missiles fly at once.
+const IMPACT_TEXTURE = "impact";
+const IMPACT_ANIMATION = "impact-loop";
+const IMPACT_POOL = 4;
+
+// Over the aliens, the boss and the vulcans it lands on, which are all
+// added to the scene after this pool.
+const IMPACT_DEPTH = 1;
 
 // Gone once fully off the playfield: half the 13 px canvas at 3x.
 const MARGIN = 7 * SCALE;
@@ -54,17 +75,51 @@ export class Missiles {
     // The painted pixels over all five frames, native px from the centre.
     hit_box = null;
 
+    // The impact pool.
+    impacts = [];
+
     constructor(scene) {
         this.scene = scene;
         this.hit_box = paintedBox(scene, "missile");
+
+        for (let i = 0; i < IMPACT_POOL; i++) {
+            const impact = scene.add.sprite(0, 0, IMPACT_TEXTURE)
+                .setScale(SCALE)
+                .setDepth(IMPACT_DEPTH)
+                .setActive(false)
+                .setVisible(false);
+
+            // The tag carries no repeat, so it plays once and goes back
+            // to the pool.
+            impact.on(Animations.Events.ANIMATION_COMPLETE, () => {
+                impact.setActive(false).setVisible(false);
+            });
+
+            this.impacts.push(impact);
+        }
+    }
+
+    // Silently does nothing if the pool is dry.
+    impact(x, y) {
+        const impact = this.impacts.find((sprite) => !sprite.active);
+
+        if (!impact) {
+            return;
+        }
+
+        impact.setPosition(x, y).setActive(true).setVisible(true);
+        impact.play(IMPACT_ANIMATION);
     }
 
     // firing: the fire button is held this frame.
-    update(time, delta, player, station, explosions, firing) {
+    // field: what a missile can go for -- the station in level 4, a
+    // LevelTargets in levels 2 and 3, null in level 1 (MainScene
+    // missileField()).
+    update(time, delta, player, field, explosions, firing) {
         const levels = player.missile_powerups.length;
 
-        if (firing && this.missiles.length < levels && player.state === "can_move" && station) {
-            const targets = station.targets();
+        if (firing && this.missiles.length < levels && player.state === "can_move" && field) {
+            const targets = field.targets();
 
             if (targets.length) {
                 this.launch(player.x + MUZZLE_X, player.y + MUZZLE_Y, pick(targets));
@@ -77,8 +132,8 @@ export class Missiles {
             this.debug_next = time + 1000;
 
             const why = player.state !== "can_move" ? `ship not in play (state ${player.state})`
-                : !station ? "no station"
-                : station.targets().length === 0 ? `no alien on screen (station ships: ${station.ships.length})`
+                : !field ? "no missile targets in this level"
+                : field.targets().length === 0 ? `no alien on screen${field.ships ? ` (station ships: ${field.ships.length})` : ""}`
                 : null;
 
             if (why) {
@@ -95,8 +150,8 @@ export class Missiles {
             const { sprite } = missile;
 
             // Its alien was shot first, or flew off: another, if any.
-            if (missile.target && !station?.isFlying(missile.target)) {
-                const targets = station ? station.targets() : [];
+            if (missile.target && !field?.isFlying(missile.target)) {
+                const targets = field ? field.targets() : [];
 
                 missile.target = targets.length ? pick(targets) : null;
             }
@@ -126,7 +181,7 @@ export class Missiles {
                 return false;
             }
 
-            if (!station) {
+            if (!field) {
                 return true;
             }
 
@@ -142,39 +197,68 @@ export class Missiles {
                 this.hit_box.h * SCALE
             );
 
-            if (station.wallIn(box)) {
+            // Levels 2 and 3: no walls; what it hits takes MISSILE_HITS.
+            if (field instanceof LevelTargets) {
+                const target = field.hitIn(box);
+
+                if (target) {
+                    debug(`ended: hit ${target.key}`, sprite);
+                    target.hit(MISSILE_HITS);
+
+                    if (target.alive()) {
+                        this.impact(sprite.x, sprite.y);
+                    }
+
+                    sprite.destroy();
+                    return false;
+                }
+
+                return true;
+            }
+
+            if (field.wallIn(box)) {
                 debug("ended: wall", sprite);
                 sprite.destroy();
                 return false;
             }
 
-            const ship = station.alienIn(box);
+            const ship = field.alienIn(box);
 
             if (ship) {
                 debug(`ended: hit ${ship.route.key}`, sprite);
-                station.destroyShip(ship, explosions);
+                field.destroyShip(ship, explosions);
                 sprite.destroy();
                 return false;
             }
 
             // A pod (the vulcan) takes it as several hits (Station.js,
             // MISSILE_HITS): two missiles kill a vulcan.
-            const pod = station.podIn(box);
+            const pod = field.podIn(box);
 
             if (pod) {
                 debug(`ended: hit ${pod.key}`, sprite);
-                station.missilePod(pod, explosions);
+                field.missilePod(pod, explosions);
+
+                if (!pod.dead) {
+                    this.impact(sprite.x, sprite.y);
+                }
+
                 sprite.destroy();
                 return false;
             }
 
             // A boss part takes it as several hits too (Boss.js); the centre
             // soaks it while top or bottom is still there.
-            const part = station.bossIn(box);
+            const part = field.bossIn(box);
 
             if (part) {
                 debug(`ended: hit ${part.key}`, sprite);
-                station.missileBoss(part, explosions);
+                field.missileBoss(part, explosions);
+
+                if (!part.dead) {
+                    this.impact(sprite.x, sprite.y);
+                }
+
                 sprite.destroy();
                 return false;
             }
@@ -203,6 +287,42 @@ export class Missiles {
         }
 
         missile.sprite.setFlipX(flip);
+    }
+}
+
+// Levels 2 and 3 (Thomas, 2026-11-15): what a missile can go for outside
+// Station X -- the wave on screen, the firecomets and the asteroid belt,
+// each giving its own list (missileTargets()). Each target is { key,
+// sprite, alive(), touches(box), hit(count) }. A missile counts as
+// MISSILE_HITS bullet hits; the kill is the wave's own, with the same
+// explosion, points and drop as a bullet kill. Nothing stops it on the way:
+// the ship's bullets fly through the cave's flames too.
+export class LevelTargets {
+
+    constructor(scene, sources) {
+        this.scene = scene;
+        this.sources = sources.filter((source) => source?.missileTargets);
+    }
+
+    // Still there, and on the playfield.
+    targets() {
+        const width = this.scene.scale.width;
+        const height = this.scene.cameras.main.height;
+
+        return this.sources
+            .flatMap((source) => source.missileTargets())
+            .filter(({ sprite, alive }) => alive()
+                && sprite.x >= 0 && sprite.x <= width
+                && sprite.y >= 0 && sprite.y <= height);
+    }
+
+    isFlying(target) {
+        return target.alive();
+    }
+
+    // The first target under the rectangle (screen px), or null.
+    hitIn(box) {
+        return this.targets().find((target) => target.touches(box)) ?? null;
     }
 }
 

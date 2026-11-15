@@ -130,6 +130,23 @@ export class AsteroidBelt {
         });
     }
 
+    // What a missile can go for (Missiles.js LevelTargets): every rock, hit
+    // where the bullets hit it. A missile counts as several bullet hits;
+    // update() blows it once its hits run out, drop and all.
+    missileTargets() {
+        return this.rocks.map((rock) => ({
+            key: "rock",
+            sprite: rock,
+            alive: () => this.rocks.includes(rock) && rock.hits > 0,
+            touches: (box) => Geom.Intersects.CircleToRectangle(
+                new Geom.Circle(rock.x, rock.y, this.shapes[rock.kind].radius), box
+            ),
+            hit: (count) => {
+                rock.hits -= count;
+            }
+        }));
+    }
+
     update(_time, delta, bullets, explosions) {
         const step = delta / 1000;
         const dx = SPEED * step;

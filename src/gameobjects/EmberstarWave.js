@@ -29,6 +29,10 @@ import { paintedBox } from "./FirecometTrack";
 // screen after about 1.2s. An emberstar shot before its time never fires.
 const FIRE_AT = { 1: 2000, 7: 2000, 4: 3000, 6: 3000 };
 
+// The emberstar, by the numbers above, that drops the missile power-up when
+// shot (Thomas, 2026-11-15).
+const DROP_AT = 4;
+
 // 32x32 native, drawn at 3x like every alien.
 const EMBERSTAR_SCALE = 3;
 
@@ -119,6 +123,7 @@ export class EmberstarWave {
                         + (column > 0 ? 1 : 0)
                         + 1;
                     star.fire_at = FIRE_AT[number] ?? null;
+                    star.number = number;
 
                     this.stars.push(star);
                 }
@@ -166,6 +171,23 @@ export class EmberstarWave {
         });
     }
 
+    // What a missile can go for (Missiles.js LevelTargets): every emberstar,
+    // hit where the bullets hit it. A missile counts as several bullet hits;
+    // update() blows it once its hits run out.
+    missileTargets() {
+        return this.stars.map((star) => ({
+            key: "emberstar",
+            sprite: star,
+            alive: () => this.stars.includes(star) && star.hits > 0,
+            touches: (box) => Geom.Intersects.CircleToRectangle(
+                new Geom.Circle(star.x, star.y, SHOT_RADIUS), box
+            ),
+            hit: (count) => {
+                star.hits -= count;
+            }
+        }));
+    }
+
     update(_time, delta, bullets, explosions) {
         const step = delta / 1000;
 
@@ -199,6 +221,11 @@ export class EmberstarWave {
             if (star.hits <= 0) {
                 explosions.spawn(star.x, star.y);
                 this.scene.addPoints(star.points);
+
+                if (star.number === DROP_AT) {
+                    this.scene.powerups.spawn(star.x, star.y, "missile");
+                }
+
                 star.destroy();
                 return false;
             }

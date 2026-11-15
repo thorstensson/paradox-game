@@ -12,9 +12,10 @@ import { FirecometTrack } from "../gameobjects/FirecometTrack";
 import { FireringWave } from "../gameobjects/FireringWave";
 import { GreywingWave } from "../gameobjects/GreywingWave";
 import { NeutronDiveWave, NeutronWave } from "../gameobjects/NeutronWave";
+import { Outro } from "../gameobjects/Outro";
 import { Player } from "../gameobjects/Player";
 import { PowerUps } from "../gameobjects/PowerUps";
-import { Missiles } from "../gameobjects/Missiles";
+import { Missiles, LevelTargets } from "../gameobjects/Missiles";
 import { StarField } from "../gameobjects/StarField";
 import { Station } from "../gameobjects/Station";
 import { BOTTOM_BAND } from "./HudScene";
@@ -90,8 +91,8 @@ const withGap = (gap, make) => Object.assign(make, { gap });
 const WAVES = [
     (scene) => new NeutronWave(scene),
     (scene) => new NeutronDiveWave(scene, 1),
-    // Shot in full, this chain drops the speed power-up.
-    (scene) => new NeutronDiveWave(scene, -1, null, false, "speed"),
+    // Its 3rd neutron drops the speed power-up (Thomas, 2026-11-15).
+    (scene) => new NeutronDiveWave(scene, -1, null, false, "speed", 3),
     (scene) => new NeutronWave(scene),
     (scene) => new CloverWave(scene),
     (scene) => new FireringWave(scene),
@@ -111,9 +112,9 @@ const LEVEL_2_WAVES = [
     // Level 1's neutrons, mirrored: in from the centre, spreading out.
     (scene) => new NeutronWave(scene, [-1, 1], null, true),
     (scene) => new NeutronDiveWave(scene, 1, null, true),
-    // The top chain drops the shield power-up when shot in full. Its last
-    // neutron is the odd-coloured one, as in level 1's wave 7.
-    (scene) => new NeutronDiveWave(scene, -1, 7, true, "shield"),
+    // Its 6th neutron drops the shield power-up (Thomas, 2026-11-15). Its
+    // last neutron is the odd-coloured one, as in level 1's wave 7.
+    (scene) => new NeutronDiveWave(scene, -1, 7, true, "shield", 6),
     (scene) => new EmberRingWave(scene)
 ];
 
@@ -163,6 +164,9 @@ export class MainScene extends Scene {
     // Level 4: Station X, its walls and its waves, the whole level.
     station = null;
     cursors = null;
+
+    // The outro (Outro.js), once the boss is dead; null before.
+    outro = null;
 
     // The level being played. Wave timers check it, so a level that is
     // skipped stops sending waves.
@@ -214,6 +218,7 @@ export class MainScene extends Scene {
         this.asteroid_belt = null;
         this.station = null;
         this.station_ready = null;
+        this.outro = null;
         this.cleared = [];
         this.wave_pending = false;
         this.attempt = 0;
@@ -267,6 +272,13 @@ export class MainScene extends Scene {
         this.anims.createFromAseprite("missile");
         this.anims.createFromAseprite("shield");
 
+        // The boss's tags; the hull loops scarab-tail. Before the Station
+        // (and its Boss) below.
+        this.anims.createFromAseprite("scarab");
+
+        // The outro's planet: saturn-loop (Outro.js).
+        this.anims.createFromAseprite("saturn");
+
         // The Belt of Osiris's turned rocks, baked now rather than as the
         // belt comes in.
         bakeAsteroidTurns(this);
@@ -274,6 +286,10 @@ export class MainScene extends Scene {
         // One animation, Animation, played once per explosion.
         this.anims.createFromAseprite("explosion");
         this.explosions = new Explosions(this);
+
+        // One animation, impact-loop, played once where a missile hits and
+        // does not kill (Missiles.js).
+        this.anims.createFromAseprite("impact");
 
         // A drop is added after the explosion pool, so it shows over the
         // blast it comes out of.
@@ -609,6 +625,21 @@ export class MainScene extends Scene {
         }
     }
 
+    // What a missile can go for (Missiles.js): the station in level 4; in
+    // levels 2 and 3 (Thomas, 2026-11-15) the wave on screen, the firecomets
+    // and the asteroid belt; nothing in level 1.
+    missileField() {
+        if (this.station) {
+            return this.station;
+        }
+
+        if (this.level === 2 || this.level === 3) {
+            return new LevelTargets(this, [ this.wave, this.firecomets, this.asteroid_belt ]);
+        }
+
+        return null;
+    }
+
     // Fade out, Station.restart() while black, fade in. The HUD bands are
     // their own scene, so only the playfield fades.
     restartStation() {
@@ -733,11 +764,19 @@ export class MainScene extends Scene {
                 this.shipHit();
             }
 
+            // The boss is dead: the outro begins, once, as soon as the ship
+            // is in play.
+            if (!this.outro && this.station.boss.state === "dead" && this.player.state === "can_move") {
+                this.outro = new Outro(this, this.station, this.player);
+            }
+
             // Gone once its last map is off the screen and its last ship too.
             if (this.station.gone) {
                 this.station = null;
             }
         }
+
+        this.outro?.update(delta);
 
         // The mouse steers the ship, so a click cannot also aim -- the ship is
         // already at the cursor. Bullets always travel right.
@@ -745,7 +784,7 @@ export class MainScene extends Scene {
 
         // After the station, so a missile goes for where its alien is now.
         // Missiles go with the fire button, as on Nemesis.
-        this.missiles.update(time, delta, this.player, this.station, this.explosions, firing);
+        this.missiles.update(time, delta, this.player, this.missileField(), this.explosions, firing);
 
         if (firing) {
             this.player.fire(time);

@@ -12,7 +12,7 @@ export class MenuScene extends Scene {
 
     create() {
         // Logo. Images are centre-origin already, so no setOrigin needed.
-        // 142x16 at 7x is 994px wide: 143px either side, about one letter.
+        // 123x13 at 8x is 984px wide: 148px either side.
         const logo_game = this.add.image(
             this.scale.width / 2,
             this.scale.height / 2,
