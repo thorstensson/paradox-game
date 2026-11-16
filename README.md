@@ -3,7 +3,7 @@
 
 # Paradox, a retro shoot 'em up
 
-This has been a surprising side project that came to me one day and would not let go, a detour from my upcoming Vue library, my creative writing, and my search for a permanent job. With this retro shoot 'em up I try to pay homage to Commodore 64 titles such as Katakis, Delta, and Nemesis. You will find nods to these titles in the game. For example, the diagonal star scroll comes straight from Katakis.
+This has been a surprising side project that came to me one day and would not let go, a detour from my upcoming Vue library, my essay writing (read my essay on Bobby Fischer @ https://www.intricacylitreview.org/thorstensson), my need for a trip to Canary Islands, my dentist, and my search for a permanent job. With this retro shoot 'em up I want to pay homage to Commodore 64 titles such as Katakis, Delta, and Nemesis. You will find nods to all titles in the game. For example, the diagonal star scroll comes straight from Katakis.
 
 ## 🧰 Stack
 
@@ -76,7 +76,3 @@ paradox/
 ├── PauseScene.js
 └── GameOverScene.js
 ```
-
-## 📝 TODO
-
-- A game audio track, 16-bit, which I am working on in Reaper.
