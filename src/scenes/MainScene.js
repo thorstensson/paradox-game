@@ -600,6 +600,11 @@ export class MainScene extends Scene {
     // the same wave starts again from the beginning. At GAME OVER the wave
     // flies on under the text.
     shipHit() {
+        // Just respawned: the ship's first SAFE_MS under control (Player.safe).
+        if (this.player.safe) {
+            return;
+        }
+
         this.explosions.spawn(this.player.x, this.player.y, "player-explosion");
         this.player.leavePlay();
 

@@ -77,16 +77,6 @@ paradox/
 └── GameOverScene.js
 ```
 
----
+## 📝 TODO
 
-## 🎮 Levels
-
-**1. Into the Breach (Deep Space).** Open space and stars. Four neutron waves, each with its own movement; clover chains racing along the top and bottom edges; a ring of firerings; neutrons again with one odd-coloured ship; two staggered greywing walls to finish. The third neutron wave drops the speed power-up, the clover top chain the bullets.
-
-**2. Ember Caves.** Walls of flame along the top and bottom; touching them kills. Firecomets shoot out of the flames all through the cave, always on the same paths. Waves: emberstar blocks swinging and firing, the dragon (only its head can be killed), deltas, neutrons and the ember ring. Drops: bullets from the deltas and the ember ring, the shield from the last neutron chain.
-
-**3. Belt of Osiris.** One long asteroid belt, the same every game so it can be learnt. Each rock takes three hits. The third rock drops the bullets; two rocks mid-belt drop the shield.
-
-**4. Station X.** A fast flight through a space station; touching the walls kills. Waves of the new station aliens with some earlier ones, guns that turn toward the ship and fire, vulcan pods, floating electroballs, the diamond gun, rockets in the narrow passages, and zaps that can't be shot, only timed. A lost ship restarts at the last marker passed. Drops: the missile, the shield and the bullets.
-
-**The boss, scarab.** At the end the station slows to a stop and the scarab slides in. It sweeps up and down, lunges forward every few seconds, and fires from its wings and hull in turn. The wings must be shot first; only then does the hull take hits.
+- A game audio track, 16-bit, which I am working on in Reaper.

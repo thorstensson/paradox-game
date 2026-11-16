@@ -154,6 +154,12 @@ const SHIELD_SLOTS = [ 0, 180 ];
 // Where the ship waits off-screen before flying in.
 const START_X = -190;
 
+// After a lost ship, once the new one has flown in and is under control,
+// nothing can kill it for this long, ms, so it can get clear of what is
+// there -- a zap at a Station X restart, say -- instead of dying again at
+// once (Thomas, 2026-11-16). No blinking: the ship looks as usual.
+const SAFE_MS = 1000;
+
 // Black kept between the top of the hull and the top of the playfield (the
 // HUD band), px.
 const TOP_GAP = 5;
@@ -165,6 +171,10 @@ export class Player extends Physics.Arcade.Sprite {
     state = "waiting";
     scene = null;
     bullets = null;
+
+    // Scene time until which the ship cannot be killed (SAFE_MS), set as a
+    // respawned ship comes under control.
+    safe_until = 0;
 
     // Tag currently held. A one-frame tag finishes immediately, so isPlaying
     // goes false and play(key, true) would restart it every tick -- tracking
@@ -543,7 +553,17 @@ export class Player extends Physics.Arcade.Sprite {
         this.speed_y = 0;
         this.bank = null;
         this.setBank("level", 0, true);
-        this.start(0, onReady);
+        this.start(0, () => {
+            this.safe_until = this.scene.time.now + SAFE_MS;
+            onReady?.();
+        });
+    }
+
+    // True for SAFE_MS after a respawned ship comes under control. It can
+    // move, fire and catch power-ups; it just cannot be killed
+    // (MainScene.shipHit).
+    get safe() {
+        return this.scene.time.now < this.safe_until;
     }
 
     // True while the ship can be hit (only in play) and a painted pixel of
