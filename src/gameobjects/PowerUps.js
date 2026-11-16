@@ -1,4 +1,5 @@
 import { Geom } from "phaser";
+import { playSound } from "../sounds";
 import { paintedBox } from "./FirecometTrack";
 
 // Power drops (NOTES.md -> Enemies & Waves -> Power drops). One numbered
@@ -73,6 +74,7 @@ export class PowerUps {
             // Caught.
             if (player.touches(box)) {
                 player[KINDS[drop.kind].start]();
+                playSound(this.scene, "player-powerup");
                 drop.destroy();
                 return false;
             }

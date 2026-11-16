@@ -1,4 +1,5 @@
 import { Math as PhaserMath, Physics } from "phaser";
+import { playSound } from "../sounds";
 import { PlayerBullets } from "./PlayerBullets";
 
 // The ship is 32x32 native. Drawn at 3x rather than the 4x grid everything
@@ -619,6 +620,8 @@ export class Player extends Physics.Arcade.Sprite {
         }
 
         this.next_fire = time + FIRE_INTERVAL;
+
+        playSound(this.scene, "player-railgun");
 
         // None on: centre. One: both arms. Two: both arms and the centre.
         const level = this.bullet_powerups.length;

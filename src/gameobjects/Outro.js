@@ -11,9 +11,14 @@
 //    with it, to STAR_PACE of their speed by the time it stops.
 // 5. Once it has stopped, the ship flies right, across it, and off the right
 //    edge.
-// 6. The words fade in, left of the planet, and stay.
+// 6. The words fade in, left of the planet, and stay. As they start, the
+//    credits scroll along the bottom, right to left.
+// 7. Once the credits are off the left edge, the game ends
+//    (MainScene.endOutro).
 //
 // Speeds and times are placeholders to tune by playing.
+
+import { entryFor } from "../hiscores";
 
 // The ship's pixel size, as everything in the game.
 const SCALE = 3;
@@ -43,19 +48,35 @@ const FLY_OFF_MS = 2000;
 // are drawn (MainScene.showLevelTitle): main-font at 24, each line centred,
 // 9 px between lines, faded in over TEXT_FADE ms. Centred on a third of the
 // screen across (his pick B), shifted left for a movie-title feel and clear
-// of the planet: the longest line is 360 px, 247-607, and the planet's
+// of the planet: the longest line is 384 px, 235-619, and the planet's
 // leftmost painted pixel stops at 635. It stays up.
 //
 // Two parts (Thomas, 2026-11-15): the second fades in TEXT_GAP ms after the
 // first has fully appeared, an empty line below it, every line where it
 // would be in one block.
 const TEXT_FIRST = "PARADOX MISSION\nCOMPLETE!";
-const TEXT_SECOND = "FLY SAFE\nPLAYER ONE";
+const TEXT_SECOND = "THE AURORIANS\nARE IN YOUR DEBT";
 const TEXT_CENTRE = 1 / 3;
 const TEXT_FADE = 500;
 const TEXT_GAP = 1000;
 const TEXT_SIZE = 24;
 const LINE_SPACING = 9;
+
+// The credits (Thomas, 2026-11-16): one line in the lilac hud-font at 24,
+// scrolling right to left along the bottom of the playfield, just above the
+// power-up band, fast, retro style. In from past the right edge as the words
+// start to fade in; once it is fully off the left edge, the game ends as at
+// GAME OVER: the name entry if the score goes on the table, or the intro
+// (MainScene.endOutro). Moved in whole px. Speed: a placeholder to tune by
+// eye.
+const CREDITS = "ALL GRAPHICS AND GAMEPLAY BY THOMAS THORSTENSSON. "
+    + "CODE BY THOMAS THORSTENSSON AND CLAUDE OPUS. "
+    + "CREDITS: AUDIO FX - MARK SHEEKY. "
+    + "SHOUTOUT TO THALAMUS GAMES, HEWSON, RAINBOW ARTS, ELECTRIC DREAMS - C64!";
+const CREDITS_SPEED = 480;
+
+// From the bottom of the playfield to the bottom of the credits, px.
+const CREDITS_BOTTOM = 12;
 
 export class Outro {
 
@@ -126,6 +147,32 @@ export class Outro {
         });
     }
 
+    // The credits, from fully off the right edge to fully off the left, at
+    // CREDITS_SPEED; then the game ends.
+    scrollCredits() {
+        const scene = this.scene;
+        const credits = scene.add.bitmapText(0, 0, "hud-font", CREDITS, TEXT_SIZE).setOrigin(0, 1);
+        const from = scene.scale.width;
+        const to = -credits.width;
+
+        credits.setPosition(from, scene.cameras.main.height - CREDITS_BOTTOM);
+
+        // Asked now, so the answer is in by the time the credits are gone.
+        const entry = entryFor(scene.points);
+        const scroll = { x: from };
+
+        scene.tweens.add({
+            targets: scroll,
+            x: to,
+            duration: (from - to) / CREDITS_SPEED * 1000,
+            ease: "Linear",
+            onUpdate: () => {
+                credits.x = Math.round(scroll.x);
+            },
+            onComplete: () => scene.endOutro(entry)
+        });
+    }
+
     // Right, across the planet, and fully off past the right edge.
     flyOff() {
         const player = this.player;
@@ -187,6 +234,8 @@ export class Outro {
             scene.events.off("pause", hide);
             scene.events.off("resume", show);
         });
+
+        this.scrollCredits();
 
         scene.tweens.add({
             targets: first,

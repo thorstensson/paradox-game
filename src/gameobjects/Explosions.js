@@ -1,4 +1,5 @@
 import { Animations } from "phaser";
+import { playSound } from "../sounds";
 
 // From a free Aseprite pack: 64x64, nine frames under one tag, Animation,
 // played once where the enemy died. Drawn at 3x, the same scale as the
@@ -10,14 +11,17 @@ const ANIMATION = "Animation";
 
 // Fixed size, like the bullet pool. A spent explosion goes invisible and
 // waits to be reused -- creating and destroying sprites mid-wave stutters.
-// 16 covers a whole wave dying at once with room to spare.
-const POOL_SIZE = 16;
+// 32: a whole wave dying at once, or the boss's cascades (Boss.js) on top of
+// other kills, with room to spare.
+const POOL_SIZE = 32;
 
 export class Explosions {
 
     sprites = [];
 
     constructor(scene) {
+        this.scene = scene;
+
         for (let i = 0; i < POOL_SIZE; i++) {
             const sprite = scene.add.sprite(0, 0, TEXTURE)
                 .setScale(EXPLOSION_SCALE)
@@ -34,8 +38,12 @@ export class Explosions {
         }
     }
 
-    // Silently does nothing if the pool is dry.
-    spawn(x, y) {
+    // Shows nothing if the pool is dry, though the sound still plays. sound:
+    // enemy-explosion for every kill; the ship's own passes player-explosion
+    // (sounds.js).
+    spawn(x, y, sound = "enemy-explosion") {
+        playSound(this.scene, sound);
+
         const sprite = this.sprites.find((s) => !s.active);
 
         if (!sprite) {

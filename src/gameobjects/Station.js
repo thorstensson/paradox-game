@@ -2,6 +2,7 @@ import { Curves, Geom, Math as PhaserMath } from "phaser";
 import { paintedBox } from "./FirecometTrack";
 import { EnemyBullets } from "./EnemyBullets";
 import { Boss, BOSS_KEY } from "./Boss";
+import { playSound } from "../sounds";
 
 // Level 4, Station X (NOTES.md -> Level 4 Concepts): the two maps traced in
 // Tiled, side by side, in from the right edge and off to the left.
@@ -152,8 +153,8 @@ const ZAPS = {
 // next one leaves a little more angled, on the other side, so the release
 // opens from narrow to a V, FIRST_ANGLE to LAST_ANGLE either side of straight
 // up. A random gap between bullets, SHOT_GAP_MIN to SHOT_GAP_MAX; after the
-// last, RELEASE_PAUSE_MS, then the next release. Takes 10 hits, one a frame
-// at most as the station's aliens; a missile counts MISSILE_HITS, so two
+// last, RELEASE_PAUSE_MS, then the next release. Takes 10 hits, every bullet
+// that lands one, as on the station's aliens; a missile counts MISSILE_HITS, so two
 // missiles kill it. Points: a placeholder. Only upright vulcans for now
 // (Thomas tries these before the flipped set).
 const PODS = {
@@ -359,6 +360,9 @@ export class Station {
 
     // The boss (Boss.js), in once the station has stopped.
     boss = null;
+
+    // endboss-alert has sounded for this approach to the stop.
+    alerted = false;
 
     // ms the station has run: the floaters' float.
     float_clock = 0;
@@ -635,8 +639,10 @@ export class Station {
             : (passed.length ? passed[passed.length - 1] : null);
 
         // The boss is whole again, and comes in again once the station has
-        // stopped again (Thomas).
+        // stopped again (Thomas); its alert sounds again as the station
+        // slows.
         this.boss.reset();
+        this.alerted = false;
 
         this.callOff();
         this.clock = 0;
@@ -731,6 +737,12 @@ export class Station {
             const move = this.leaving ? LEAVE_STEP
                 : left < SLOW_DISTANCE ? STEP * Math.sqrt(Math.max(left, 0) / SLOW_DISTANCE) : STEP;
 
+            // The slowdown has begun: the boss is about 2 s away (sounds.js).
+            if (!this.leaving && !this.alerted && left < SLOW_DISTANCE) {
+                this.alerted = true;
+                playSound(this.scene, "endboss-alert");
+            }
+
             this.x = Math.max(this.stop_x, this.x - move);
         }
 
@@ -813,18 +825,17 @@ export class Station {
                 return false;
             }
 
-            // One hit a frame at most: the railgun's two bullets landing
-            // together count as one (Thomas's pick A, 2026-11-09), so it is
-            // no quicker than one bullet on an alien that takes 3. Both
-            // bullets are used up.
-            let hit = false;
+            // Every bullet that lands is a hit, so the railgun's two or three
+            // landing together count two or three (Thomas, 2026-11-16: a
+            // power-up has to make the ship stronger; was one a frame).
+            let hits = 0;
 
             bullets.collide(sprite, () => {
-                hit = true;
+                hits++;
             });
 
-            if (hit) {
-                ship.taken++;
+            if (hits) {
+                ship.taken += hits;
             }
 
             // Short of its hits, the bullets are used up and the alien flies
@@ -916,15 +927,15 @@ export class Station {
 
             const { sprite } = pod;
 
-            // One hit a frame at most, as the station's aliens.
-            let hit = false;
+            // Every bullet that lands is a hit, as on the station's aliens.
+            let hits = 0;
 
             bullets.collide(this.podTarget(pod), () => {
-                hit = true;
+                hits++;
             });
 
-            if (hit) {
-                this.hitPod(pod, 1, explosions);
+            if (hits) {
+                this.hitPod(pod, hits, explosions);
 
                 if (pod.dead) {
                     continue;
@@ -1020,6 +1031,7 @@ export class Station {
 
         // EnemyBullets fires toward a point: one along that angle.
         this.pod_bullets[pod.key].fire(x, y, x + Math.sin(angle) * 100, y + out * Math.cos(angle) * 100);
+        playSound(this.scene, "stationx-guns");
     }
 
     // The gun's frame, toward the ship: gun-track with the ship ahead (to
@@ -1050,6 +1062,7 @@ export class Station {
 
         // EnemyBullets fires toward a point: one along the barrel.
         this.pod_bullets[pod.key].fire(x, y, x - 100, y + rise * 100);
+        playSound(this.scene, "stationx-guns");
     }
 
     // One bullet from the diamond gun's barrel next in turn, from the end of
@@ -1068,6 +1081,7 @@ export class Station {
             barrel.out * speed,
             0
         );
+        playSound(this.scene, "stationx-guns");
     }
 
     // The pod's painted box on screen, as something the ship's bullets can

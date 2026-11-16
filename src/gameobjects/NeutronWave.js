@@ -101,6 +101,9 @@ export class NeutronWave {
         neutron.side = side;
         neutron.number = number;
         neutron.points = odd ? ODD_POINTS : POINTS;
+        // Shot, the odd one sounds yellow-enemy in place of enemy-explosion
+        // (Thomas, 2026-11-16; sounds.js).
+        neutron.sound = odd ? "yellow-enemy" : "enemy-explosion";
         neutron.y = this.pathY(neutron.x, side);
         neutron.play({ key: odd ? "neutron-odd-spin" : "spin", repeat: -1 });
 
@@ -176,7 +179,7 @@ export class NeutronWave {
             });
 
             if (hit || neutron.missile_hit) {
-                explosions.spawn(neutron.x, neutron.y);
+                explosions.spawn(neutron.x, neutron.y, neutron.sound);
                 this.scene.addPoints(neutron.points);
 
                 if (this.drop && neutron.number === this.drop_at) {

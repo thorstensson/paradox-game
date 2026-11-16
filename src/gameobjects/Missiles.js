@@ -1,4 +1,5 @@
 import { Animations, Geom, Math as PhaserMath } from "phaser";
+import { playSound } from "../sounds";
 import { paintedBox } from "./FirecometTrack";
 import { MUZZLE_X, MUZZLE_Y } from "./Player";
 
@@ -273,6 +274,7 @@ export class Missiles {
 
         this.show(missile);
         this.missiles.push(missile);
+        playSound(this.scene, "player-missile");
         debug(`launched at ${target.route?.key ?? target.key}`, sprite);
     }
 

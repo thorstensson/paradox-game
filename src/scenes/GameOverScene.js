@@ -1,4 +1,5 @@
 import { Scene } from "phaser";
+import { entryFor } from "../hiscores";
 
 // How long GAME OVER holds before cutting back to the intro.
 const HOLD_MS = 3000;
@@ -10,7 +11,8 @@ export class GameOverScene extends Scene {
         super("GameOverScene");
     }
 
-    create() {
+    // data.points: the game's score.
+    create(data) {
         // Small font at 16, the same size as the intro's PLAYER ONE /
         // CLICK TO START.
         this.add.bitmapText(
@@ -21,11 +23,15 @@ export class GameOverScene extends Scene {
             24
         ).setOrigin(0.5, 0.5);
 
-        // No restart prompt: hold, then cut straight to the intro. start()
-        // restarts MainScene -- which launches MenuScene from its init() --
-        // and shuts this scene down.
+        // Asked now, so the answer is in by the end of the hold.
+        const entry = entryFor(data.points);
+
+        // No restart prompt: hold, then cut straight to the name entry if the
+        // score goes on the table, or to the intro. start() restarts
+        // MainScene -- which launches either from its init() -- and shuts
+        // this scene down.
         this.time.delayedCall(HOLD_MS, () => {
-            this.scene.start("MainScene", { cut: true });
+            entry.then((result) => this.scene.start("MainScene", { cut: true, entry: result }));
         });
     }
 }

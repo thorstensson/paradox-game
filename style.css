@@ -17,3 +17,48 @@ body {
 canvas {
     image-rendering: pixelated;
 }
+
+/* The loader (index.html, src/loader.js). */
+
+@font-face {
+    font-family: "Commodore 64";
+    src: url("/src/assets/fonts/Commodore64.woff") format("woff");
+}
+
+#loader {
+    --zoom: 1;
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    background-color: #000000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 500ms;
+}
+
+#loader.gone {
+    opacity: 0;
+}
+
+/* Top left, as a C64 prints LOADING; mixed case, small (Thomas). */
+#loader-text {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    margin: 0;
+    font-family: "Commodore 64", monospace;
+    font-size: 12px;
+    /* 16 px of space between the two lines. */
+    line-height: 2;
+    /* The game's lilac: hud-font (katakis-lilac-24_0.png) is all #849be4. */
+    color: #849be4;
+    -webkit-font-smoothing: none;
+}
+
+/* The splash, centred, at the game's zoom (set in index.html). */
+#loader-splash {
+    width: calc(1280px * var(--zoom));
+    height: calc(800px * var(--zoom));
+    image-rendering: pixelated;
+}

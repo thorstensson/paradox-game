@@ -1,5 +1,29 @@
 import { Scene } from "phaser";
 import { COLOUR_SHINE } from "../fx/ColourShine";
+import { fetchTopScores, TOP } from "../hiscores";
+import { SCORE_DIGITS } from "./HudScene";
+
+// The intro and TOP SCORES take turns, as in Delta (Thomas, 2026-11-16): each
+// holds HOLD_MS, then fades out over FADE_MS and the other fades in over
+// FADE_MS. A click starts the game from either. Without the table (no
+// scores yet, or Supabase can't be reached) the intro stays up.
+const HOLD_MS = 8000;
+
+// A placeholder to tune by eye.
+const FADE_MS = 500;
+
+// TOP SCORES: the title in the lilac hud-font, the rows below it in the white
+// main-font, all 10 on one screen, written as Delta has them: rank, a dot,
+// the score, the name ("1.000000 STAVROS"). The ranks are right-aligned, so
+// 10 lines up with the rest. Every row is left-aligned on the widest a row
+// can be (10.000000 and an 8-letter name, 18 characters), centred across.
+// The block is centred down the screen: title, ROWS_BELOW_TITLE px, the rows
+// ROW_STEP px apart.
+const TABLE_SIZE = 24;
+const CHAR_WIDTH = 24;
+const ROW_CHARS = 2 + 1 + SCORE_DIGITS + 1 + 8;
+const ROWS_BELOW_TITLE = 96;
+const ROW_STEP = 48;
 
 export class MenuScene extends Scene {
     constructor() {
@@ -46,7 +70,7 @@ export class MenuScene extends Scene {
         const logo_bounds = logo_game.getBounds();
         const gap = start_msg.getBounds().top - logo_bounds.bottom;
 
-        this.add.bitmapText(
+        const year = this.add.bitmapText(
             this.scale.width / 2,
             logo_bounds.top - gap,
             "main-font",
@@ -56,7 +80,7 @@ export class MenuScene extends Scene {
 
         // Byline, centred along the bottom of the screen, in the HI score's
         // lilac (hud-font; Thomas, 2026-11-09).
-        this.add.bitmapText(
+        const byline = this.add.bitmapText(
             this.scale.width / 2,
             this.scale.height - 40,
             "hud-font",
@@ -64,22 +88,111 @@ export class MenuScene extends Scene {
             24
         ).setOrigin(0.5, 1);
 
+        // Blinks the text by showing and hiding it, so its alpha is free for
+        // the intro's fade.
+        const blink = { on: 1 };
 
-        // Tween to blink the text
         this.tweens.add({
-            targets: start_msg,
-            alpha: 0,
+            targets: blink,
+            on: 0,
             duration: 800,
             ease: (value) => Math.abs(Math.round(value)),
             yoyo: true,
-            repeat: -1
+            repeat: -1,
+            onUpdate: () => start_msg.setVisible(blink.on > 0.5)
         });
+
+        this.intro_parts = [ logo_game, start_msg, year, byline ];
+        this.table_parts = this.makeTable();
 
         // Send start-game event when user clicks. The same click locks the
         // mouse to the game -- browsers only allow that in answer to a click.
         this.input.on("pointerdown", () => {
             this.input.mouse.requestPointerLock();
             this.game.events.emit("start-game");
+        });
+
+        // A fetch can come back after the scene has stopped; it is dropped.
+        this.running = true;
+        this.events.once("shutdown", () => {
+            this.running = false;
+        });
+
+        this.scores = null;
+        this.holdIntro();
+    }
+
+    // TOP SCORES and 10 empty rows, hidden until the table's turn.
+    makeTable() {
+        const width = this.scale.width;
+        const height = TABLE_SIZE + ROWS_BELOW_TITLE + (TOP - 1) * ROW_STEP + TABLE_SIZE;
+        const top = Math.round((this.scale.height - height) / 2);
+        const left = Math.round((width - ROW_CHARS * CHAR_WIDTH) / 2);
+
+        const title = this.add.bitmapText(width / 2, top, "hud-font", "TOP SCORES", TABLE_SIZE)
+            .setOrigin(0.5, 0)
+            .setAlpha(0);
+
+        this.rows = [];
+
+        for (let i = 0; i < TOP; i++) {
+            const row = this.add.bitmapText(
+                left, top + TABLE_SIZE + ROWS_BELOW_TITLE + i * ROW_STEP, "main-font", "", TABLE_SIZE
+            ).setAlpha(0);
+
+            this.rows.push(row);
+        }
+
+        return [ title, ...this.rows ];
+    }
+
+    // The intro's turn: fetch the table meanwhile, then hand over to it.
+    holdIntro() {
+        fetchTopScores().then((scores) => {
+            if (this.running) {
+                this.scores = scores;
+            }
+        });
+
+        this.time.delayedCall(HOLD_MS, () => {
+            if (!this.scores?.length) {
+                this.holdIntro();
+                return;
+            }
+
+            this.fillTable(this.scores);
+            this.swap(this.intro_parts, this.table_parts, () => {
+                this.time.delayedCall(HOLD_MS, () => {
+                    this.swap(this.table_parts, this.intro_parts, () => this.holdIntro());
+                });
+            });
+        });
+    }
+
+    fillTable(scores) {
+        this.rows.forEach((row, i) => {
+            const entry = scores[i];
+
+            row.setText(entry
+                ? `${String(i + 1).padStart(2, " ")}.${String(entry.score).padStart(SCORE_DIGITS, "0")} ${entry.name}`
+                : "");
+        });
+    }
+
+    // Fades one screen out, then the other in.
+    swap(out, into, onDone) {
+        this.tweens.add({
+            targets: out,
+            alpha: 0,
+            duration: FADE_MS,
+            onComplete: () => {
+                this.tweens.add({
+                    targets: into,
+                    alpha: 1,
+                    duration: FADE_MS,
+                    onComplete: onDone
+                });
+            }
         });
     }
 }

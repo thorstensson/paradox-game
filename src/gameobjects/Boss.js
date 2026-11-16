@@ -1,4 +1,5 @@
 import { Geom, Math as PhaserMath } from "phaser";
+import { playSound } from "../sounds";
 import { EnemyBullets } from "./EnemyBullets";
 import { paintedBox } from "./FirecometTrack";
 
@@ -44,16 +45,18 @@ const FULL_FRAME = "0";
 // guns: each gun's light blue square, its top-left canvas pixel (scarab-full,
 // measured 2026-11-14); every square is 2 px tall. The bullet leaves from
 // the square's left side, level with its middle.
+// hits: four times the first pass (Thomas, 2026-11-16: every bullet counts
+// now, so the power-ups made it too easy).
 // mount: the hull guns' weapon mount, its front edge (the outline left of
 // the square), canvas x, measured 2026-11-15. The bullet starts right in
 // front of it, its back end against it (Thomas: "-=", bullet then mount).
 const PARTS = [
     {
-        name: "centre", frame: "1", hit_frame: "2", loop: "scarab-tail", hits: 80, points: 5000,
+        name: "centre", frame: "1", hit_frame: "2", loop: "scarab-tail", hits: 320, points: 5000,
         guns: [ { x: 5, y: 56, mount: 4 }, { x: 5, y: 122, mount: 4 } ]
     },
-    { name: "top", frame: "3", hits: 50, points: 1000, guns: [ { x: 1, y: 20 } ] },
-    { name: "bottom", frame: "4", hits: 50, points: 1000, guns: [ { x: 1, y: 158 } ] }
+    { name: "top", frame: "3", hits: 200, points: 1000, guns: [ { x: 1, y: 20 } ] },
+    { name: "bottom", frame: "4", hits: 200, points: 1000, guns: [ { x: 1, y: 158 } ] }
 ];
 
 // Height of every gun's light blue square, native px.
@@ -89,6 +92,15 @@ const FLASH_MS = 100;
 // Hits a missile counts on a part, as on the pods.
 const MISSILE_HITS = 5;
 
+// A part blowing up (Thomas, 2026-11-16): a cascade of explosions, one every
+// CASCADE_GAP_MS, each at a random spot across the part where it is at that
+// moment, each with its enemy-explosion sound. The part shows until half of
+// them have gone off, then disappears behind them. Placeholders to tune.
+// The hull's is the boss's end: about 3 s (Thomas, 2026-11-16: two seconds
+// more than its first 10).
+const CASCADE = { top: 6, bottom: 6, centre: 30 };
+const CASCADE_GAP_MS = 100;
+
 export class Boss {
 
     scene = null;
@@ -97,6 +109,9 @@ export class Boss {
     state = "idle";
 
     parts = [];
+
+    // The timers of cascades still going off, called off by reset().
+    cascades = [];
 
     // ms since it began sliding in.
     clock = 0;
@@ -249,23 +264,23 @@ export class Boss {
             }
         }
 
-        // The ship's bullets, one hit a frame at most per part, as the
-        // station's aliens. A bullet hits a part only on its painted pixels
-        // (Thomas, 2026-11-14: "the wing is the wing"); the wings first, as
-        // they are drawn over the hull.
+        // The ship's bullets: every bullet that lands is a hit, as on the
+        // station's aliens (Thomas, 2026-11-16). A bullet hits a part only on
+        // its painted pixels (Thomas, 2026-11-14: "the wing is the wing");
+        // the wings first, as they are drawn over the hull.
         for (const part of this.onTop()) {
             if (part.dead) {
                 continue;
             }
 
-            let hit = false;
+            let hits = 0;
 
             bullets.collideTest((box) => this.paintedIn(part, box), () => {
-                hit = true;
+                hits++;
             });
 
-            if (hit) {
-                this.hit(part, 1, explosions);
+            if (hits) {
+                this.hit(part, hits, explosions);
             }
         }
 
@@ -296,11 +311,14 @@ export class Boss {
     // at the square's left side.
     fire(names) {
         const box = this.bullets.hit_box;
+        let fired = false;
 
         for (const part of this.parts) {
             if (part.dead || !names.includes(part.name)) {
                 continue;
             }
+
+            fired = true;
 
             const { sprite } = part;
             const left = sprite.x - sprite.frame.width * SCALE / 2;
@@ -319,6 +337,11 @@ export class Boss {
                     0
                 );
             }
+        }
+
+        // Once for the guns that fired together.
+        if (fired) {
+            playSound(this.scene, "stationx-guns");
         }
     }
 
@@ -355,7 +378,8 @@ export class Boss {
         this.count(part, hits, explosions);
     }
 
-    // hits more on one part; at its last, it blows up.
+    // hits more on one part; at its last, it blows up. It is dead from the
+    // first explosion of its cascade on: no more hits, no more shots.
     count(part, hits, explosions) {
         part.taken += hits;
 
@@ -363,17 +387,46 @@ export class Boss {
             return;
         }
 
-        const rect = this.rect(part);
-
-        explosions.spawn(rect.centerX, rect.centerY);
         this.scene.addPoints(part.points);
         part.dead = true;
-        part.sprite.setVisible(false);
+        this.cascade(part, explosions);
 
         if (part.name === "centre") {
             this.state = "dead";
-            this.parts.forEach((other) => other.sprite.setVisible(false));
         }
+    }
+
+    // The part's explosions, one every CASCADE_GAP_MS; it disappears once
+    // half of them have gone off (with the hull, the whole boss does).
+    cascade(part, explosions) {
+        const total = CASCADE[part.name];
+        const hide_at = Math.ceil(total / 2);
+
+        for (let i = 0; i < total; i++) {
+            const timer = this.scene.time.delayedCall(i * CASCADE_GAP_MS, () => {
+                const rect = this.rect(part);
+
+                explosions.spawn(
+                    rect.x + Math.random() * rect.width,
+                    rect.y + Math.random() * rect.height
+                );
+
+                if (i + 1 === hide_at) {
+                    const gone = part.name === "centre" ? this.parts : [ part ];
+
+                    gone.forEach((other) => other.sprite.setVisible(false));
+                }
+
+                this.cascades = this.cascades.filter((t) => t !== timer);
+            });
+
+            this.cascades.push(timer);
+        }
+    }
+
+    stopCascades() {
+        this.cascades.forEach((timer) => timer.remove());
+        this.cascades = [];
     }
 
     missile(part, explosions) {
@@ -490,6 +543,7 @@ export class Boss {
     // After a lost ship: whole again, out of sight, until the station stops
     // again.
     reset() {
+        this.stopCascades();
         this.state = "idle";
         this.clock = 0;
         this.fire_clock = 0;
@@ -506,6 +560,7 @@ export class Boss {
     }
 
     destroy() {
+        this.stopCascades();
         this.bullets.clear();
         this.parts.forEach((part) => part.sprite.destroy());
         this.parts = [];

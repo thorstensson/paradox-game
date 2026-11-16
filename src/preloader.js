@@ -7,6 +7,12 @@
 // at 7x (MenuScene) -- chunkier pixels, one letter's width from each edge.
 import titleLogoUrl from "./assets/fonts/scifiadventure.png?url";
 
+// Sound effects: the files and their loading are in sounds.js.
+import { loadSounds } from "./sounds";
+
+// The HTML loader: its percentage and its fade (loader.js).
+import { fadeOutLoader, setLoaderProgress } from "./loader";
+
 // Player ship. Hand-painted, 32x32 indexed, three one-frame tags:
 // level / bank-up / bank-down. Exported from Aseprite untrimmed in Array
 // format with Tags on -- Phaser indexes the frames numerically, so Hash
@@ -289,9 +295,13 @@ export class Preloader extends Phaser.Scene {
         this.load.bitmapFont("main-font", mainFontUrl, mainFontXmlUrl);
         this.load.bitmapFont("hud-font", hudFontUrl, mainFontXmlUrl);
 
-        // Event to update the loading bar
+        // Sound effects (sounds.js)
+        loadSounds(this);
+
+        // Counts the loader's percentage up (index.html, loader.js).
         this.load.on("progress", (progress) => {
             console.log("Loading: " + Math.round(progress * 100) + "%");
+            setLoaderProgress(progress);
         });
     }
 
@@ -305,7 +315,9 @@ export class Preloader extends Phaser.Scene {
             font.size = Math.abs(font.size);
         }
 
-        // When all the assets are loaded go to the next scene
-        this.scene.start("MainScene");
+        // All loaded: the loader's text and splash fade away, then the game
+        // fades in (MainScene).
+        setLoaderProgress(1);
+        fadeOutLoader(() => this.scene.start("MainScene"));
     }
 }

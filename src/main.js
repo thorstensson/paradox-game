@@ -5,6 +5,7 @@ import { GameOverScene } from "./scenes/GameOverScene";
 import { HudScene } from "./scenes/HudScene";
 import { MainScene } from "./scenes/MainScene";
 import { MenuScene } from "./scenes/MenuScene";
+import { NameEntryScene } from "./scenes/NameEntryScene";
 import { PauseScene } from "./scenes/PauseScene";
 
 // 4x the C64 playfield (320x200).
@@ -58,7 +59,7 @@ const config = {
         },
     },
     // PauseScene last, so it draws over everything else.
-    scene: [Preloader, MainScene, MenuScene, HudScene, GameOverScene, PauseScene],
+    scene: [Preloader, MainScene, MenuScene, NameEntryScene, HudScene, GameOverScene, PauseScene],
 };
 
 const game = new Game(config);

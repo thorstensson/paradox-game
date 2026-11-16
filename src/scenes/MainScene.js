@@ -18,6 +18,7 @@ import { PowerUps } from "../gameobjects/PowerUps";
 import { Missiles, LevelTargets } from "../gameobjects/Missiles";
 import { StarField } from "../gameobjects/StarField";
 import { Station } from "../gameobjects/Station";
+import { playSound } from "../sounds";
 import { BOTTOM_BAND } from "./HudScene";
 
 // Black band along the top of the canvas, as in Delta: the HUD sits in it,
@@ -200,13 +201,22 @@ export class MainScene extends Scene {
         super("MainScene");
     }
 
-    // data.cut is set by GameOverScene: coming back from GAME OVER is a hard
-    // cut to the intro, as in Delta. Only the first load fades in.
+    // data.cut is set at the end of a game (GameOverScene, endOutro): coming
+    // back is a hard cut, as in Delta. Only the first load fades in.
+    //
+    // data.entry is set when the score goes on the hiscore table
+    // (hiscores.entryFor): the name entry comes up over the stars, and the
+    // intro after it. Otherwise straight to the intro.
     init(data) {
         if (!data.cut) {
             this.cameras.main.fadeIn(1000, 0, 0, 0);
         }
-        this.scene.launch("MenuScene");
+
+        if (data.entry) {
+            this.scene.launch("NameEntryScene", data.entry);
+        } else {
+            this.scene.launch("MenuScene");
+        }
 
         // The scene instance is reused on restart, so the last run's wave has
         // to be dropped by hand.
@@ -590,7 +600,7 @@ export class MainScene extends Scene {
     // the same wave starts again from the beginning. At GAME OVER the wave
     // flies on under the text.
     shipHit() {
-        this.explosions.spawn(this.player.x, this.player.y);
+        this.explosions.spawn(this.player.x, this.player.y, "player-explosion");
         this.player.leavePlay();
 
         this.lives--;
@@ -661,6 +671,7 @@ export class MainScene extends Scene {
 
         this.lives++;
         this.scene.get("HudScene").update_lives(this.lives);
+        playSound(this, "extra-life");
     }
 
     // Bullets still in flight after GAME OVER can still pop an alien; those
@@ -681,6 +692,23 @@ export class MainScene extends Scene {
     }
 
     gameOver() {
+        this.endPlay();
+
+        // Launched over this scene, not started in place of it: as in Delta,
+        // the level carries on underneath GAME OVER, minus the ship.
+        this.scene.launch("GameOverScene", { points: this.points });
+    }
+
+    // The outro is over (Outro.js): the same hand-back as GAME OVER, then the
+    // name entry or the intro once entry -- hiscores.entryFor, asked while
+    // the words were up -- has its answer.
+    endOutro(entry) {
+        this.endPlay();
+        entry.then((result) => this.scene.restart({ cut: true, entry: result }));
+    }
+
+    // The end of a game, by GAME OVER or the outro.
+    endPlay() {
         // Hand the mouse back. Cleared first, so the unlock this causes does
         // not pause the game on its way out.
         this.playing = false;
@@ -690,10 +718,6 @@ export class MainScene extends Scene {
         this.game.events.removeListener("start-game");
         // It is necessary to stop the scenes launched in parallel.
         this.scene.stop("HudScene");
-
-        // Launched over this scene, not started in place of it: as in Delta,
-        // the level carries on underneath GAME OVER, minus the ship.
-        this.scene.launch("GameOverScene");
     }
 
     pauseGame() {

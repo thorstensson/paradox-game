@@ -4,7 +4,7 @@ import { Scene } from "phaser";
 // the left, then the six-digit score, then HI on the right. Positions are
 // the C64 Nemesis HUD's, measured and scaled to our 4x canvas; the score sits
 // far enough right for five ships before it.
-const SCORE_DIGITS = 6;
+export const SCORE_DIGITS = 6;
 
 // From the band's top to the text, px.
 const HUD_MARGIN = 10;

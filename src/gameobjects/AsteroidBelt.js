@@ -23,8 +23,9 @@ const ROCK_SCALE = 3;
 const SPEED = 524.7;
 
 // Bullets a rock soaks up before it blows. No sign of the hits before then,
-// as with the firering.
-const HITS = 3;
+// as with the firering. Doubled from 3 (Thomas, 2026-11-16: cleared too
+// easily with the railgun); a missile still blows a rock in one go.
+const HITS = 6;
 
 // Score for shooting one down.
 const POINTS = 100;
@@ -131,8 +132,8 @@ export class AsteroidBelt {
     }
 
     // What a missile can go for (Missiles.js LevelTargets): every rock, hit
-    // where the bullets hit it. A missile counts as several bullet hits;
-    // update() blows it once its hits run out, drop and all.
+    // where the bullets hit it. A missile blows a rock in one go, whatever
+    // hits it has left (Thomas, 2026-11-16); update() blows it, drop and all.
     missileTargets() {
         return this.rocks.map((rock) => ({
             key: "rock",
@@ -141,8 +142,8 @@ export class AsteroidBelt {
             touches: (box) => Geom.Intersects.CircleToRectangle(
                 new Geom.Circle(rock.x, rock.y, this.shapes[rock.kind].radius), box
             ),
-            hit: (count) => {
-                rock.hits -= count;
+            hit: () => {
+                rock.hits = 0;
             }
         }));
     }
