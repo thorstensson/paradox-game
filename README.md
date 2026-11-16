@@ -3,18 +3,19 @@
 
 # Paradox, a retro shoot 'em up
 
-This has been a surprising side project that came to me one day and would not let go, a detour from my upcoming Vue library, my essay writing (read my essay on Bobby Fischer @ https://www.intricacylitreview.org/thorstensson), my need for a trip to Canary Islands, my dentist, and my search for a permanent job. With this retro shoot 'em up I want to pay homage to Commodore 64 titles such as Katakis, Delta, and Nemesis. You will find nods to all titles in the game. For example, the diagonal star scroll comes straight from Katakis.
+This has been a surprising little side project that came to me one day and would not let go, a detour from my upcoming Vue library, my essay writing (read my essay on Bobby Fischer @ https://www.intricacylitreview.org/thorstensson), my need for a trip to Canary Islands, my dentist, and my search for a permanent job. Inspired by C64 tiles such as Katakis, Delta, Nemesis...
 
 ## 🧰 Stack
 
-- Graphics: Crafted by me in Aseprite and Tiled. And yes, this was a learning experience!
+- Graphics: Crafted by me in Aseprite and Tiled.
 - Game engine: Phaser.js
-- Code: My brain, and Claude Opus's digital one.
+- Code: Me + Claude.
+- Concept: Always me, nobody else here.
 
-## 🎵 Credits
+## 🎵 Credits due
 
-- Audio: Mark Sheeky (Indiesfx)
-- Ship explosion: Sentient Dream Studio
+- Audio FX: Mark Sheeky (Indiesfx)
+- Ship explosion FX: Sentient Dream Studio
 
 ## 📐 Canvas & Scaling Blueprint
 
@@ -40,7 +41,7 @@ Assets live in **`src/assets/`** and are resolved by Vite at build time, not in 
 
 ## 📁 Project & Folder Structure
 
-We are using a modular, ES6-module approach splitting files by their functional roles:
+A simple modular, ES6-module approach splitting files by their functional roles:
 
 ```
 paradox/
