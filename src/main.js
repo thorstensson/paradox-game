@@ -62,12 +62,15 @@ const config = {
     scene: [Preloader, MainScene, MenuScene, NameEntryScene, HudScene, GameOverScene, PauseScene],
 };
 
-const game = new Game(config);
+// Phones and iPads (html.mobile, set in index.html) get no game.
+if (!document.documentElement.classList.contains("mobile")) {
+    const game = new Game(config);
 
-// Phaser resolves zoom once at startup, so re-derive it when the window changes.
-window.addEventListener("resize", () => {
-    game.scale.setZoom(integerZoom());
-});
+    // Phaser resolves zoom once at startup, so re-derive it when the window changes.
+    window.addEventListener("resize", () => {
+        game.scale.setZoom(integerZoom());
+    });
 
-// Exposed for console debugging.
-window.game = game;
+    // Exposed for console debugging.
+    window.game = game;
+}

@@ -62,3 +62,31 @@ canvas {
     height: calc(800px * var(--zoom));
     image-rendering: pixelated;
 }
+
+/* Phones and iPads (html.mobile, set in index.html): only the message, no
+   loader and no game. The loader's look, wrapping 16 px from each edge. */
+
+#mobile-text {
+    display: none;
+}
+
+html.mobile body {
+    background-color: #000000;
+}
+
+html.mobile #loader,
+html.mobile #app {
+    display: none;
+}
+
+html.mobile #mobile-text {
+    display: block;
+    margin: 16px;
+    font-family: "Commodore 64", monospace;
+    font-size: 12px;
+    line-height: 2;
+    color: #849be4;
+    -webkit-font-smoothing: none;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}

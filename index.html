@@ -12,9 +12,26 @@
         <meta property="og:image" content="https://paradox-game.io/OG.png" />
         <meta name="twitter:card" content="summary_large_image" />
         <link rel="stylesheet" href="/style.css" />
+
+        <!-- Phones and iPads get only the mobile message: no loader, no game
+             (Thomas, 2026-11-16). Runs before the page draws. -->
+        <script>
+            (function () {
+                const isiPad = /Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints && navigator.maxTouchPoints > 1;
+                const isiPadLegacy = /iPad/i.test(navigator.userAgent);
+                const isAnyiPad = isiPad || isiPadLegacy;
+                const isPhone = /Android|iPhone|iPod/i.test(navigator.userAgent);
+
+                if (isAnyiPad || isPhone) {
+                    document.documentElement.classList.add("mobile");
+                }
+            })();
+        </script>
     </head>
 
     <body>
+        <p id="mobile-text">Hello. There were no C64 mobiles. Revisit from a desktop screen to play!</p>
+
         <!-- The loader (Thomas, 2026-11-16), C64 style: the text top left,
              the splash centred, until the game has loaded (src/loader.js). -->
         <div id="loader">
