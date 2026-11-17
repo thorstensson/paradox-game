@@ -66,6 +66,10 @@ const LINE_SPACING = 9;
 // for a while is gone (Thomas: distracting).
 const END_HOLD = 8000;
 
+// The words and the planet fade out over this, ms, once the hold is over:
+// the intro's FADE_MS (MenuScene.js).
+const END_FADE = 500;
+
 export class Outro {
 
     scene = null;
@@ -212,7 +216,17 @@ export class Outro {
                         // hold.
                         const entry = entryFor(scene.points);
 
-                        scene.time.delayedCall(END_HOLD, () => scene.endOutro(entry));
+                        // Then the words and the planet fade out together
+                        // before the hand-back, as the intro's screens do
+                        // (Thomas, 2026-11-17).
+                        scene.time.delayedCall(END_HOLD, () => {
+                            scene.tweens.add({
+                                targets: [ first, second, this.planet ],
+                                alpha: 0,
+                                duration: END_FADE,
+                                onComplete: () => scene.endOutro(entry)
+                            });
+                        });
                     }
                 });
             }

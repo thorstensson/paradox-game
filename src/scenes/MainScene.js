@@ -212,8 +212,9 @@ export class MainScene extends Scene {
             this.cameras.main.fadeIn(1000, 0, 0, 0);
         }
 
+        // data.fade is set by the outro only: the name entry fades in.
         if (data.entry) {
-            this.scene.launch("NameEntryScene", data.entry);
+            this.scene.launch("NameEntryScene", { ...data.entry, fade: data.fade === true });
         } else {
             this.scene.launch("MenuScene");
         }
@@ -709,7 +710,7 @@ export class MainScene extends Scene {
     // the words were up -- has its answer.
     endOutro(entry) {
         this.endPlay();
-        entry.then((result) => this.scene.restart({ cut: true, entry: result }));
+        entry.then((result) => this.scene.restart({ cut: true, entry: result, fade: true }));
     }
 
     // The end of a game, by GAME OVER or the outro.

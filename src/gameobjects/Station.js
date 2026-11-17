@@ -115,7 +115,7 @@ const DROPS = {
     "w1-delta-top-x1": { kind: "missile", at: 2 },
     // Electroball floaters, by their Name on the gun layer: the drop comes
     // out of its explosion when it is killed (Thomas, 2026-11-15).
-    "e1-electroball-x1": { kind: "missile" },
+    "e1-electroball-x1": { kind: "shield" },
     "e2-electroball-x2": { kind: "bullets" }
 };
 

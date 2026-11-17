@@ -63,6 +63,22 @@ canvas {
     image-rendering: pixelated;
 }
 
+/* Lower right, 16 px from the bottom and right edges, as the loader text is
+   from the top and left. */
+#by-link {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 11;
+    font-family: "Press Start 2P", system-ui;
+    font-weight: 400;
+    font-style: normal;
+    font-size: 10px;
+    color: #849be4;
+    text-decoration: none;
+    -webkit-font-smoothing: none;
+}
+
 /* Phones and iPads (html.mobile, set in index.html): only the message, no
    loader and no game. The loader's look, wrapping 16 px from each edge. */
 

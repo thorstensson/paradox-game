@@ -48,6 +48,11 @@ const TABLE_GAP = 72;
 const VALUE_GAP = 48;
 const TABLE_COLUMNS = [ 0, 3, 7 ];
 
+// After the outro only (data.fade), everything fades in over this, ms: the
+// intro's FADE_MS (MenuScene.js). The box stays hidden until it is done.
+// After GAME OVER it is a hard cut, as in Delta.
+const FADE_MS = 500;
+
 function ordinal(rank) {
     if (rank === 1) {
         return "1ST";
@@ -69,21 +74,25 @@ export class NameEntryScene extends Scene {
         super("NameEntryScene");
     }
 
-    // data: { points, rank } (hiscores.entryFor).
+    // data: { points, rank } (hiscores.entryFor), and fade (MainScene.init).
     create(data) {
         this.points = data.points;
         this.name = "";
         this.saving = false;
+        this.fading = data.fade === true;
 
         const left = Math.round((this.scale.width - COLUMNS * CELL_WIDTH) / 2);
         const rows = Math.ceil(KEYS.length / COLUMNS);
 
         this.grid = { left, top: GRID_TOP, rows };
 
-        this.add.bitmapText(this.scale.width / 2, MESSAGE_TOP, "hud-font", MESSAGE, TEXT_SIZE)
+        const message = this.add.bitmapText(this.scale.width / 2, MESSAGE_TOP, "hud-font", MESSAGE, TEXT_SIZE)
             .setOrigin(0.5, 0)
             .setCenterAlign()
             .setLineSpacing(LINE_SPACING);
+
+        // Everything that fades in after the outro.
+        const texts = [ message ];
 
         // Each key centred in its cell.
         this.keys = KEYS.map((label, i) => {
@@ -105,17 +114,35 @@ export class NameEntryScene extends Scene {
         [ "RANK", "SCORE", "NAME" ].forEach((heading, i) => {
             const x = left + TABLE_COLUMNS[i] * CELL_WIDTH;
 
-            this.add.bitmapText(x, table_top, "hud-font", heading, TEXT_SIZE);
+            const title = this.add.bitmapText(x, table_top, "hud-font", heading, TEXT_SIZE);
 
             const value = this.add.bitmapText(x, table_top + VALUE_GAP, "main-font", values[i], TEXT_SIZE);
+
+            texts.push(title, value);
 
             if (i === 2) {
                 this.name_text = value;
             }
         });
 
+        texts.push(...this.keys);
+
         this.input.on("pointermove", (pointer) => this.hover(pointer));
         this.input.on("pointerdown", (pointer) => this.press(pointer));
+
+        if (this.fading) {
+            texts.forEach((text) => text.setAlpha(0));
+
+            this.tweens.add({
+                targets: texts,
+                alpha: 1,
+                duration: FADE_MS,
+                onComplete: () => {
+                    this.fading = false;
+                    this.hover(this.input.activePointer);
+                }
+            });
+        }
 
         this.hover(this.input.activePointer);
     }
@@ -138,7 +165,7 @@ export class NameEntryScene extends Scene {
     hover(pointer) {
         const index = this.keyAt(pointer);
 
-        if (index < 0 || this.saving) {
+        if (index < 0 || this.saving || this.fading) {
             this.box.setVisible(false);
             return;
         }
