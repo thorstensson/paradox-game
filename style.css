@@ -79,6 +79,12 @@ canvas {
     -webkit-font-smoothing: none;
 }
 
+/* Github | Folio: the links keep the lilac and stay without underline. */
+#by-link a {
+    color: inherit;
+    text-decoration: none;
+}
+
 /* Phones and iPads (html.mobile, set in index.html): only the message, no
    loader and no game. The loader's look, wrapping 16 px from each edge. */
 

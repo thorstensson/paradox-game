@@ -42,11 +42,11 @@ const SOUNDS = {
     "player-powerup": { url: playerPowerupUrl, volume: 1 },
     "extra-life": { url: extraLifeUrl, volume: 1 },
     "endboss-alert": { url: endbossAlertUrl, volume: 1 },
-    "yellow-enemy": { url: yellowEnemyUrl, volume: 1 }
+    "yellow-enemy": { url: yellowEnemyUrl, volume: 1 },
 };
 
 export function loadSounds(scene) {
-    for (const [ key, { url } ] of Object.entries(SOUNDS)) {
+    for (const [key, { url }] of Object.entries(SOUNDS)) {
         scene.load.audio(key, url);
     }
 }

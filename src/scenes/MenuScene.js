@@ -25,6 +25,18 @@ const ROW_CHARS = 2 + 1 + SCORE_DIGITS + 1 + 8;
 const ROWS_BELOW_TITLE = 96;
 const ROW_STEP = 48;
 
+// The play helper (src/assets/ui/playhelper): 146x52 at the ship's 3x, one
+// loop tag, ui-loop. The drawing doesn't fill its canvas: across all 26
+// frames it covers x 15-75 and y 11-36. So the drawing, not the canvas, is
+// centred: across the screen, and down the middle of the gap between CLICK
+// TO START and the byline.
+const HELPER_SCALE = 3;
+const HELPER_DRAWN = { x: 15, y: 11, w: 61, h: 26 };
+
+// main-font's lines are 24px tall but its letters 21 (katakis-24.fnt): the
+// 3px under the last line is empty.
+const LETTER_DROP = 3;
+
 export class MenuScene extends Scene {
     constructor() {
         super("MenuScene");
@@ -88,6 +100,24 @@ export class MenuScene extends Scene {
             24
         ).setOrigin(0.5, 1);
 
+        // Play helper, placed by its top-left corner on whole pixels.
+        const text_bottom = start_msg.getBounds().bottom - LETTER_DROP;
+        const byline_top = byline.getBounds().top;
+
+        const helper_x = Math.round(
+            this.scale.width / 2 - (HELPER_DRAWN.x + HELPER_DRAWN.w / 2) * HELPER_SCALE
+        );
+        const helper_y = Math.round(
+            (text_bottom + byline_top) / 2 - (HELPER_DRAWN.y + HELPER_DRAWN.h / 2) * HELPER_SCALE
+        );
+
+        this.anims.createFromAseprite("playhelper");
+
+        const helper = this.add.sprite(helper_x, helper_y, "playhelper", "0")
+            .setOrigin(0, 0)
+            .setScale(HELPER_SCALE)
+            .play({ key: "ui-loop", repeat: -1 });
+
         // Blinks the text by showing and hiding it, so its alpha is free for
         // the intro's fade.
         const blink = { on: 1 };
@@ -102,7 +132,7 @@ export class MenuScene extends Scene {
             onUpdate: () => start_msg.setVisible(blink.on > 0.5)
         });
 
-        this.intro_parts = [ logo_game, start_msg, year, byline ];
+        this.intro_parts = [ logo_game, start_msg, year, byline, helper ];
         this.table_parts = this.makeTable();
 
         // Send start-game event when user clicks. The same click locks the

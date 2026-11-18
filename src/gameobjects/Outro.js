@@ -11,8 +11,11 @@
 //    with it, to STAR_PACE of their speed by the time it stops.
 // 5. Once it has stopped, the ship flies right, across it, and off the right
 //    edge.
-// 6. The words fade in, left of the planet, and stay.
-// 7. They hold END_HOLD, then the game ends (MainScene.endOutro).
+// 6. The words fade in, left of the planet.
+// 7. They hold END_HOLD and fade out. The credits follow at the same spot,
+//    one section at a time: each fades in, holds SECTION_HOLD and fades out.
+// 8. The last section holds LAST_HOLD, then it and the planet fade out and
+//    the game ends (MainScene.endOutro).
 //
 // Speeds and times are placeholders to tune by playing.
 
@@ -60,15 +63,31 @@ const TEXT_GAP = 1000;
 const TEXT_SIZE = 24;
 const LINE_SPACING = 9;
 
-// The words hold this long once fully up, then the game ends as at GAME
-// OVER: the name entry if the score goes on the table, or the intro
-// (MainScene.endOutro; Thomas, 2026-11-16). The credits scroll that ended it
-// for a while is gone (Thomas: distracting).
+// The words hold this long once fully up, then fade out and the credits come
+// in. The credits scroll that ended it for a while is gone (Thomas:
+// distracting).
 const END_HOLD = 8000;
 
-// The words and the planet fade out over this, ms, once the hold is over:
-// the intro's FADE_MS (MenuScene.js).
+// The words fade out over this, ms, and at the end the credits and the
+// planet: the intro's FADE_MS (MenuScene.js).
 const END_FADE = 500;
+
+// The credits (Thomas, 2026-11-18): four sections, one at a time, each at the
+// words' spot (centred on TEXT_CENTRE across and on the middle height).
+// Each fades in over TEXT_FADE, holds SECTION_HOLD and fades out over
+// END_FADE, then the next comes in.
+const CREDITS = [
+    "Graphics:\nThomas Thorstensson",
+    "Programming:\nThomas Thorstensson\nOpus",
+    "Credits\nAudio FX:\nMark Sheeky",
+    "Explosion FX:\nSentient Dream Studio"
+];
+const SECTION_HOLD = 2000;
+
+// The last section holds this long, then it and the planet fade out and the
+// game ends as at GAME OVER: the name entry if the score goes on the table,
+// or the intro (MainScene.endOutro; Thomas, 2026-11-16).
+const LAST_HOLD = 2000;
 
 export class Outro {
 
@@ -152,30 +171,113 @@ export class Outro {
         });
     }
 
-    // The words at the middle height, centred on TEXT_CENTRE of the screen
-    // across: the first part fades in, then, TEXT_GAP ms after it is fully
-    // up, the second. Placed on whole px so every brick of the font stays
-    // even.
+    // The words, centred on TEXT_CENTRE of the screen across. Once they have
+    // held END_HOLD, they fade out and the credits come in.
     showText() {
         const scene = this.scene;
-        const centre_x = scene.scale.width * TEXT_CENTRE;
+
+        this.showParts(TEXT_FIRST, TEXT_SECOND, scene.scale.width * TEXT_CENTRE, (parts, remove) => {
+            // Asked now, so the answer is in by the end of the credits.
+            const entry = entryFor(scene.points);
+
+            scene.time.delayedCall(END_HOLD, () => {
+                scene.tweens.add({
+                    targets: parts,
+                    alpha: 0,
+                    duration: END_FADE,
+                    onComplete: () => {
+                        remove();
+                        this.showCredits(entry);
+                    }
+                });
+            });
+        });
+    }
+
+    // One credits section at the words' spot, each line centred: it fades in,
+    // holds SECTION_HOLD and fades out, then the next comes in. The last
+    // holds LAST_HOLD and fades out together with the planet before the
+    // hand-back, as the intro's screens do (Thomas, 2026-11-17). Placed on
+    // whole px so every brick of the font stays even.
+    showCredits(entry, index = 0) {
+        const scene = this.scene;
+        const last = index === CREDITS.length - 1;
+
+        const section = scene.add.bitmapText(0, 0, "main-font", CREDITS[index], TEXT_SIZE)
+            .setOrigin(0, 0)
+            .setCenterAlign()
+            .setLineSpacing(LINE_SPACING)
+            .setAlpha(0);
+
+        section.setPosition(
+            Math.round(scene.scale.width * TEXT_CENTRE - section.width / 2),
+            Math.round(scene.cameras.main.height / 2 - section.height / 2)
+        );
+
+        // PAUSED shows near the same spot: the section steps aside while it
+        // is up, as the words do.
+        const hide = () => section.setVisible(false);
+        const show = () => section.setVisible(true);
+        const unhook = () => {
+            scene.events.off("pause", hide);
+            scene.events.off("resume", show);
+        };
+
+        scene.events.on("pause", hide);
+        scene.events.on("resume", show);
+        scene.events.once("shutdown", unhook);
+
+        scene.tweens.add({
+            targets: section,
+            alpha: 1,
+            duration: TEXT_FADE,
+            onComplete: () => {
+                scene.time.delayedCall(last ? LAST_HOLD : SECTION_HOLD, () => {
+                    scene.tweens.add({
+                        targets: last ? [ section, this.planet ] : section,
+                        alpha: 0,
+                        duration: END_FADE,
+                        onComplete: () => {
+                            if (last) {
+                                scene.endOutro(entry);
+                                return;
+                            }
+
+                            unhook();
+                            scene.events.off("shutdown", unhook);
+                            section.destroy();
+                            this.showCredits(entry, index + 1);
+                        }
+                    });
+                });
+            }
+        });
+    }
+
+    // Two parts of text at the middle height, each line centred on centre_x:
+    // the first fades in, then, TEXT_GAP ms after it is fully up, the second,
+    // an empty line below it, every line where it would be in one block.
+    // Placed on whole px so every brick of the font stays even. Once the
+    // second is fully up, onUp gets both parts and a function that takes
+    // them away.
+    showParts(text_first, text_second, centre_x, onUp) {
+        const scene = this.scene;
         const block = (content) => scene.add.bitmapText(0, 0, "main-font", content, TEXT_SIZE)
             .setOrigin(0, 0)
             .setCenterAlign()
             .setLineSpacing(LINE_SPACING);
 
         // The whole text as one block, only to measure where it sits.
-        const whole = block(`${TEXT_FIRST}\n\n${TEXT_SECOND}`);
+        const whole = block(`${text_first}\n\n${text_second}`);
         const top = Math.round(scene.cameras.main.height / 2 - whole.height / 2);
 
         whole.destroy();
 
-        const first = block(TEXT_FIRST).setAlpha(0);
-        const second = block(TEXT_SECOND).setAlpha(0);
+        const first = block(text_first).setAlpha(0);
+        const second = block(text_second).setAlpha(0);
 
-        // The second part three lines down: the first part's two and the
-        // empty one.
-        const lines_before = TEXT_FIRST.split("\n").length + 1;
+        // The second part below the first part's lines and the empty one.
+        const lines_before = text_first.split("\n").length + 1;
 
         first.setPosition(Math.round(centre_x - first.width / 2), top);
         second.setPosition(
@@ -183,7 +285,7 @@ export class Outro {
             top + lines_before * (TEXT_SIZE + LINE_SPACING)
         );
 
-        // PAUSED shows near the same spot: the words step aside while it is
+        // PAUSED shows near the same spot: the text steps aside while it is
         // up, as the level titles do.
         const hide = () => {
             first.setVisible(false);
@@ -193,13 +295,21 @@ export class Outro {
             first.setVisible(true);
             second.setVisible(true);
         };
+        const unhook = () => {
+            scene.events.off("pause", hide);
+            scene.events.off("resume", show);
+        };
 
         scene.events.on("pause", hide);
         scene.events.on("resume", show);
-        scene.events.once("shutdown", () => {
-            scene.events.off("pause", hide);
-            scene.events.off("resume", show);
-        });
+        scene.events.once("shutdown", unhook);
+
+        const remove = () => {
+            unhook();
+            scene.events.off("shutdown", unhook);
+            first.destroy();
+            second.destroy();
+        };
 
         scene.tweens.add({
             targets: first,
@@ -211,23 +321,7 @@ export class Outro {
                     alpha: 1,
                     duration: TEXT_FADE,
                     delay: TEXT_GAP,
-                    onComplete: () => {
-                        // Asked now, so the answer is in by the end of the
-                        // hold.
-                        const entry = entryFor(scene.points);
-
-                        // Then the words and the planet fade out together
-                        // before the hand-back, as the intro's screens do
-                        // (Thomas, 2026-11-17).
-                        scene.time.delayedCall(END_HOLD, () => {
-                            scene.tweens.add({
-                                targets: [ first, second, this.planet ],
-                                alpha: 0,
-                                duration: END_FADE,
-                                onComplete: () => scene.endOutro(entry)
-                            });
-                        });
-                    }
+                    onComplete: () => onUp([ first, second ], remove)
                 });
             }
         });

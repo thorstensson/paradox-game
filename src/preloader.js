@@ -224,6 +224,10 @@ import gunSheetJsonUrl from "./assets/enviro/guns/gun-sheet.json?url";
 // Six barrels, each ending in two yellow pixels (Station.js finds them).
 import gunDiamondUrl from "./assets/enviro/guns/gun-diamond.png?url";
 
+// The intro's play helper: 146x52, one loop tag, ui-loop (MenuScene).
+import playhelperUrl from "./assets/ui/playhelper.png?url";
+import playhelperJsonUrl from "./assets/ui/playhelper.json?url";
+
 // Main font: Katakis (C64) (FontStruct, Patrick H. Lauke), a bitmap font
 // exported from BMFont at 24px -- its 8-brick grid at 3px per brick. Drawn
 // at 24 (1:1) so every brick stays an even square.
@@ -294,6 +298,7 @@ export class Preloader extends Phaser.Scene {
         this.load.aseprite("vulcan", vulcanUrl, vulcanJsonUrl);
         this.load.aseprite("gun-sheet", gunSheetUrl, gunSheetJsonUrl);
         this.load.image("gun-diamond", gunDiamondUrl);
+        this.load.aseprite("playhelper", playhelperUrl, playhelperJsonUrl);
 
         // Fonts
         this.load.bitmapFont("main-font", mainFontUrl, mainFontXmlUrl);

@@ -9,6 +9,7 @@
         <meta property="og:url" content="https://paradox-game.io/" />
         <meta property="og:title" content="Paradox" />
         <meta property="og:description" content="A retro shoot 'em up by Thomas Thorstensson" />
+        <meta name="description" content="A retro shoot 'em up by Thomas Thorstensson" />
         <meta property="og:image" content="https://paradox-game.io/OG.png" />
         <meta name="twitter:card" content="summary_large_image" />
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,7 +34,7 @@
     </head>
 
     <body>
-        <p id="mobile-text">Hello. There were no C64 mobiles. Revisit from a desktop screen to play!</p>
+        <p id="mobile-text"><span data-nosnippet>Hello. There were no C64 mobiles. Revisit from a desktop screen to play!</span></p>
 
         <!-- The loader (Thomas, 2026-11-16), C64 style: the text top left,
              the splash centred, until the game has loaded (src/loader.js). -->
@@ -60,7 +61,7 @@
             <div id="phaser-container"></div>
         </div>
 
-        <a id="by-link" href="https://www.thomasthorstensson.com" target="_blank" rel="noopener">by Thomas</a>
+        <span id="by-link" data-nosnippet><a href="https://github.com/thorstensson" target="_blank" rel="noopener">Github</a> | <a href="https://www.thomasthorstensson.com" target="_blank" rel="noopener">Folio</a></span>
         <script type="module" src="/src/main.js"></script>
     </body>
 </html>
