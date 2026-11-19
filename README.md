@@ -1,5 +1,6 @@
-![Image](https://github.com/user-attachments/assets/2c98d110-1b9a-4ade-ba62-f0cde51e7d56)
-![Image](https://github.com/user-attachments/assets/e8bf85c8-1a5a-4fab-ab89-fff3be49be77)
+![Image](https://github.com/user-attachments/assets/fdea3e3d-1f84-44c4-b63f-11da9d2fb819)
+![Image](https://github.com/user-attachments/assets/c79b3a09-b58e-4d48-8e80-f4e0882ea76e)
+![Image](https://github.com/user-attachments/assets/dca4447e-52a7-40d8-b176-4cb66f6820ac)
 
 # Paradox, a retro shoot 'em up
 
