@@ -11,11 +11,7 @@ import titleLogoUrl from "./assets/fonts/scifiadventure.png?url";
 import { loadSounds } from "./sounds";
 
 // The HTML loader: its percentage and its fade (loader.js).
-import { fadeOutLoader, setLoaderProgress } from "./loader";
-
-// The loader holds at 100% this long before it fades, ms (Thomas,
-// 2026-11-16: the game loads fast, so the splash gets its moment).
-const SPLASH_HOLD_MS = 3000;
+import { fadeOutLoader, setLoaderProgress, waitForClick } from "./loader";
 
 // Player ship. Hand-painted, 32x32 indexed, three one-frame tags:
 // level / bank-up / bank-down. Exported from Aseprite untrimmed in Array
@@ -324,10 +320,10 @@ export class Preloader extends Phaser.Scene {
             font.size = Math.abs(font.size);
         }
 
-        // All loaded: the loader holds at 100% for SPLASH_HOLD_MS, then its
-        // text and splash fade away and the game fades in (MainScene).
+        // All loaded: the loader shows READY. and Click to RUN; on the click
+        // its text and splash fade away and the game fades in (MainScene).
         setLoaderProgress(1);
-        this.time.delayedCall(SPLASH_HOLD_MS, () => {
+        waitForClick(() => {
             fadeOutLoader(() => this.scene.start("MainScene"));
         });
     }

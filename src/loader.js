@@ -1,7 +1,8 @@
 // The HTML loader in index.html (Thomas, 2026-11-16): the C64-style text
 // top left and the splash centred, shown from the moment the page opens.
-// The preloader counts the percentage up as the game loads; at 100% the text
-// and splash fade away together, then the game fades in.
+// The preloader counts the percentage up as the game loads. At 100% READY.
+// and Click to RUN show, as a C64 after LOAD (Thomas, 2026-11-22); on the
+// click the text and splash fade away together, then the game fades in.
 
 // The loader's fade, ms: the same as its transition in style.css.
 const FADE_MS = 500;
@@ -13,6 +14,26 @@ export function setLoaderProgress(progress) {
     if (percent) {
         percent.textContent = String(Math.round(progress * 100));
     }
+}
+
+// Shows READY. and Click to RUN, then calls done on a click on the loader.
+// That click is the page's first, so it also turns sound on: Phaser listens
+// for it on the body (WebAudioSoundManager.unlock), and the intro's music
+// can play.
+export function waitForClick(done) {
+    const loader = document.getElementById("loader");
+    const ready = document.getElementById("loader-ready");
+
+    if (!loader) {
+        done();
+        return;
+    }
+
+    if (ready) {
+        ready.hidden = false;
+    }
+
+    loader.addEventListener("click", done, { once: true });
 }
 
 // Fades the loader away and removes it, then calls done.

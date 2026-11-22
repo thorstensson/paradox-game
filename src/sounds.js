@@ -2,8 +2,8 @@
 // 16-bit mono 44.1 kHz WAV, which every browser plays. Loaded with the art
 // (preloader.js); each plays from where its event happens.
 //
-// Browsers keep a page silent until its first click. CLICK TO START is that
-// click, and Phaser unmutes itself on it.
+// Browsers keep a page silent until its first click. Click to RUN on the
+// loader is that click (loader.js), and Phaser unmutes itself on it.
 //
 // First pass, 2026-11-16: everything is trial and error, to tune by playing.
 
@@ -45,10 +45,30 @@ const SOUNDS = {
     "yellow-enemy": { url: yellowEnemyUrl, volume: 1 },
 };
 
+// The intro's music (Thomas, Reason and WaveLab, 2026-11-22): loops while
+// the intro is up (MenuScene), at volume 1 like the effects. Played from
+// Thomas's Cloudflare bucket, not shipped with the game.
+const MUSIC = {
+    key: "thomas-theme-edit",
+    url: "https://assets.thomasthorstensson.photography/paradox/thomas-theme-edit.mp3",
+    volume: 1,
+};
+
 export function loadSounds(scene) {
     for (const [key, { url }] of Object.entries(SOUNDS)) {
         scene.load.audio(key, url);
     }
+
+    scene.load.audio(MUSIC.key, MUSIC.url);
+}
+
+// Starts the music on loop; the caller destroys it to stop it.
+export function playMusic(scene) {
+    const music = scene.sound.add(MUSIC.key, { loop: true, volume: MUSIC.volume });
+
+    music.play();
+
+    return music;
 }
 
 // One play of the sound; several can overlap.

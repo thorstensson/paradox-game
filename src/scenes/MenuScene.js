@@ -2,6 +2,7 @@ import { Scene } from "phaser";
 import { COLOUR_SHINE } from "../fx/ColourShine";
 import { fetchTopScores, TOP } from "../hiscores";
 import { SCORE_DIGITS } from "./HudScene";
+import { playMusic } from "../sounds";
 
 // The intro and TOP SCORES take turns, as in Delta (Thomas, 2026-11-16): each
 // holds HOLD_MS, then fades out over FADE_MS and the other fades in over
@@ -142,10 +143,14 @@ export class MenuScene extends Scene {
             this.game.events.emit("start-game");
         });
 
+        // The intro's music, on loop until the intro closes (sounds.js).
+        const music = playMusic(this);
+
         // A fetch can come back after the scene has stopped; it is dropped.
         this.running = true;
         this.events.once("shutdown", () => {
             this.running = false;
+            music.destroy();
         });
 
         this.scores = null;

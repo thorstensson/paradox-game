@@ -56,6 +56,23 @@ canvas {
     -webkit-font-smoothing: none;
 }
 
+/* At 100%: READY. and Click to RUN, then the C64 cursor, a lilac block one
+   character wide, blinking at the intro's CLICK TO START rate (800 ms on,
+   800 ms off, MenuScene.js). */
+#loader-cursor {
+    display: inline-block;
+    width: 1ch;
+    height: 1em;
+    background-color: #849be4;
+    animation: loader-cursor 1600ms step-end infinite;
+}
+
+@keyframes loader-cursor {
+    50% {
+        visibility: hidden;
+    }
+}
+
 /* The splash, centred, at the game's zoom (set in index.html). */
 #loader-splash {
     width: calc(1280px * var(--zoom));

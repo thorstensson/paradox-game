@@ -66,6 +66,11 @@ const config = {
 if (!document.documentElement.classList.contains("mobile")) {
     const game = new Game(config);
 
+    // Phaser pauses all sound when the window loses focus (pauseOnBlur, on by
+    // default). Off, so clicking another window doesn't stop the music; the
+    // browser's own behaviour applies instead (Thomas, 2026-11-22).
+    game.sound.pauseOnBlur = false;
+
     // Phaser resolves zoom once at startup, so re-derive it when the window changes.
     window.addEventListener("resize", () => {
         game.scale.setZoom(integerZoom());
