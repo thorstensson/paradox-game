@@ -79,6 +79,7 @@ const END_FADE = 500;
 const CREDITS = [
     "Graphics:\nThomas Thorstensson",
     "Programming:\nThomas Thorstensson\nOpus",
+    "Soundtrack by\nThomas Thorstensson",
     "Credits\nAudio FX:\nMark Sheeky",
     "Explosion FX:\nSentient Dream Studio"
 ];
