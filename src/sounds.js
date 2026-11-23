@@ -59,7 +59,8 @@ export function loadSounds(scene) {
         scene.load.audio(key, url);
     }
 
-    scene.load.audio(MUSIC.key, MUSIC.url);
+    // Intro music off until Thomas replaces the track (2026-11-23).
+    // scene.load.audio(MUSIC.key, MUSIC.url);
 }
 
 // Starts the music on loop; the caller destroys it to stop it.

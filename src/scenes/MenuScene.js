@@ -144,13 +144,14 @@ export class MenuScene extends Scene {
         });
 
         // The intro's music, on loop until the intro closes (sounds.js).
-        const music = playMusic(this);
+        // Off until Thomas replaces the track (2026-11-23).
+        // const music = playMusic(this);
 
         // A fetch can come back after the scene has stopped; it is dropped.
         this.running = true;
         this.events.once("shutdown", () => {
             this.running = false;
-            music.destroy();
+            // music.destroy(); // intro music off (see above)
         });
 
         this.scores = null;
