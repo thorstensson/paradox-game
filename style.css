@@ -30,7 +30,8 @@ canvas {
     position: fixed;
     inset: 0;
     z-index: 10;
-    background-color: #000000;
+    /* The same as the space round the game (body). */
+    background-color: #10101B;
     display: flex;
     justify-content: center;
     align-items: center;

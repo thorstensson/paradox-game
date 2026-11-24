@@ -38,6 +38,10 @@ const HELPER_DRAWN = { x: 15, y: 11, w: 61, h: 26 };
 // 3px under the last line is empty.
 const LETTER_DROP = 3;
 
+// The PARADOX logo sits 5% of the screen's 800px above the middle (Thomas,
+// 2026-11-24); MMXXVI moves up with it.
+const LOGO_RAISE = 40;
+
 export class MenuScene extends Scene {
     constructor() {
         super("MenuScene");
@@ -49,10 +53,11 @@ export class MenuScene extends Scene {
 
     create() {
         // Logo. Images are centre-origin already, so no setOrigin needed.
-        // 123x13 at 8x is 984px wide: 148px either side.
+        // 123x13 at 8x is 984px wide: 148px either side. Raised LOGO_RAISE
+        // above the middle of the screen.
         const logo_game = this.add.image(
             this.scale.width / 2,
-            this.scale.height / 2,
+            this.scale.height / 2 - LOGO_RAISE,
             "title-logo"
         ).setScale(8);
 
@@ -79,9 +84,10 @@ export class MenuScene extends Scene {
 
         // The year in Roman numerals above the logo, as Delta has it. Same
         // gap above the logo as PLAYER ONE sits below it, measured from the
-        // drawn text rather than set by hand.
+        // drawn text rather than set by hand. The gap is taken as it was
+        // before the raise, so the year moves up with the logo by LOGO_RAISE.
         const logo_bounds = logo_game.getBounds();
-        const gap = start_msg.getBounds().top - logo_bounds.bottom;
+        const gap = start_msg.getBounds().top - logo_bounds.bottom - LOGO_RAISE;
 
         const year = this.add.bitmapText(
             this.scale.width / 2,
