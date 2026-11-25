@@ -34,13 +34,19 @@
     </head>
 
     <body>
-        <p id="mobile-text"><span data-nosnippet>Hello. There were no C64 mobiles. Revisit from a desktop screen to play!</span></p>
+        <!-- Phones and iPads (Thomas, 2026-11-25): the monitor, the text
+             below it, centred together (style.css). -->
+        <div id="mobile-message">
+            <div id="mobile-monitor"></div>
+            <p id="mobile-text"><span data-nosnippet>Retro Gaming. Revisit me from laptop or desktop to play.</span></p>
+        </div>
 
-        <!-- The loader (Thomas, 2026-11-16), C64 style: the text top left,
-             the splash centred, until the game has loaded (src/loader.js). -->
+        <!-- The loader (Thomas, 2026-11-25): the cassette plays, centred,
+             while the game loads; then a cut to the splash for 3 s
+             (src/loader.js). -->
         <div id="loader">
-            <p id="loader-text">Loading Paradox <span id="loader-percent">0</span>%<br>Headphones recommended.<span id="loader-ready" hidden><br>READY.<br>Click to RUN <span id="loader-cursor"></span></span></p>
-            <img id="loader-splash" src="/src/assets/splash/splash.png" alt="" />
+            <div id="loader-tape"></div>
+            <img id="loader-splash" src="/src/assets/splash/splash.png" alt="" hidden />
         </div>
 
         <!-- The splash at the game's zoom: the largest whole multiple of

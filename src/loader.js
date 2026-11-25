@@ -1,39 +1,41 @@
-// The HTML loader in index.html (Thomas, 2026-11-16): the C64-style text
-// top left and the splash centred, shown from the moment the page opens.
-// The preloader counts the percentage up as the game loads. At 100% READY.
-// and Click to RUN show, as a C64 after LOAD (Thomas, 2026-11-22); on the
-// click the text and splash fade away together, then the game fades in.
+// The HTML loader in index.html (Thomas, 2026-11-25): the cassette plays its
+// loop, centred, while the game loads. When all is loaded it cuts to the
+// splash, no fade, as a C64 does; the splash holds 3 s, then the loader
+// fades away and the game fades in.
 
 // The loader's fade, ms: the same as its transition in style.css.
 const FADE_MS = 500;
 
-// progress: 0 to 1.
-export function setLoaderProgress(progress) {
-    const percent = document.getElementById("loader-percent");
+// The splash's hold, ms (Thomas).
+const SPLASH_MS = 3000;
 
-    if (percent) {
-        percent.textContent = String(Math.round(progress * 100));
-    }
-}
+// Cuts from the tape to the splash, holds it, then calls done.
+export function showSplash(done) {
+    const tape = document.getElementById("loader-tape");
+    const splash = document.getElementById("loader-splash");
 
-// Shows READY. and Click to RUN, then calls done on a click on the loader.
-// That click is the page's first, so it also turns sound on: Phaser listens
-// for it on the body (WebAudioSoundManager.unlock), and the intro's music
-// can play.
-export function waitForClick(done) {
-    const loader = document.getElementById("loader");
-    const ready = document.getElementById("loader-ready");
-
-    if (!loader) {
+    if (!splash) {
         done();
         return;
     }
 
-    if (ready) {
-        ready.hidden = false;
-    }
+    const cut = () => {
+        if (tape) {
+            tape.hidden = true;
+        }
 
-    loader.addEventListener("click", done, { once: true });
+        splash.hidden = false;
+        setTimeout(done, SPLASH_MS);
+    };
+
+    // Waits for the splash picture, so the cut never lands on an empty
+    // screen. A picture that fails to load still moves on.
+    if (splash.complete) {
+        cut();
+    } else {
+        splash.addEventListener("load", cut, { once: true });
+        splash.addEventListener("error", cut, { once: true });
+    }
 }
 
 // Fades the loader away and removes it, then calls done.
