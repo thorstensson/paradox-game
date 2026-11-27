@@ -14,7 +14,7 @@
         <meta name="twitter:card" content="summary_large_image" />
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="/style.css" />
 
         <!-- Phones and iPads get only the mobile message: no loader, no game
@@ -41,12 +41,15 @@
             <p id="mobile-text"><span data-nosnippet>Retro Gaming. Revisit me from laptop or desktop to play.</span></p>
         </div>
 
-        <!-- The loader (Thomas, 2026-11-25): the cassette plays, centred,
-             while the game loads; then a cut to the splash for 3 s
+        <!-- The loader (Thomas, 2026-11-27): the splash, centred, while the
+             game loads, with a dashed line below it that fills from left
+             to right; the splash holds 3 s after loading
              (src/loader.js). -->
         <div id="loader">
-            <div id="loader-tape"></div>
-            <img id="loader-splash" src="/src/assets/splash/splash.png" alt="" hidden />
+            <div id="loader-frame">
+                <div id="loader-line"></div>
+                <img id="loader-splash" src="/src/assets/splash/splash.png" alt="" />
+            </div>
         </div>
 
         <!-- The splash at the game's zoom: the largest whole multiple of
@@ -67,7 +70,7 @@
             <div id="phaser-container"></div>
         </div>
 
-        <span id="by-link" data-nosnippet><a href="https://www.thomasthorstensson.com" target="_blank" rel="noopener">by thomas</a></span>
+        <span id="by-link" data-nosnippet><a href="https://github.com/thorstensson" target="_blank" rel="noopener">GITHUB</a> | <a href="https://www.thomasthorstensson.com" target="_blank" rel="noopener">BY THOMAS</a></span>
         <script type="module" src="/src/main.js"></script>
     </body>
 </html>

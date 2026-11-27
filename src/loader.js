@@ -1,7 +1,6 @@
-// The HTML loader in index.html (Thomas, 2026-11-25): the cassette plays its
-// loop, centred, while the game loads. When all is loaded it cuts to the
-// splash, no fade, as a C64 does; the splash holds 3 s, then the loader
-// fades away and the game fades in.
+// The HTML loader in index.html (Thomas, 2026-11-27): the splash shows,
+// centred, from the start while the game loads. When all is loaded the
+// splash holds 3 s, then the loader fades away and the game fades in.
 
 // The loader's fade, ms: the same as its transition in style.css.
 const FADE_MS = 500;
@@ -9,9 +8,18 @@ const FADE_MS = 500;
 // The splash's hold, ms (Thomas).
 const SPLASH_MS = 3000;
 
-// Cuts from the tape to the splash, holds it, then calls done.
-export function showSplash(done) {
-    const tape = document.getElementById("loader-tape");
+// The dashed line below the splash, filled from left to right by the load's
+// progress (0 to 1).
+export function setLoaderLine(progress) {
+    const line = document.getElementById("loader-line");
+
+    if (line) {
+        line.style.width = progress * 100 + "%";
+    }
+}
+
+// Holds the splash, then calls done.
+export function holdSplash(done) {
     const splash = document.getElementById("loader-splash");
 
     if (!splash) {
@@ -19,22 +27,15 @@ export function showSplash(done) {
         return;
     }
 
-    const cut = () => {
-        if (tape) {
-            tape.hidden = true;
-        }
+    const hold = () => setTimeout(done, SPLASH_MS);
 
-        splash.hidden = false;
-        setTimeout(done, SPLASH_MS);
-    };
-
-    // Waits for the splash picture, so the cut never lands on an empty
-    // screen. A picture that fails to load still moves on.
+    // Waits for the splash picture, so the hold is never on an empty screen.
+    // A picture that fails to load still moves on.
     if (splash.complete) {
-        cut();
+        hold();
     } else {
-        splash.addEventListener("load", cut, { once: true });
-        splash.addEventListener("error", cut, { once: true });
+        splash.addEventListener("load", hold, { once: true });
+        splash.addEventListener("error", hold, { once: true });
     }
 }
 

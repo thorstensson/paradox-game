@@ -10,8 +10,8 @@ import titleLogoUrl from "./assets/fonts/scifiadventure.png?url";
 // Sound effects: the files and their loading are in sounds.js.
 import { loadSounds } from "./sounds";
 
-// The HTML loader: the cut to the splash and its fade (loader.js).
-import { fadeOutLoader, showSplash } from "./loader";
+// The HTML loader: the line, the splash's hold and its fade (loader.js).
+import { fadeOutLoader, holdSplash, setLoaderLine } from "./loader";
 
 // Player ship. Hand-painted, 32x32 indexed, three one-frame tags:
 // level / bank-up / bank-down. Exported from Aseprite untrimmed in Array
@@ -305,6 +305,7 @@ export class Preloader extends Phaser.Scene {
 
         this.load.on("progress", (progress) => {
             console.log("Loading: " + Math.round(progress * 100) + "%");
+            setLoaderLine(progress);
         });
     }
 
@@ -318,9 +319,9 @@ export class Preloader extends Phaser.Scene {
             font.size = Math.abs(font.size);
         }
 
-        // All loaded: the loader cuts from the tape to the splash, holds it
-        // 3 s, fades away, and the game fades in (MainScene).
-        showSplash(() => {
+        // All loaded: the splash holds 3 s, the loader fades away, and the
+        // game fades in (MainScene).
+        holdSplash(() => {
             fadeOutLoader(() => this.scene.start("MainScene"));
         });
     }

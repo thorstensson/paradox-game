@@ -42,27 +42,31 @@ canvas {
     opacity: 0;
 }
 
-/* The cassette (src/assets/ui/cassette.png), centred while the game loads:
-   13 frames of 64x64 side by side (832x64), casette-loop, 100 ms each, at
-   the ship's 3x: 192x192. */
-#loader-tape {
-    width: calc(64px * 3 * var(--zoom));
-    height: calc(64px * 3 * var(--zoom));
-    background-image: url("/src/assets/ui/cassette.png");
-    background-repeat: no-repeat;
-    background-size: calc(832px * 3 * var(--zoom)) calc(64px * 3 * var(--zoom));
-    image-rendering: pixelated;
-    animation: loader-tape 1300ms steps(13) infinite;
+/* The splash and the line above it; the line doesn't move the splash. */
+#loader-frame {
+    position: relative;
 }
 
-@keyframes loader-tape {
-    to {
-        background-position: calc(-832px * 3 * var(--zoom)) 0;
-    }
+/* The loading line: dashes 9 px thick, 48 px long, 24 px apart, a lighter
+   shade of the background, at the game's zoom, 10 px below the splash. Its
+   width grows from 0 to the splash's full width as the game loads
+   (src/loader.js). */
+#loader-line {
+    position: absolute;
+    left: 0;
+    top: calc(100% + 10px * var(--zoom));
+    width: 0;
+    height: calc(9px * var(--zoom));
+    background: repeating-linear-gradient(
+        to right,
+        #1E1E33 0 calc(48px * var(--zoom)),
+        transparent calc(48px * var(--zoom)) calc(72px * var(--zoom))
+    );
 }
 
 /* The splash, centred, at the game's zoom (set in index.html). */
 #loader-splash {
+    display: block;
     width: calc(1280px * var(--zoom));
     height: calc(800px * var(--zoom));
     image-rendering: pixelated;
@@ -75,16 +79,18 @@ canvas {
     bottom: 16px;
     right: 16px;
     z-index: 11;
-    font-family: "Press Start 2P", system-ui;
-    font-weight: 400;
+    font-family: "Orbitron", sans-serif;
+    /* Medium (Orbitron is variable, 400 to 900). */
+    font-weight: 500;
     font-style: normal;
-    font-size: 9px;
-    color: #849be4;
+    font-size: 11px;
+    /* The lilac of TOP SCORES (hud-font, katakis-lilac-24_0.png). */
+    color: #849BE4;
     text-decoration: none;
     -webkit-font-smoothing: none;
 }
 
-/* Github | Folio: the links keep the lilac and stay without underline. */
+/* GITHUB | BY THOMAS: the links stay lilac and without underline. */
 #by-link a {
     color: inherit;
     text-decoration: none;
